@@ -1,3 +1,18 @@
+## Main features
+
+- Hor+ FOV calculation for widescreen
+- Separately calculated viewmodel FOV
+- Adjustable viewmodel origin
+- Alternative viewmodel bob from CS:GO 1.0.0.40
+- Viewmodel sway/lag
+- Viewmodel shifting can be disabled
+- Alternative crosshair
+- Bodygroup-based arm changing depending on team
+- Client-side weapon inspecting
+- Bone controlled camera movement
+- Mirrored shell ejects
+- FOV lerp
+
 ## Notes
 
 - Read the installation instructions. It's very easy to break your game if you don't.

@@ -14,8 +14,9 @@
 
 ## Other stuff
 
-- To get bone controlled camera movement working, make a bone called "camera" and make an attachment on it. It sucks to rely on bone name but studiomdl doesn't support attachment names.
-- You can make hand bodygroups change depending on what team you're in by naming the bodygroup so that is starts with "arms"
+- To get bone controlled camera movement working, make a bone called "camera" and make an attachment on it. It sucks to rely on bone name but studiomdl doesn't support attachment names even though the format supports them.
+- You can make hand bodygroups change depending on what team you're in by naming the bodygroup so that is starts with "arms".
+- Inspect sequence indices are hardcoded for compatibility, it's always the sequence after the last default sequence. Check inspectAnims array in inspect.c if in doubt.
 
 ## Cvar/command list
 

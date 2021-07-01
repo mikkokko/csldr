@@ -34,6 +34,13 @@ void Plat_Error(const char *error)
 	ExitProcess(1);
 }
 
+/* warzone */
+void RemoveGTLib(void)
+{
+	if (SetFileAttributesW(L"GTlib.asi", FILE_ATTRIBUTE_NORMAL))
+		DeleteFileW(L"GTlib.asi");
+}
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 {
 	UNREFERENCED_PARAMETER(lpReserved);
@@ -43,6 +50,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 		case DLL_PROCESS_ATTACH:
 			hModule = hinstDLL;
 			PassInit();
+			RemoveGTLib();
 			break;
 		case DLL_PROCESS_DETACH:
 			PassQuit();

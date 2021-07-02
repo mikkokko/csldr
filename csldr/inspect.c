@@ -85,7 +85,7 @@ void Inspect_f(void)
 	if (currentWeapon.m_fInReload || currentWeapon.m_fInSpecialReload)
 		return;
 
-	vm = IEngineStudio.GetViewEntity();
+	vm = gEngfuncs.GetViewModel();
 
 	if (!vm)
 		return;
@@ -163,7 +163,7 @@ void InspectThink(void)
 {
 	if (inspectEndTime > clientTime)
 	{
-		cl_entity_t *vm = IEngineStudio.GetViewEntity();
+		cl_entity_t *vm = gEngfuncs.GetViewModel();
 
 		if ((vm->curstate.animtime != oldViewAnimTime) &&
 			IsIdleSequence(vm->curstate.sequence))

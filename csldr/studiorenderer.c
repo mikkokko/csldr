@@ -74,9 +74,8 @@ int Hk_StudioDrawModel(int flags)
 	float fov, fov1, fov2;
 
 	cl_entity_t *entity = IEngineStudio.GetCurrentEntity();
-	bool viewModel = (entity == IEngineStudio.GetViewEntity());
 
-	if (!viewModel)
+	if (entity != IEngineStudio.GetViewEntity())
 		return studio.StudioDrawModel(flags);
 
 	scr.iSize = sizeof(SCREENINFO);

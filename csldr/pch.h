@@ -21,6 +21,10 @@ typedef int qboolean;
 
 typedef unsigned char byte;
 
+typedef signed char int8;
+typedef unsigned char uint8;
+typedef short int16;
+typedef unsigned short uint16;
 typedef int int32;
 typedef unsigned int uint32;
 
@@ -73,6 +77,7 @@ typedef struct
 #include "studiorenderer.h"
 #include "view.h"
 #include "weapon_info.h"
+#include "secret_dll.h"
 
 /* ui stuff */
 #include "hud_crosshair.h"

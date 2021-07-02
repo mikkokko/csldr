@@ -30,6 +30,9 @@ void PassInit(void)
 	/* mikkotodo unsafe */
 	strcpy(dot, "_orig" LIB_EXT);
 
+	if (Secret_LoadClient(name))
+		return;
+
 	clientOrig = Plat_Dlopen(name);
 
 	if (clientOrig == NULL)

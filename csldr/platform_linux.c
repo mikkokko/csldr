@@ -27,9 +27,7 @@ void Plat_CurrentModuleName(char *name, size_t size)
 	dladdr(__builtin_return_address(0), &info);
 	/* mikkotodo strncpy bad */
 	strncpy(name, info.dli_fname, size);
-
-	if (size)
-		name[size - 1] = '\0';
+	name[size - 1] = '\0';
 }
 
 void Plat_Error(const char *error)

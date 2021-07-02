@@ -12,10 +12,8 @@ void *Plat_Dlopen(const char *filename)
 void *Plat_Dlsym(void *handle, const char *name)
 {
 	/* shut up compiler */
-	FARPROC hresult = GetProcAddress((HMODULE)handle, name);
-	void *result = *(void **)(&hresult);
-
-	return result;
+	FARPROC res = GetProcAddress((HMODULE)handle, name);
+	return *(void **)(&res);
 }
 
 void Plat_Dlclose(void *handle)
@@ -35,7 +33,7 @@ void Plat_Error(const char *error)
 }
 
 /* warzone */
-void RemoveGTLib(void)
+void RemoveGTlib(void)
 {
 	if (SetFileAttributesW(L"GTlib.asi", FILE_ATTRIBUTE_NORMAL))
 		DeleteFileW(L"GTlib.asi");
@@ -50,7 +48,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 		case DLL_PROCESS_ATTACH:
 			hModule = hinstDLL;
 			PassInit();
-			RemoveGTLib();
+			RemoveGTlib();
 			break;
 		case DLL_PROCESS_DETACH:
 			PassQuit();

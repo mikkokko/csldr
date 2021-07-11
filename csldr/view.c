@@ -37,6 +37,9 @@ void ViewInit(void)
 	cl_bobup = gEngfuncs.pfnGetCvarPointer("cl_bobup");
 	cl_bob = gEngfuncs.pfnGetCvarPointer("cl_bob");
 
+	cl_bobcycle->flags |= FCVAR_ARCHIVE;
+	cl_bobup->flags |= FCVAR_ARCHIVE;
+
 	CVAR_ARHCIVE_FAST(cl_bobamt_vert, 0.13);
 	CVAR_ARHCIVE_FAST(cl_bobamt_lat, 0.32);
 	CVAR_ARHCIVE_FAST(cl_bob_lower_amt, 8.0);
@@ -96,8 +99,10 @@ void V_CalcBob(ref_params_t *pparams)
 	g_bobVars.bobTime += (pparams->time - g_bobVars.lastBobTime) * bobOffset;
 	g_bobVars.lastBobTime = pparams->time;
 
+	/* scale the bob by 1.25, this wasn't in 10040 but this way
+	cs 1.6's default cl_bobcycle value (0.8) will look right */
 	bobCycle = (((1000.0f - 150.0f) / 3.5f) * 0.001f) *
-			   cl_bobcycle->value;
+			   cl_bobcycle->value * 1.25f;
 
 	cycle = g_bobVars.bobTime - (int)(g_bobVars.bobTime / bobCycle) *
 			bobCycle;

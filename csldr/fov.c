@@ -21,6 +21,10 @@ void SetFov(float fov)
 {
 	SCREENINFO scr;
 
+	/* crappy fix for the thing where you can't see shit when you die */
+	if (fov == 0.0f)
+		fov = 90.0f;
+
 	fovDifference = fov / 90.0f;
 
 	scr.iSize = sizeof(SCREENINFO);

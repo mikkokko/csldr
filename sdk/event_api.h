@@ -8,14 +8,14 @@ typedef struct
 	void (*EV_StopSound)(int, int, const char *);
 	int (*EV_FindModelIndex)(const char *);
 	int (*EV_IsLocal)(int);
-	int (*EV_LocalPlayerDucking)();
+	int (*EV_LocalPlayerDucking)(void);
 	void (*EV_LocalPlayerViewheight)(float *);
 	void (*EV_LocalPlayerBounds)(int, float *, float *);
 	int (*EV_IndexFromTrace)(pmtrace_t *);
 	physent_t *(*EV_GetPhysent)(int);
 	void (*EV_SetUpPlayerPrediction)(int, int);
-	void (*EV_PushPMStates)();
-	void (*EV_PopPMStates)();
+	void (*EV_PushPMStates)(void);
+	void (*EV_PopPMStates)(void);
 	void (*EV_SetSolidPlayers)(int);
 	void (*EV_SetTraceHull)(int);
 	void (*EV_PlayerTrace)(float *, float *, int, int, pmtrace_t *);

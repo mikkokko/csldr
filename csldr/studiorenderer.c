@@ -31,7 +31,18 @@ static vec3_t origin_backup[128];
 void ChangeModelOrigin(studiohdr_t *hdr)
 {
 	int i;
+	float x, y, z;
 	mstudiobone_t *bone;
+
+	if (currentWeapon.m_iId == WEAPON_KNIFE && cl_mirror_knife->value)
+	{
+		x = -viewmodel_offset_x->value;
+	}
+	else
+		x = viewmodel_offset_x->value;
+
+	y = viewmodel_offset_y->value;
+	z = viewmodel_offset_z->value;
 
 	bone = (mstudiobone_t *)((byte *)hdr + hdr->boneindex);
 
@@ -43,9 +54,9 @@ void ChangeModelOrigin(studiohdr_t *hdr)
 			origin_backup[i][1] = bone->value[1];
 			origin_backup[i][2] = bone->value[2];
 
-			bone->value[0] += viewmodel_offset_y->value;
-			bone->value[1] += viewmodel_offset_x->value;
-			bone->value[2] += viewmodel_offset_z->value;
+			bone->value[0] += y;
+			bone->value[1] += x;
+			bone->value[2] += z;
 		}
 	}
 }

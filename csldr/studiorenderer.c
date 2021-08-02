@@ -125,6 +125,8 @@ void Hk_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 	studiohdr_t *studiohdr;
 	mstudiobodyparts_t *body;
 	int oldbody;
+	int current;
+	int newbody;
 
 	entity = IEngineStudio.GetCurrentEntity();
 	viewModel = (entity == IEngineStudio.GetViewEntity());
@@ -139,7 +141,8 @@ void Hk_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 	studiohdr = (studiohdr_t *)entity->model->cache.data;
 	body = (mstudiobodyparts_t *)((byte *)studiohdr + studiohdr->bodypartindex) + bodypart;
 
-	if (*(uint32 *)body->name != *(uint32 *)"arms") /* it's not, bail out */
+	/* check if the names matches and that there's enough submodels */
+	if (*(uint32 *)body->name != *(uint32 *)"arms" || body->nummodels < 2)
 	{
 		IEngineStudio.StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
 		return;
@@ -149,9 +152,12 @@ void Hk_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 	oldbody = entity->curstate.body;
 
 	if (user1 == 4)
-		entity->curstate.body = playerInfo[user2].team;
+		newbody = playerInfo[user2].team;
 	else
-		entity->curstate.body = localTeam;
+		newbody = localTeam;
+
+	current = (entity->curstate.body / body->base) % body->nummodels;
+	entity->curstate.body = (entity->curstate.body - (current * body->base) + (newbody * body->base));
 
 	/* set the cool arm stuff */
 	IEngineStudio.StudioSetupModel(bodypart, ppbodypart, ppsubmodel);

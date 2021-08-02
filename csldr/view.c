@@ -23,6 +23,8 @@ cvar_t *viewmodel_lag_speed;
 cvar_t *fov_horplus;
 cvar_t *fov_lerp;
 
+cvar_t *cl_mirror_knife;
+
 void ViewInit(void)
 {
 	CVAR_ARHCIVE_FAST(viewmodel_fov, 68);
@@ -49,6 +51,8 @@ void ViewInit(void)
 
 	CVAR_ARHCIVE_FAST(fov_horplus, 1);
 	CVAR_ARHCIVE_FAST(fov_lerp, 0.1);
+
+	CVAR_ARHCIVE_FAST(cl_mirror_knife, 1);
 }
 
 struct

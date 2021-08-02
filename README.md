@@ -39,6 +39,7 @@
         cl_bob_lower_amt
         cl_bobamt_lat
         cl_bobamt_vert
+		cl_mirror_knife
         cl_use_new_bob
         fov_horplus
         fov_lerp

@@ -9,6 +9,8 @@ extern cvar_t *viewmodel_offset_x;
 extern cvar_t *viewmodel_offset_y;
 extern cvar_t *viewmodel_offset_z;
 
+extern cvar_t *cl_mirror_knife;
+
 /* mikkotodo yank these from elsewhere? */
 
 /* was 4 but fucked up my ads */
@@ -66,12 +68,30 @@ void RestoreModelOrigin(studiohdr_t *hdr)
 	}
 }
 
+void UnflipKnife(float *value)
+{
+	if (currentWeapon.m_iId != WEAPON_KNIFE || cl_mirror_knife->value)
+		return;
+
+	*value = cl_righthand->value;
+	cl_righthand->value = !cl_righthand->value;
+}
+
+void ReflipKnife(float value)
+{
+	if (currentWeapon.m_iId != WEAPON_KNIFE || cl_mirror_knife->value)
+		return;
+
+	cl_righthand->value = value;
+}
+
 int Hk_StudioDrawModel(int flags)
 {
 	int result;
 	SCREENINFO scr;
 	double top, aspect;
 	float fov, fov1, fov2;
+	float old_righthand;
 
 	cl_entity_t *entity = IEngineStudio.GetCurrentEntity();
 
@@ -100,6 +120,8 @@ int Hk_StudioDrawModel(int flags)
 	/* think about inspecting now since we're about to draw the vm */
 	InspectThink();
 
+	UnflipKnife(&old_righthand);
+
 	/* worse than hitler */
 	ChangeModelOrigin((studiohdr_t *)entity->model->cache.data);
 
@@ -107,6 +129,8 @@ int Hk_StudioDrawModel(int flags)
 
 	/* worse than hitler */
 	RestoreModelOrigin((studiohdr_t *)entity->model->cache.data);
+
+	ReflipKnife(old_righthand);
 
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();

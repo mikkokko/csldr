@@ -46,6 +46,14 @@ void ForceDestFov(void)
 void FovThink(void)
 {
 	float f, fov;
+	static float horplus_value;
+
+	if (horplus_value != fov_horplus->value)
+	{
+		horplus_value = fov_horplus->value;
+		ForceDestFov();
+		return;
+	}
 
 	if (destFov == initialFov)
 		return;

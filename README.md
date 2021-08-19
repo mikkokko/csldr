@@ -41,6 +41,8 @@
         cl_bobamt_vert
         cl_bobstyle
         cl_mirror_knife
+        cl_rollangle
+        cl_rollspeed
         fov_horplus
         fov_lerp
         lookat

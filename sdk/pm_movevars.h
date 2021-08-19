@@ -1,0 +1,29 @@
+typedef struct
+{
+	float gravity;
+	float stopspeed;
+	float maxspeed;
+	float spectatormaxspeed;
+	float accelerate;
+	float airaccelerate;
+	float wateraccelerate;
+	float friction;
+	float edgefriction;
+	float waterfriction;
+	float entgravity;
+	float bounce;
+	float stepsize;
+	float maxvelocity;
+	float zmax;
+	float waveHeight;
+	qboolean footsteps;
+	char skyName[32];
+	float rollangle;
+	float rollspeed;
+	float skycolor_r;
+	float skycolor_g;
+	float skycolor_b;
+	float skyvec_x;
+	float skyvec_y;
+	float skyvec_z;
+} movevars_t;

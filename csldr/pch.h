@@ -56,6 +56,7 @@ typedef struct
 #include "../sdk/com_model.h"
 #include "../sdk/cl_entity.h"
 #include "../sdk/cvar.h"
+#include "../sdk/pm_movevars.h"
 #include "../sdk/ref_params.h"
 #include "../sdk/r_studioint.h"
 #include "../sdk/r_efx.h"

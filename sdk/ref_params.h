@@ -1,5 +1,4 @@
 UNIMPLEMENTED_TYPE(usercmd_t);
-UNIMPLEMENTED_TYPE(movevars_t);
 
 typedef struct
 {

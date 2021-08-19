@@ -20,6 +20,9 @@ cvar_t *cl_bobamt_vert;
 cvar_t *cl_bobamt_lat;
 cvar_t *cl_bob_lower_amt;
 
+cvar_t *cl_rollangle;
+cvar_t *cl_rollspeed;
+
 cvar_t *viewmodel_lag_scale;
 cvar_t *viewmodel_lag_speed;
 
@@ -48,6 +51,9 @@ void ViewInit(void)
 	CVAR_ARHCIVE_FAST(cl_bobamt_vert, 0.13);
 	CVAR_ARHCIVE_FAST(cl_bobamt_lat, 0.32);
 	CVAR_ARHCIVE_FAST(cl_bob_lower_amt, 8);
+
+	CVAR_ARHCIVE_FAST(cl_rollangle, 2.0);
+	CVAR_ARHCIVE_FAST(cl_rollspeed, 200);
 
 	CVAR_ARHCIVE_FAST(viewmodel_lag_scale, 1.0);
 	CVAR_ARHCIVE_FAST(viewmodel_lag_speed, 8.0);
@@ -181,6 +187,9 @@ void V_AddLag(ref_params_t *pparams, vec3_t origin, vec3_t angles)
 
 void Hk_CalcRefdef(ref_params_t *pparams)
 {
+	pparams->movevars->rollangle = cl_rollangle->value;
+	pparams->movevars->rollspeed = cl_rollspeed->value;
+
 	if (cl_bobstyle->value == BOB_CSTRIKE15)
 	{
 		float bobcycle, bobup, bob;

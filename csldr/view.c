@@ -1,5 +1,8 @@
 #include "pch.h"
 
+// values for cl_bobstyle
+enum { BOB_DEFAULT, BOB_OLD, BOB_CSTRIKE15 };
+
 cvar_t *viewmodel_fov;
 cvar_t *viewmodel_shift;
 
@@ -7,7 +10,7 @@ cvar_t *viewmodel_offset_x;
 cvar_t *viewmodel_offset_y;
 cvar_t *viewmodel_offset_z;
 
-cvar_t *cl_use_new_bob;
+cvar_t *cl_bobstyle;
 
 cvar_t *cl_bobcycle;
 cvar_t *cl_bobup;
@@ -33,7 +36,7 @@ void ViewInit(void)
 	CVAR_ARHCIVE_FAST(viewmodel_offset_y, 0);
 	CVAR_ARHCIVE_FAST(viewmodel_offset_z, 0);
 
-	CVAR_ARHCIVE_FAST(cl_use_new_bob, 1);
+	CVAR_ARHCIVE_FAST(cl_bobstyle, 0);
 
 	cl_bobcycle = gEngfuncs.pfnGetCvarPointer("cl_bobcycle");
 	cl_bobup = gEngfuncs.pfnGetCvarPointer("cl_bobup");
@@ -44,7 +47,7 @@ void ViewInit(void)
 
 	CVAR_ARHCIVE_FAST(cl_bobamt_vert, 0.13);
 	CVAR_ARHCIVE_FAST(cl_bobamt_lat, 0.32);
-	CVAR_ARHCIVE_FAST(cl_bob_lower_amt, 8.0);
+	CVAR_ARHCIVE_FAST(cl_bob_lower_amt, 8);
 
 	CVAR_ARHCIVE_FAST(viewmodel_lag_scale, 1.0);
 	CVAR_ARHCIVE_FAST(viewmodel_lag_speed, 8.0);
@@ -178,7 +181,7 @@ void V_AddLag(ref_params_t *pparams, vec3_t origin, vec3_t angles)
 
 void Hk_CalcRefdef(ref_params_t *pparams)
 {
-	if (cl_use_new_bob->value)
+	if (cl_bobstyle->value == BOB_CSTRIKE15)
 	{
 		float bobcycle, bobup, bob;
 
@@ -211,9 +214,15 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 		if (!viewmodel_shift->value)
 			vm->origin[2] += 1;
 
-		if (cl_use_new_bob->value)
+		if (cl_bobstyle->value == BOB_CSTRIKE15)
 			V_AddBob(pparams, vm->origin, vm->angles);
-		
+		else if (cl_bobstyle->value == BOB_OLD)
+		{
+			vm->curstate.angles[0] = vm->angles[0];
+			vm->curstate.angles[1] = vm->angles[1];
+			vm->curstate.angles[2] = vm->angles[2];
+		}
+	
 		if (viewmodel_lag_scale->value)
 			V_AddLag(pparams, vm->origin, vm->angles);
 

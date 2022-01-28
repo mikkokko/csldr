@@ -1,6 +1,6 @@
 #include "pch.h"
 
-// values for cl_bobstyle
+/* values for cl_bobstyle */
 enum { BOB_DEFAULT, BOB_OLD, BOB_CSTRIKE15 };
 
 cvar_t *viewmodel_fov;

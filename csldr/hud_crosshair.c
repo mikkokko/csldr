@@ -1,5 +1,7 @@
 #include "pch.h"
 
+bool can_xhair;
+
 cvar_t *xhair_enable;
 
 cvar_t *xhair_gap;
@@ -36,6 +38,8 @@ void HudInit(void)
 
 	/* value spoof */
 	cl_crosshair_translucent = gEngfuncs.pfnGetCvarPointer("cl_crosshair_translucent");
+
+	can_xhair = (cl_crosshair_color && cl_crosshair_translucent);
 }
 
 int ScaleForRes(int value, int height)
@@ -149,7 +153,7 @@ int Hk_HudRedraw(float time, int intermission)
 	float old_trans;
 	char old_color[2];
 
-	if (!xhair_enable->value)
+	if (!can_xhair || !xhair_enable->value)
 		return cl_funcs.pHudRedrawFunc(time, intermission);
 
 	/*  stupid hack, the memory is always writable though */

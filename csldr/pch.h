@@ -72,7 +72,6 @@ typedef struct
 #include "inspect.h"
 #include "passthrough.h"
 #include "platform.h"
-#include "platform.h"
 #include "player_info.h"
 #include "shell.h"
 #include "studiorenderer.h"

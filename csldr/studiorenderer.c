@@ -85,7 +85,7 @@ void UnflipKnife(float *value)
 		return;
 
 	*value = cl_righthand->value;
-	cl_righthand->value = !cl_righthand->value;
+	cl_righthand->value = (float)!cl_righthand->value;
 }
 
 void ReflipKnife(float value)

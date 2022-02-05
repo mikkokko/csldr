@@ -22,8 +22,8 @@ float CalcVerticalFov(float fov)
 	/* hardcoded 4:3 aspect ratio so i don't need to do hor+ on vm fov */
 	float x;
 
-	x = 4.0f / TANF(fov / 360.0f * FL_PI);
-	return ATANF(3.0f / x) * 360.0f / FL_PI;
+	x = 4.0f / tanf(fov / 360.0f * FL_PI);
+	return atanf(3.0f / x) * 360.0f / FL_PI;
 }
 
 static vec3_t origin_backup[128];

@@ -74,8 +74,8 @@ TEMPENTITY *Hk_TempModel(float *pos,
 
 		rot = shellRotation * (FL_PI / 180.0f);
 
-		sini = SINF(rot);
-		kosiini = COSF(rot);
+		sini = sinf(rot);
+		kosiini = cosf(rot);
 
 		if (!cl_righthand->value)
 		{

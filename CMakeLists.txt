@@ -7,7 +7,7 @@ if (MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 else()
 	set(CMAKE_C_FLAGS "-m32")
-	add_compile_options(-std=c89 -pedantic -Wall -Wextra -Werror)
+	add_compile_options(-std=c99 -pedantic -Wall -Wextra -Werror)
 endif()
 
 set(SRCDIR ${CMAKE_CURRENT_LIST_DIR})

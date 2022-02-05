@@ -91,7 +91,7 @@ void V_CalcBob(ref_params_t *pparams)
 	if ((!pparams->frametime))
 		return;
 
-	speed = SQRTF(
+	speed = sqrtf(
 			pparams->simvel[0] * pparams->simvel[0] + pparams->simvel[1] *
 			pparams->simvel[1]);
 
@@ -135,7 +135,7 @@ void V_CalcBob(ref_params_t *pparams)
 
 	g_bobVars.vertBob = speed * (bobScale * cl_bobamt_vert->value);
 	g_bobVars.vertBob =
-		(g_bobVars.vertBob * 0.3f + g_bobVars.vertBob * 0.7f * SINF(cycle));
+		(g_bobVars.vertBob * 0.3f + g_bobVars.vertBob * 0.7f * sinf(cycle));
 	g_bobVars.vertBob = CLAMP(g_bobVars.vertBob - lowerAmt, -8.0f, 4.0f);
 
 	cycle = g_bobVars.bobTime - (int)(g_bobVars.bobTime / bobCycle * 2.0f) *
@@ -149,7 +149,7 @@ void V_CalcBob(ref_params_t *pparams)
 				(1.0f - cl_bobup->value);
 
 	g_bobVars.horBob = speed * (bobScale * cl_bobamt_lat->value);
-	g_bobVars.horBob = g_bobVars.horBob * 0.3f + g_bobVars.horBob * 0.7f * SINF(
+	g_bobVars.horBob = g_bobVars.horBob * 0.3f + g_bobVars.horBob * 0.7f * sinf(
 			cycle);
 	g_bobVars.horBob = CLAMP(g_bobVars.horBob, -7.0f, 4.0f);
 }
@@ -189,21 +189,21 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 {
 	pparams->movevars->rollangle = cl_rollangle->value;
 	pparams->movevars->rollspeed = cl_rollspeed->value;
-
+	
 	if (cl_bobstyle->value == BOB_CSTRIKE15)
 	{
 		float bobcycle, bobup, bob;
-
+	
 		bobcycle = cl_bobcycle->value;
 		bobup = cl_bobup->value;
 		bob = cl_bob->value;
-
+	
 		cl_bobcycle->value = 0.0f;
 		cl_bobup->value = 0.0f;
 		cl_bob->value = 0.0f;
-
+	
 		cl_funcs.pCalcRefdef(pparams);
-
+	
 		cl_bobcycle->value = bobcycle;
 		cl_bobup->value = bobup;
 		cl_bob->value = bob;
@@ -216,13 +216,13 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 	if (!pparams->intermission && !pparams->paused)
 	{
 		cl_entity_t *vm;
-
+	
 		vm = gEngfuncs.GetViewModel();
-
+	
 		/* fuck this annoying shift */
 		if (!viewmodel_shift->value)
 			vm->origin[2] += 1;
-
+	
 		if (cl_bobstyle->value == BOB_CSTRIKE15)
 			V_AddBob(pparams, vm->origin, vm->angles);
 		else if (cl_bobstyle->value == BOB_OLD)
@@ -234,7 +234,7 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 	
 		if (viewmodel_lag_scale->value)
 			V_AddLag(pparams, vm->origin, vm->angles);
-
+	
 		/* mikkotodo move? */
 		CameraApplyMovement(pparams);
 	}

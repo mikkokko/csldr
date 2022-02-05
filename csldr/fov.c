@@ -14,7 +14,7 @@ float fovLerp;
 
 float HorPlusFov(float fov, float w, float h)
 {
-	return ATANF(TANF(fov / 360.0f * FL_PI) * (w / h * 0.75f)) / FL_PI * 360.0f;
+	return atanf(tanf(fov / 360.0f * FL_PI) * (w / h * 0.75f)) / FL_PI * 360.0f;
 }
 
 void SetFov(float fov)

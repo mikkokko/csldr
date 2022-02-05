@@ -10,13 +10,6 @@
 #define YAW 1
 #define ROLL 2
 
-/* what the fuck */
-float ATANF(float a);
-float COSF(float a);
-float SINF(float a);
-float SQRTF(float a);
-float TANF(float a);
-
 typedef float vec_t;
 typedef vec_t vec3_t[3];
 
@@ -26,5 +19,3 @@ void InverseRollVectorMA(const vec3_t veca, float scale, const vec3_t vecb, vec3
 
 float Lerp(float a, float b, float f);
 void VectorLerp(vec3_t a, vec3_t b, float f, vec3_t out);
-
-float EaseOut(float a, float b, float f);

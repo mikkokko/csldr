@@ -3,59 +3,57 @@
 extern cvar_t *fov_horplus;
 extern cvar_t *fov_lerp;
 
-float currentFov;
+float fovDifference = 1.0f;
 
-float fovDifference;
-
-int destFov;
-int initialFov;
+float currentFov = 90.0f;
+float destFov = 90.0f;
+float initialFov = 90.0f;
 float fovTime;
 float fovLerp;
 
-float HorPlusFov(float fov, float w, float h)
+float GetCurrentFov(void)
 {
-	return atanf(tanf(fov / 360.0f * FL_PI) * (w / h * 0.75f)) / FL_PI * 360.0f;
-}
-
-void SetFov(float fov)
-{
+	float w, h;
 	SCREENINFO scr;
-
-	/* crappy fix for the thing where you can't see shit when you die */
-	if (fov == 0.0f)
-		fov = 90.0f;
-
-	fovDifference = fov / 90.0f;
 
 	scr.iSize = sizeof(SCREENINFO);
 	gEngfuncs.pfnGetScreenInfo(&scr);
 
-	if (fov_horplus->value && ((scr.iHeight / scr.iWidth) != 0.75))
-		/* user is not based and doesn't play in 4:3, do hor+ stuff */
-		fov = HorPlusFov(fov, (float)scr.iWidth, (float)scr.iHeight);
+	w = (float)scr.iWidth;
+	h = (float)scr.iHeight;
 
+	if (fov_horplus->value && ((w / h) != 0.75))
+	{
+		return atanf(tanf(currentFov / 360.0f * FL_PI) *
+			(w / h * 0.75f)) / FL_PI * 360.0f;
+	}
+	else
+		return currentFov;
+}
+
+void SetFov(float fov)
+{
+	fovDifference = fov / 90.0f;
 	currentFov = fov;
 }
 
 void ForceDestFov(void)
 {
 	initialFov = destFov;
-	SetFov((float)destFov);
+	SetFov(destFov);
+}
+
+static float FovInterp(float a, float b, float f)
+{
+	f -= 1.0f;
+	return (b - a) * sqrtf(1.0f - f * f) + a;
 }
 
 void FovThink(void)
 {
 	float f, fov;
-	static float horplus_value;
 
-	if (horplus_value != fov_horplus->value)
-	{
-		horplus_value = fov_horplus->value;
-		ForceDestFov();
-		return;
-	}
-
-	if (destFov == initialFov)
+	if ((int)destFov == (int)initialFov)
 		return;
 
 	if (fovLerp == 0.0f)
@@ -64,7 +62,7 @@ void FovThink(void)
 		return;
 	}
 
-	/* if some smart young man (me) disconnects and reconnects, don't break the fov */
+	/* if player disconnects and reconnects, don't break the fov */
 	if (clientTime < fovTime)
 	{
 		ForceDestFov();
@@ -79,19 +77,16 @@ void FovThink(void)
 		return;
 	}
 
-	fov = Lerp((float)initialFov, (float)destFov, f);
+	fov = FovInterp(initialFov, destFov, f);
 	SetFov(fov);
 }
 
-void SetLerpFov(int fov, float lerp)
+void SetLerpFov(float fov, float lerp)
 {
-	if (destFov == fov)
+	if ((int)destFov == (int)fov)
 		return;
 
-	/* mikko: crappy clientside hack to fix those zoom in/out things before round
-	start that look like they're straight from a frag movie, should remove */
-	fovLerp = (fov == 0 || destFov == 0) ? 0 : lerp;
-
+	fovLerp = lerp;
 	initialFov = destFov;
 	fovTime = clientTime;
 	destFov = fov;
@@ -101,7 +96,10 @@ int (*Og_MsgFunc_SetFOV)(const char *pszName, int iSize, void *pbuf);
 
 int Hk_MsgFunc_SetFOV(const char *pszName, int iSize, void *pbuf)
 {
-	int fov = *(byte *)pbuf;
+	float fov = (float)(*(byte *)pbuf);
+
+	if (fov < 1.0f || fov > 180.0f)
+		fov = 90.0f;
 
 	SetLerpFov(fov, fov_lerp->value);
 	return Og_MsgFunc_SetFOV(pszName, iSize, pbuf);

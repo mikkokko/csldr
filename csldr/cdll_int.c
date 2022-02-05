@@ -117,6 +117,6 @@ void Hk_HudFrame(double time)
 int Hk_UpdateClientData(client_data_t *pcldata, float flTime)
 {
 	cl_funcs.pHudUpdateClientDataFunc(pcldata, flTime);
-	pcldata->fov = currentFov;
+	pcldata->fov = GetCurrentFov();
 	return 1;
 }

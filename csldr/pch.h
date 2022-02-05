@@ -9,6 +9,7 @@
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define CLAMP(a, b, c) (((a) > (c)) ? (c) : (((a) < (b)) ? (b) : (a)))
 
+#include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

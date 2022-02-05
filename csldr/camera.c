@@ -3,10 +3,12 @@
 /* animate camera using a viewmodel attachment */
 
 cvar_t *camera_movement_scale;
+cvar_t *camera_movement_smooth;
 
 void CameraInit(void)
 {
 	camera_movement_scale = gEngfuncs.pfnRegisterVariable("camera_movement_scale", "1", FCVAR_ARCHIVE);
+	camera_movement_smooth = gEngfuncs.pfnRegisterVariable("camera_movement_smooth", "0", FCVAR_ARCHIVE);
 }
 
 float EstimateFrame(cl_entity_t *entity, mstudioseqdesc_t *seqdesc)
@@ -144,11 +146,7 @@ int GetCameraBone(studiohdr_t *hdr)
 	return -1;
 }
 
-/* stupid shit im sick of shit */
-vec3_t cameraAngles;
-bool cameraMovement;
-
-void CameraCalcMovement(cl_entity_t *vm)
+bool CameraCalcMovementHelper(cl_entity_t *vm, vec_t *angles)
 {
 	model_t *model;
 	studiohdr_t *hdr;
@@ -167,8 +165,8 @@ void CameraCalcMovement(cl_entity_t *vm)
 
 	if (bone_index == -1)
 	{
-		cameraMovement = false;
-		return;
+		angles[2] = angles[1] = angles[0] = 0.0f;
+		return false;
 	}
 
 	sequence = vm->curstate.sequence;
@@ -191,21 +189,82 @@ void CameraCalcMovement(cl_entity_t *vm)
 	frame = (int)f;
 	s = (f - frame);
 
-	CalcBoneAngles(frame, s, bone, anim, cameraAngles);
-	cameraMovement = true;
+	CalcBoneAngles(frame, s, bone, anim, angles);
+	return true;
+}
+
+static float AngleDelta(vec_t *v1, vec_t *v2)
+{
+	vec3_t dt;
+
+	dt[0] = fabsf(v1[0] - v2[0]);
+	dt[1] = fabsf(v1[1] - v2[1]);
+	dt[2] = fabsf(v1[2] - v2[2]);
+
+	return MAX(MAX(dt[0], dt[1]), dt[2]);
+}
+
+#define MAX_ANGLE_DT 0.5f
+
+vec3_t cameraAngles;
+
+void CameraCalcMovement(cl_entity_t *vm)
+{
+	float delta;
+	vec3_t angle;
+	static float lerpTime;
+	static vec3_t prevAngles;
+	static float prevTime = -FLT_MAX;
+
+	CameraCalcMovementHelper(vm, angle);
+
+	if (!camera_movement_smooth->value)
+	{
+		/* apply angles directly */
+		cameraAngles[0] = angle[0];
+		cameraAngles[1] = angle[1];
+		cameraAngles[2] = angle[2];
+		return;
+	}
+
+	/* lerp if we're doing that */
+	if (clientTime < prevTime + lerpTime)
+	{
+		VectorLerp(prevAngles,
+			angle,
+			(clientTime - prevTime) / lerpTime,
+			cameraAngles);
+
+		return;
+	}
+
+	/* see how different the new angle is to the current one */
+	delta = AngleDelta(angle, cameraAngles);
+
+	if (delta > MAX_ANGLE_DT)
+	{
+		/* yikes, need to lerp so it doesn't snap and look like ass */
+		prevTime = clientTime;
+		lerpTime = delta / 25.0f;
+
+		prevAngles[0] = cameraAngles[0];
+		prevAngles[1] = cameraAngles[1];
+		prevAngles[2] = cameraAngles[2];
+	}
+	else
+	{
+		/* small enough difference, apply directly */
+		cameraAngles[0] = angle[0];
+		cameraAngles[1] = angle[1];
+		cameraAngles[2] = angle[2];
+	}	
 }
 
 void CameraApplyMovement(ref_params_t *pparams)
 {
 	float scale;
 
-	if (!cameraMovement)
-		return;
-
 	scale = camera_movement_scale->value;
-
-	/* fuck this
-	LerpCameraAngles(cameraAngles); */
 
 	pparams->viewangles[0] += cameraAngles[0] * scale;
 	pparams->viewangles[1] += cameraAngles[1] * scale;

@@ -118,12 +118,12 @@ void CalcBoneAngles(int frame, float s, mstudiobone_t *bone, mstudioanim_t *anim
 		}
 	}
 
-	angle1[0] *= 180.0f / FL_PI;
-	angle1[1] *= 180.0f / FL_PI;
-	angle1[2] *= 180.0f / FL_PI;
-	angle2[0] *= 180.0f / FL_PI;
-	angle2[1] *= 180.0f / FL_PI;
-	angle2[2] *= 180.0f / FL_PI;
+	angle1[0] = DEG(angle1[0]);
+	angle1[1] = DEG(angle1[1]);
+	angle1[2] = DEG(angle1[2]);
+	angle2[0] = DEG(angle2[0]);
+	angle2[1] = DEG(angle2[1]);
+	angle2[2] = DEG(angle2[2]);
 
 	VectorLerp(angle1, angle2, s, angles);
 }
@@ -197,9 +197,9 @@ static float AngleDelta(vec_t *v1, vec_t *v2)
 {
 	vec3_t dt;
 
-	dt[0] = fabsf(v1[0] - v2[0]);
-	dt[1] = fabsf(v1[1] - v2[1]);
-	dt[2] = fabsf(v1[2] - v2[2]);
+	dt[0] = fabs(v1[0] - v2[0]);
+	dt[1] = fabs(v1[1] - v2[1]);
+	dt[2] = fabs(v1[2] - v2[2]);
 
 	return MAX(MAX(dt[0], dt[1]), dt[2]);
 }

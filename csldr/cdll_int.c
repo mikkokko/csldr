@@ -6,6 +6,7 @@ cldll_func_t cl_funcs;
 void *(*pCreateInterface)(const char *, int *);
 
 bool isCzero;
+bool isSoftware;
 
 float clientTime;
 
@@ -71,6 +72,16 @@ void Hk_HudInit(void)
 	const char *gamedir;
 
 	cl_funcs.pHudInitFunc();
+
+	/* we have to know if software mode is enabled so we can disable all of the cool features */
+#if defined(_WIN32)
+	isSoftware = !GetModuleHandleA("hw.dll");
+#else
+	isSoftware = false;
+#endif
+
+	if (!isSoftware)
+		GL_Load(); /* bad place for this */
 
 	ViewInit();
 	HudInit();

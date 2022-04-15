@@ -33,7 +33,9 @@ cvar_t *cl_mirror_knife;
 
 void ViewInit(void)
 {
-	CVAR_ARHCIVE_FAST(viewmodel_fov, 68);
+	if (!isSoftware)
+		CVAR_ARHCIVE_FAST(viewmodel_fov, 68);
+
 	CVAR_ARHCIVE_FAST(viewmodel_shift, 0);
 	CVAR_ARHCIVE_FAST(viewmodel_offset_x, 0);
 	CVAR_ARHCIVE_FAST(viewmodel_offset_y, 0);
@@ -58,10 +60,13 @@ void ViewInit(void)
 	CVAR_ARHCIVE_FAST(viewmodel_lag_scale, 1.0);
 	CVAR_ARHCIVE_FAST(viewmodel_lag_speed, 8.0);
 
-	CVAR_ARHCIVE_FAST(fov_horplus, 1);
+	if (!isSoftware)
+		CVAR_ARHCIVE_FAST(fov_horplus, 1);
+
 	CVAR_ARHCIVE_FAST(fov_lerp, 0.1);
 
-	CVAR_ARHCIVE_FAST(cl_mirror_knife, 1);
+	if (!isSoftware)
+		CVAR_ARHCIVE_FAST(cl_mirror_knife, 1);
 }
 
 struct
@@ -91,7 +96,7 @@ void V_CalcBob(ref_params_t *pparams)
 	if ((!pparams->frametime))
 		return;
 
-	speed = sqrtf(
+	speed = sqrt(
 			pparams->simvel[0] * pparams->simvel[0] + pparams->simvel[1] *
 			pparams->simvel[1]);
 
@@ -123,9 +128,9 @@ void V_CalcBob(ref_params_t *pparams)
 	cycle /= bobCycle;
 
 	if (cycle < cl_bobup->value)
-		cycle = FL_PI * cycle / cl_bobup->value;
+		cycle = M_PI * cycle / cl_bobup->value;
 	else
-		cycle = FL_PI + FL_PI * (cycle - cl_bobup->value) /
+		cycle = M_PI + M_PI * (cycle - cl_bobup->value) /
 				(1.0f - cl_bobup->value);
 
 	bobScale = 0.00625f;
@@ -135,7 +140,7 @@ void V_CalcBob(ref_params_t *pparams)
 
 	g_bobVars.vertBob = speed * (bobScale * cl_bobamt_vert->value);
 	g_bobVars.vertBob =
-		(g_bobVars.vertBob * 0.3f + g_bobVars.vertBob * 0.7f * sinf(cycle));
+		(g_bobVars.vertBob * 0.3f + g_bobVars.vertBob * 0.7f * sin(cycle));
 	g_bobVars.vertBob = CLAMP(g_bobVars.vertBob - lowerAmt, -8.0f, 4.0f);
 
 	cycle = g_bobVars.bobTime - (int)(g_bobVars.bobTime / bobCycle * 2.0f) *
@@ -143,13 +148,13 @@ void V_CalcBob(ref_params_t *pparams)
 	cycle /= bobCycle * 2.0f;
 
 	if (cycle < cl_bobup->value)
-		cycle = FL_PI * cycle / cl_bobup->value;
+		cycle = M_PI * cycle / cl_bobup->value;
 	else
-		cycle = FL_PI + FL_PI * (cycle - cl_bobup->value) /
+		cycle = M_PI + M_PI * (cycle - cl_bobup->value) /
 				(1.0f - cl_bobup->value);
 
 	g_bobVars.horBob = speed * (bobScale * cl_bobamt_lat->value);
-	g_bobVars.horBob = g_bobVars.horBob * 0.3f + g_bobVars.horBob * 0.7f * sinf(
+	g_bobVars.horBob = g_bobVars.horBob * 0.3f + g_bobVars.horBob * 0.7f * sin(
 			cycle);
 	g_bobVars.horBob = CLAMP(g_bobVars.horBob, -7.0f, 4.0f);
 }

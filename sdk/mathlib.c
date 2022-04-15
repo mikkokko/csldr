@@ -5,15 +5,15 @@ void AngleVectors(const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up)
 	float angle;
 	float sr, sp, sy, cr, cp, cy;
 
-	angle = angles[YAW] * (FL_PI * 2.0f / 360.0f);
-	sy = sinf(angle);
-	cy = cosf(angle);
-	angle = angles[PITCH] * (FL_PI * 2.0f / 360.0f);
-	sp = sinf(angle);
-	cp = cosf(angle);
-	angle = angles[ROLL] * (FL_PI * 2.0f / 360.0f);
-	sr = sinf(angle);
-	cr = cosf(angle);
+	angle = RAD(angles[YAW]);
+	sy = sin(angle);
+	cy = cos(angle);
+	angle = RAD(angles[PITCH]);
+	sp = sin(angle);
+	cp = cos(angle);
+	angle = RAD(angles[ROLL]);
+	sr = sin(angle);
+	cr = cos(angle);
 
 	if (forward)
 	{

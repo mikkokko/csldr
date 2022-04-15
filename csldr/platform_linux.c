@@ -7,7 +7,7 @@
 
 void *Plat_Dlopen(const char *filename)
 {
-	return dlopen(filename, RTLD_LAZY);
+	return dlopen(filename, RTLD_NOW);
 }
 
 void *Plat_Dlsym(void *handle, const char *name)

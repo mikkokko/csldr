@@ -4,17 +4,8 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#define FL_PI 3.14159265358979323846f
-
-#if defined(_MSC_VER)
-/* urgh */
-#define atanf(x) (float)atan((double)x)
-#define cosf(x) (float)cos((double)x)
-#define fabsf(x) (float)fabs((double)x)
-#define sinf(x) (float)sin((double)x)
-#define sqrtf(x) (float)sqrt((double)x)
-#define tanf(x) (float)tan((double)x)
-#endif
+#define DEG(rad) (float)(rad * (180.0 / M_PI))
+#define RAD(deg) (float)(deg * (M_PI / 180.0))
 
 #define PITCH 0
 #define YAW 1

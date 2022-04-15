@@ -22,11 +22,8 @@ float GetCurrentFov(void)
 	w = (float)scr.iWidth;
 	h = (float)scr.iHeight;
 
-	if (fov_horplus->value && ((w / h) != 0.75))
-	{
-		return atanf(tanf(currentFov / 360.0f * FL_PI) *
-			(w / h * 0.75f)) / FL_PI * 360.0f;
-	}
+	if (!isSoftware && fov_horplus->value && ((w / h) != 0.75))
+		return DEG(atan(tan(RAD(currentFov) / 2.0f) * (w / h * 0.75f))) * 2.0f;
 	else
 		return currentFov;
 }
@@ -46,7 +43,7 @@ void ForceDestFov(void)
 static float FovInterp(float a, float b, float f)
 {
 	f -= 1.0f;
-	return (b - a) * sqrtf(1.0f - f * f) + a;
+	return (b - a) * sqrt(1.0f - f * f) + a;
 }
 
 void FovThink(void)

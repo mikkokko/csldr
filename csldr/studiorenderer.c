@@ -22,8 +22,8 @@ float CalcVerticalFov(float fov)
 	/* hardcoded 4:3 aspect ratio so i don't need to do hor+ on vm fov */
 	float x;
 
-	x = 4.0f / tanf(fov / 360.0f * FL_PI);
-	return atanf(3.0f / x) * 360.0f / FL_PI;
+	x = 4.0f / tan(RAD(fov) / 2.0f);
+	return DEG(atan(3.0f / x)) * 2.0f;
 }
 
 static vec3_t origin_backup[128];
@@ -34,7 +34,7 @@ void ChangeModelOrigin(studiohdr_t *hdr)
 	float x, y, z;
 	mstudiobone_t *bone;
 
-	if (currentWeapon.m_iId == WEAPON_KNIFE && cl_mirror_knife->value)
+	if (!isSoftware && currentWeapon.m_iId == WEAPON_KNIFE && cl_mirror_knife->value)
 	{
 		x = -viewmodel_offset_x->value;
 	}
@@ -81,6 +81,9 @@ void RestoreModelOrigin(studiohdr_t *hdr)
 
 void UnflipKnife(float *value)
 {
+	if (isSoftware)
+		return;
+
 	if (currentWeapon.m_iId != WEAPON_KNIFE || cl_mirror_knife->value)
 		return;
 
@@ -90,6 +93,9 @@ void UnflipKnife(float *value)
 
 void ReflipKnife(float value)
 {
+	if (isSoftware)
+		return;
+
 	if (currentWeapon.m_iId != WEAPON_KNIFE || cl_mirror_knife->value)
 		return;
 
@@ -114,19 +120,23 @@ int Hk_StudioDrawModel(int flags)
 	gEngfuncs.pfnGetScreenInfo(&scr);
 	aspect = (double)scr.iWidth / (double)scr.iHeight;
 
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
+	/* viewmodel fov only supported on hardware */
+	if (!isSoftware)
+	{
+		GL_MatrixMode(GL_PROJECTION);
+		GL_PushMatrix();
+		GL_LoadIdentity();
 
-	fov1 = viewmodel_fov->value * fovDifference;
-	fov2 = CLAMP(fov1, 1.0f, 170.0f);
-	fov = CalcVerticalFov(fov2);
+		fov1 = viewmodel_fov->value * fovDifference;
+		fov2 = CLAMP(fov1, 1.0f, 170.0f);
+		fov = CalcVerticalFov(fov2);
 
-	top = tan(fov * M_PI / 360.0f) * Z_NEAR;
+		top = tan(RAD(fov) / 2.0f) * Z_NEAR;
 
-	glFrustum(-top * aspect, top * aspect, -top, top, Z_NEAR, Z_FAR);
+		GL_Frustum(-top * aspect, top * aspect, -top, top, Z_NEAR, Z_FAR);
 
-	glMatrixMode(GL_MODELVIEW);
+		GL_MatrixMode(GL_MODELVIEW);
+	}
 
 	/* think about inspecting now since we're about to draw the vm */
 	InspectThink();
@@ -143,9 +153,13 @@ int Hk_StudioDrawModel(int flags)
 
 	ReflipKnife(old_righthand);
 
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-	glMatrixMode(GL_MODELVIEW);
+	/* viewmodel fov only supported on hardware */
+	if (!isSoftware)
+	{
+		GL_MatrixMode(GL_PROJECTION);
+		GL_PopMatrix();
+		GL_MatrixMode(GL_MODELVIEW);
+	}
 
 	/* do camera stuff after drawing the vm */
 	CameraCalcMovement(entity);
@@ -217,10 +231,6 @@ int Hk_GetStudioModelInterface(int version,
 	/* backup and change client sided stuff */
 	memcpy(&studio, (*ppinterface), sizeof(studio));
 	(*ppinterface)->StudioDrawModel = Hk_StudioDrawModel;
-	
-	/* if someone tries to run with software mode, tell them to get fuck */
-	if (!IEngineStudio.IsHardware())
-		Plat_Error("Software mode is not supported\n");
 
 	return result;
 }

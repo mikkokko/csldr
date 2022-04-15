@@ -1,7 +1,7 @@
 #include "pch.h"
 
+bool can_shell;
 cvar_t *mirror_shell;
-
 cvar_t *cl_righthand;
 
 bool recalcShell;
@@ -11,15 +11,20 @@ vec3_t shellVelocity;
 
 void ShellInit(void)
 {
-	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
-	mirror_shell = gEngfuncs.pfnRegisterVariable("mirror_shell", "1", FCVAR_ARCHIVE);
+	can_shell = !isSoftware;
+
+	if (can_shell)
+	{
+		cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
+		mirror_shell = gEngfuncs.pfnRegisterVariable("mirror_shell", "1", FCVAR_ARCHIVE);
+	}
 }
 
 int (*Og_MsgFunc_Brass)(const char *pszName, int iSize, void *pbuf);
 
 int Hk_MsgFunc_Brass(const char *pszName, int iSize, void *pbuf)
 {
-	if (mirror_shell->value)
+	if (can_shell && mirror_shell->value)
 	{
 		/* save origin and velocity, we'll flip them later in R_TempModel */
 		BEGIN_READ(pbuf, iSize);
@@ -67,28 +72,28 @@ TEMPENTITY *Hk_TempModel(float *pos,
 	if (recalcShell)
 	{
 		float rot;
-		float sini, kosiini;
+		float sini, kosini;
 		float x, y;
 
 		recalcShell = false;
 
-		rot = shellRotation * (FL_PI / 180.0f);
+		rot = RAD(shellRotation);
 
-		sini = sinf(rot);
-		kosiini = cosf(rot);
+		sini = sin(rot);
+		kosini = cos(rot);
 
 		if (!cl_righthand->value)
 		{
 			shellVelocity[0] = shellVelocity[0] - sini * 120.0f;
-			shellVelocity[1] = kosiini * 120.0f + shellVelocity[1];
+			shellVelocity[1] = kosini * 120.0f + shellVelocity[1];
 
 			x = -9.0f * sini;
-			y = 9.0f * kosiini;
+			y = 9.0f * kosini;
 		}
 		else
 		{
 			x = 9.0f * sini;
-			y = -9.0f * kosiini;
+			y = -9.0f * kosini;
 		}
 
 		shellOrigin[0] += x;
@@ -202,7 +207,7 @@ pfnEvent_t CheckForShellEvent(const char *name, pfnEvent_t pfnEvent)
 
 void Hk_HookEvent(const char *name, void (*pfnEvent)(event_args_t *))
 {
-	pfnEvent_t hooked = CheckForShellEvent(name, pfnEvent);
+	pfnEvent_t hooked = can_shell ? CheckForShellEvent(name, pfnEvent) : NULL;
 
 	if (hooked)
 	{

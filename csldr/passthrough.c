@@ -28,7 +28,7 @@ void PassInit(void)
 	}
 
 	/* mikkotodo unsafe */
-	strcpy(dot, "_orig" LIB_EXT);
+	memcpy(dot, "_orig" LIB_EXT, sizeof("_orig" LIB_EXT));
 
 	if (Secret_LoadClient(name))
 		return;

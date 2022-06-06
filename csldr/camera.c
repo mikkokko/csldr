@@ -193,6 +193,13 @@ bool CameraCalcMovementHelper(cl_entity_t *vm, vec_t *angles)
 	return true;
 }
 
+/* mikkotodo wtf is is this code */
+/* mikkotodo maybe don't treat angles as vectors, big enough difference? */
+
+/* fudge, not based on anything */
+#define MAX_ANGLE_DT 0.5f
+
+
 static float AngleDelta(vec_t *v1, vec_t *v2)
 {
 	vec3_t dt;
@@ -204,11 +211,7 @@ static float AngleDelta(vec_t *v1, vec_t *v2)
 	return MAX(MAX(dt[0], dt[1]), dt[2]);
 }
 
-#define MAX_ANGLE_DT 0.5f
-
-vec3_t cameraAngles;
-
-void CameraCalcMovement(cl_entity_t *vm)
+void CameraCalcMovement(cl_entity_t *vm, vec_t *cameraAngles)
 {
 	float delta;
 	vec3_t angle;
@@ -224,6 +227,15 @@ void CameraCalcMovement(cl_entity_t *vm)
 		cameraAngles[0] = angle[0];
 		cameraAngles[1] = angle[1];
 		cameraAngles[2] = angle[2];
+		return;
+	}
+
+	if (clientTime < prevTime)
+	{
+		prevTime = -FLT_MAX;
+		cameraAngles[0] = 0.0f;
+		cameraAngles[1] = 0.0f;
+		cameraAngles[2] = 0.0f;
 		return;
 	}
 
@@ -263,9 +275,16 @@ void CameraCalcMovement(cl_entity_t *vm)
 void CameraApplyMovement(ref_params_t *pparams)
 {
 	float scale;
+	cl_entity_t *vm;
+	vec3_t cameraAngles;
+
+	vm = gEngfuncs.GetViewModel();
+	if (!vm->model)
+		return;
+
+	CameraCalcMovement(vm, cameraAngles);
 
 	scale = camera_movement_scale->value;
-
 	pparams->viewangles[0] += cameraAngles[0] * scale;
 	pparams->viewangles[1] += cameraAngles[1] * scale;
 	pparams->viewangles[2] += cameraAngles[2] * scale;

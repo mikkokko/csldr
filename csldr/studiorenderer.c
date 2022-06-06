@@ -161,9 +161,6 @@ int Hk_StudioDrawModel(int flags)
 		GL_MatrixMode(GL_MODELVIEW);
 	}
 
-	/* do camera stuff after drawing the vm */
-	CameraCalcMovement(entity);
-
 	return result;
 }
 

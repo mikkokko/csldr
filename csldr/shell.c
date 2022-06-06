@@ -116,7 +116,7 @@ TEMPENTITY *Hk_TempModel(float *pos,
 	void Hk_ ## name(event_args_t * args) \
 	{ \
 		float value; \
-		if (!mirror_shell->value) \
+		if (!can_shell || !mirror_shell->value) \
 		{ \
 			Og_ ## name(args); \
 			return; \
@@ -207,8 +207,7 @@ pfnEvent_t CheckForShellEvent(const char *name, pfnEvent_t pfnEvent)
 
 void Hk_HookEvent(const char *name, void (*pfnEvent)(event_args_t *))
 {
-	pfnEvent_t hooked = can_shell ? CheckForShellEvent(name, pfnEvent) : NULL;
-
+	pfnEvent_t hooked = CheckForShellEvent(name, pfnEvent);
 	if (hooked)
 	{
 		gEngfuncs.pfnHookEvent(name, hooked);

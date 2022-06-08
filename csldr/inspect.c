@@ -126,6 +126,8 @@ void Inspect_f(void)
 	}
 
 	studiohdr = (studiohdr_t *)vm->model->cache.data;
+	if (!studiohdr)
+		return;
 
 	sequence = LookupInspect(vm->curstate.sequence, currentWeapon.m_iId);
 

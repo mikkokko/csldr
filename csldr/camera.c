@@ -159,7 +159,18 @@ bool CameraCalcMovementHelper(cl_entity_t *vm, vec_t *angles)
 	float f, s;
 
 	model = vm->model;
+	if (!model)
+	{
+		angles[2] = angles[1] = angles[0] = 0.0f;
+		return false;
+	}
+
 	hdr = (studiohdr_t *)model->cache.data;
+	if (!hdr)
+	{
+		angles[2] = angles[1] = angles[0] = 0.0f;
+		return false;
+	}
 
 	bone_index = GetCameraBone(hdr);
 
@@ -276,15 +287,10 @@ void CameraCalcMovement(cl_entity_t *vm)
 void CameraApplyMovement(ref_params_t *pparams)
 {
 	float scale;
-	cl_entity_t *vm;
 
-	vm = gEngfuncs.GetViewModel();
-	if (!vm->model)
-		return;
-
-	CameraCalcMovement(vm);
-
+	CameraCalcMovement(gEngfuncs.GetViewModel());
 	scale = camera_movement_scale->value;
+
 	pparams->viewangles[0] += cameraAngles[0] * scale;
 	pparams->viewangles[1] += cameraAngles[1] * scale;
 	pparams->viewangles[2] += cameraAngles[2] * scale;

@@ -28,11 +28,14 @@ float CalcVerticalFov(float fov)
 
 static vec3_t origin_backup[128];
 
-void ChangeModelOrigin(studiohdr_t *hdr)
+bool ChangeModelOrigin(studiohdr_t *hdr)
 {
 	int i;
 	float x, y, z;
 	mstudiobone_t *bone;
+
+	if (!hdr)
+		return false;
 
 	if (!isSoftware && currentWeapon.m_iId == WEAPON_KNIFE && cl_mirror_knife->value)
 	{
@@ -59,6 +62,8 @@ void ChangeModelOrigin(studiohdr_t *hdr)
 			bone->value[2] += z;
 		}
 	}
+
+	return true;
 }
 
 void RestoreModelOrigin(studiohdr_t *hdr)
@@ -109,6 +114,7 @@ int Hk_StudioDrawModel(int flags)
 	double top, aspect;
 	float fov, fov1, fov2;
 	float old_righthand;
+	bool ofs_restore;
 
 	cl_entity_t *entity = IEngineStudio.GetCurrentEntity();
 
@@ -144,12 +150,13 @@ int Hk_StudioDrawModel(int flags)
 	UnflipKnife(&old_righthand);
 
 	/* worse than hitler */
-	ChangeModelOrigin((studiohdr_t *)entity->model->cache.data);
+	ofs_restore = ChangeModelOrigin((studiohdr_t *)entity->model->cache.data);
 
 	result = studio.StudioDrawModel(flags);
 
 	/* worse than hitler */
-	RestoreModelOrigin((studiohdr_t *)entity->model->cache.data);
+	if (ofs_restore)
+		RestoreModelOrigin((studiohdr_t *)entity->model->cache.data);
 
 	ReflipKnife(old_righthand);
 

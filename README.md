@@ -16,8 +16,9 @@
 ## Notes
 
 - Read the installation instructions. It's very easy to break your game if you don't.
-- I wouldn't recommend you to play on VAC secured servers with this. You shouldn't get banned but don't do it just in case.
-- This has been only tested properly on latest 1.6 and Condition Zero builds from Steam. This should work fine on older builds but if it doesn't, too bad.
+- Play on VAC secured servers at your own risk.
+- Some features will not work when using the software renderer (Hor+ FOV, viewmodel FOV, crosshair...).
+- Some features will not work when cl_lw is set to 0 (inspecting, crosshair...).
 - Some pirated clients (warzone) come with a program called gtlib which starts bitching when csldr is installed. To avoid this, csldr will remove GTLib.asi automatically when the game is launched. I'm not sure if this has any consequences but it has worked for me so far.
 
 ## Installation

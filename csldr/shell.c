@@ -1,6 +1,5 @@
 #include "pch.h"
 
-bool can_shell;
 cvar_t *mirror_shell;
 cvar_t *cl_righthand;
 
@@ -11,20 +10,15 @@ vec3_t shellVelocity;
 
 void ShellInit(void)
 {
-	can_shell = !isSoftware;
-
-	if (can_shell)
-	{
-		cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
-		mirror_shell = gEngfuncs.pfnRegisterVariable("mirror_shell", "1", FCVAR_ARCHIVE);
-	}
+	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
+	mirror_shell = gEngfuncs.pfnRegisterVariable("mirror_shell", "1", FCVAR_ARCHIVE);
 }
 
 int (*Og_MsgFunc_Brass)(const char *pszName, int iSize, void *pbuf);
 
 int Hk_MsgFunc_Brass(const char *pszName, int iSize, void *pbuf)
 {
-	if (can_shell && mirror_shell->value)
+	if (!isSoftware && mirror_shell->value)
 	{
 		/* save origin and velocity, we'll flip them later in R_TempModel */
 		BEGIN_READ(pbuf, iSize);
@@ -116,7 +110,7 @@ TEMPENTITY *Hk_TempModel(float *pos,
 	void Hk_ ## name(event_args_t * args) \
 	{ \
 		float value; \
-		if (!can_shell || !mirror_shell->value) \
+		if (isSoftware || !mirror_shell->value) \
 		{ \
 			Og_ ## name(args); \
 			return; \

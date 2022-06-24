@@ -6,7 +6,6 @@ cldll_func_t cl_funcs;
 void *(*pCreateInterface)(const char *, int *);
 
 bool isCzero;
-bool isSoftware;
 
 float clientTime;
 
@@ -73,16 +72,6 @@ void Hk_HudInit(void)
 
 	cl_funcs.pHudInitFunc();
 
-	/* we have to know if software mode is enabled so we can disable all of the cool features */
-#if defined(_WIN32)
-	isSoftware = !GetModuleHandleA("hw.dll");
-#else
-	isSoftware = false;
-#endif
-
-	if (!isSoftware)
-		GL_Load(); /* bad place for this */
-
 	ViewInit();
 	HudInit();
 	InspectInit();
@@ -115,6 +104,15 @@ void Hk_HudShutdown(void)
 
 void Hk_HudFrame(double time)
 {
+	static bool bitched;
+
+	if (!bitched)
+	{
+		if (isSoftware)
+			gEngfuncs.Con_Printf("Running in software mode. Some features of csldr will not work.\n");
+		bitched = true;
+	}
+
 	clientTime = gEngfuncs.GetClientTime();
 	cl_funcs.pHudFrame(time);
 }

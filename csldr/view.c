@@ -33,8 +33,7 @@ cvar_t *cl_mirror_knife;
 
 void ViewInit(void)
 {
-	if (!isSoftware)
-		CVAR_ARHCIVE_FAST(viewmodel_fov, 68);
+	CVAR_ARHCIVE_FAST(viewmodel_fov, 68);
 
 	CVAR_ARHCIVE_FAST(viewmodel_shift, 0);
 	CVAR_ARHCIVE_FAST(viewmodel_offset_x, 0);
@@ -60,13 +59,10 @@ void ViewInit(void)
 	CVAR_ARHCIVE_FAST(viewmodel_lag_scale, 1.0);
 	CVAR_ARHCIVE_FAST(viewmodel_lag_speed, 8.0);
 
-	if (!isSoftware)
-		CVAR_ARHCIVE_FAST(fov_horplus, 1);
-
+	CVAR_ARHCIVE_FAST(fov_horplus, 1);
 	CVAR_ARHCIVE_FAST(fov_lerp, 0.1);
 
-	if (!isSoftware)
-		CVAR_ARHCIVE_FAST(cl_mirror_knife, 1);
+	CVAR_ARHCIVE_FAST(cl_mirror_knife, 1);
 }
 
 struct

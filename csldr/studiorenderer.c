@@ -1,5 +1,7 @@
 #include "pch.h"
 
+bool isSoftware;
+
 engine_studio_api_t IEngineStudio;
 r_studio_interface_t studio;
 
@@ -71,6 +73,9 @@ void RestoreModelOrigin(studiohdr_t *hdr)
 	int i;
 	mstudiobone_t *bone;
 
+	if (!hdr)
+		return;
+
 	bone = (mstudiobone_t *)((byte *)hdr + hdr->boneindex);
 
 	for (i = 0; i < hdr->numbones; i++, bone++)
@@ -129,9 +134,9 @@ int Hk_StudioDrawModel(int flags)
 	/* viewmodel fov only supported on hardware */
 	if (!isSoftware)
 	{
-		GL_MatrixMode(GL_PROJECTION);
-		GL_PushMatrix();
-		GL_LoadIdentity();
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
+		glLoadIdentity();
 
 		fov1 = viewmodel_fov->value * fovDifference;
 		fov2 = CLAMP(fov1, 1.0f, 170.0f);
@@ -139,9 +144,9 @@ int Hk_StudioDrawModel(int flags)
 
 		top = tan(RAD(fov) / 2.0f) * Z_NEAR;
 
-		GL_Frustum(-top * aspect, top * aspect, -top, top, Z_NEAR, Z_FAR);
+		glFrustum(-top * aspect, top * aspect, -top, top, Z_NEAR, Z_FAR);
 
-		GL_MatrixMode(GL_MODELVIEW);
+		glMatrixMode(GL_MODELVIEW);
 	}
 
 	/* think about inspecting now since we're about to draw the vm */
@@ -163,9 +168,9 @@ int Hk_StudioDrawModel(int flags)
 	/* viewmodel fov only supported on hardware */
 	if (!isSoftware)
 	{
-		GL_MatrixMode(GL_PROJECTION);
-		GL_PopMatrix();
-		GL_MatrixMode(GL_MODELVIEW);
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
 	}
 
 	return result;
@@ -192,6 +197,12 @@ void Hk_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 
 	/* check if bodypart is right */
 	studiohdr = (studiohdr_t *)entity->model->cache.data;
+	if (!studiohdr) /* what the fuck */
+	{
+		IEngineStudio.StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
+		return;
+	}
+
 	body = (mstudiobodyparts_t *)((byte *)studiohdr + studiohdr->bodypartindex) + bodypart;
 
 	/* check if the names matches and that there's enough submodels */
@@ -235,6 +246,8 @@ int Hk_GetStudioModelInterface(int version,
 	/* backup and change client sided stuff */
 	memcpy(&studio, (*ppinterface), sizeof(studio));
 	(*ppinterface)->StudioDrawModel = Hk_StudioDrawModel;
+
+	isSoftware = !pstudio->IsHardware();
 
 	return result;
 }

@@ -20,13 +20,6 @@ cvar_t *cl_crosshair_translucent;
 
 void HudInit(void)
 {
-	if (isSoftware)
-	{
-		/* crosshair relies on opengl */
-		can_xhair = false;
-		return;
-	}
-
 	CVAR_ARHCIVE_FAST(xhair_enable, 0);
 
 	CVAR_ARHCIVE_FAST(xhair_gap, 4);
@@ -57,20 +50,20 @@ int ScaleForRes(int value, int height)
 
 void DrawQuad(int x0, int y0, int x1, int y1, float r, float g, float b)
 {
-	GL_Disable(GL_TEXTURE_2D);
+	glDisable(GL_TEXTURE_2D);
 
-	GL_Color3f(r, b, g);
+	glColor3f(r, b, g);
 
-	GL_Begin(GL_QUADS);
-	GL_Vertex2i(x0, y0);
-	GL_Vertex2i(x1, y0);
-	GL_Vertex2i(x1, y1);
-	GL_Vertex2i(x0, y1);
-	GL_End();
+	glBegin(GL_QUADS);
+	glVertex2i(x0, y0);
+	glVertex2i(x1, y0);
+	glVertex2i(x1, y1);
+	glVertex2i(x0, y1);
+	glEnd();
 
-	GL_Color3f(1.0f, 1.0f, 1.0f);
+	glColor3f(1.0f, 1.0f, 1.0f);
 
-	GL_Enable(GL_TEXTURE_2D);
+	glEnable(GL_TEXTURE_2D);
 }
 
 void DrawCrosshairSection(int x0, int y0, int x1, int y1)
@@ -160,7 +153,7 @@ int Hk_HudRedraw(float time, int intermission)
 	float old_trans;
 	char old_color[2];
 
-	if (!can_xhair || !xhair_enable->value)
+	if (isSoftware || !can_xhair || !xhair_enable->value)
 		return cl_funcs.pHudRedrawFunc(time, intermission);
 
 	/*  stupid hack, the memory is always writable though */

@@ -4,7 +4,6 @@ extern cldll_func_t cl_funcs;
 extern void *(*pCreateInterface)(const char *, int *);
 
 extern bool isCzero;
-extern bool isSoftware;
 
 extern float clientTime;
 

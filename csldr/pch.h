@@ -70,7 +70,6 @@ typedef struct
 #include "camera.h"
 #include "cl_dll.h"
 #include "fov.h"
-#include "gl_load.h"
 #include "inspect.h"
 #include "passthrough.h"
 #include "platform.h"

@@ -9,6 +9,8 @@ bool isCzero;
 
 float clientTime;
 
+cvar_t *cl_lw;
+
 /*
 -------------------------------------------------
  HookUserMsg hook
@@ -83,6 +85,8 @@ void Hk_HudInit(void)
 
 	if (!strcmp(gamedir, "czero"))
 		isCzero = true;
+
+	cl_lw = gEngfuncs.pfnGetCvarPointer("cl_lw");
 }
 
 /*
@@ -104,14 +108,29 @@ void Hk_HudShutdown(void)
 
 void Hk_HudFrame(double time)
 {
-	static bool bitched;
+	static bool sw_bitched;
+	static bool lw_bitched;
 
-	if (!bitched)
+	if (isSoftware && !sw_bitched)
 	{
-		if (isSoftware)
-			gEngfuncs.Con_Printf("Running in software mode. Some features of csldr will not work.\n");
-		bitched = true;
+		gEngfuncs.Con_Printf("Running in software mode. Some features of csldr will not work.\n");
+		sw_bitched = true;
 	}
+
+	if (cl_lw)
+	{
+		if (!cl_lw->value)
+		{
+			if (!lw_bitched)
+			{
+				gEngfuncs.Con_Printf("cl_lw is set to 0. Some features of csldr will not work.\n");
+				lw_bitched = true;
+			}
+		}
+		else if (lw_bitched)
+			lw_bitched = false;
+	}
+
 
 	clientTime = gEngfuncs.GetClientTime();
 	cl_funcs.pHudFrame(time);

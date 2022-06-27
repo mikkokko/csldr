@@ -17,8 +17,9 @@
 
 - Read the installation instructions. It's very easy to break your game if you don't.
 - Play on VAC secured servers at your own risk.
-- Some features will not work when using the software renderer (Hor+ FOV, viewmodel FOV, crosshair...).
+- Some features will not work when running the game in D3D or software mode (viewmodel FOV, crosshair...).
 - Some features will not work when cl_lw is set to 0 (inspecting, crosshair...).
+- Other client-side mods like MetaHook might interfere with this.
 - Some pirated clients (warzone) come with a program called gtlib which starts bitching when csldr is installed. To avoid this, csldr will remove GTLib.asi automatically when the game is launched. I'm not sure if this has any consequences but it has worked for me so far.
 
 ## Installation

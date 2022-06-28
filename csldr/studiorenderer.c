@@ -1,6 +1,7 @@
 #include "pch.h"
 
 bool isSoftware;
+bool isOpenGL;
 
 engine_studio_api_t IEngineStudio;
 r_studio_interface_t studio;
@@ -131,8 +132,8 @@ int Hk_StudioDrawModel(int flags)
 	gEngfuncs.pfnGetScreenInfo(&scr);
 	aspect = (double)scr.iWidth / (double)scr.iHeight;
 
-	/* viewmodel fov only supported on hardware */
-	if (!isSoftware)
+	/* viewmodel fov only supported on opengl */
+	if (isOpenGL)
 	{
 		glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
@@ -165,8 +166,8 @@ int Hk_StudioDrawModel(int flags)
 
 	ReflipKnife(old_righthand);
 
-	/* viewmodel fov only supported on hardware */
-	if (!isSoftware)
+	/* viewmodel fov only supported on opengl */
+	if (isOpenGL)
 	{
 		glMatrixMode(GL_PROJECTION);
 		glPopMatrix();
@@ -236,18 +237,26 @@ int Hk_GetStudioModelInterface(int version,
 {
 	int result;
 
-	/* backup and change engine sided stuff */
+	/* backup and change engine stuff */
 	memcpy(&IEngineStudio, pstudio, sizeof(engine_studio_api_t));
 	pstudio->StudioSetupModel = Hk_StudioSetupModel;
 
 	/* give to client */
 	result = cl_funcs.pStudioInterface(version, ppinterface, pstudio);
 
-	/* backup and change client sided stuff */
+	/* backup and change client stuff */
 	memcpy(&studio, (*ppinterface), sizeof(studio));
 	(*ppinterface)->StudioDrawModel = Hk_StudioDrawModel;
 
 	isSoftware = !pstudio->IsHardware();
+	if (!isSoftware)
+	{
+#if defined(_WIN32)
+		isOpenGL = wglGetCurrentContext() != NULL;
+#else
+		isOpenGL = true;
+#endif
+	}
 
 	return result;
 }

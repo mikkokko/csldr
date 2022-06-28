@@ -153,7 +153,7 @@ int Hk_HudRedraw(float time, int intermission)
 	float old_trans;
 	char old_color[2];
 
-	if (isSoftware || !can_xhair || !xhair_enable->value)
+	if (!isOpenGL || !can_xhair || !xhair_enable->value)
 		return cl_funcs.pHudRedrawFunc(time, intermission);
 
 	/*  stupid hack, the memory is always writable though */

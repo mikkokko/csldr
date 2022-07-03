@@ -13,6 +13,7 @@
 
 typedef float vec_t;
 typedef vec_t vec3_t[3];
+typedef vec_t vec4_t[4];
 
 void AngleVectors(const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up);
 void VectorMA(const vec3_t veca, float scale, const vec3_t vecb, vec3_t vecc);

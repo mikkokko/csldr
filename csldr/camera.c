@@ -3,75 +3,35 @@
 /* animate camera using a viewmodel attachment */
 
 cvar_t *camera_movement_scale;
-cvar_t *camera_movement_smooth;
 
 void CameraInit(void)
 {
 	camera_movement_scale = gEngfuncs.pfnRegisterVariable("camera_movement_scale", "1", FCVAR_ARCHIVE);
-	camera_movement_smooth = gEngfuncs.pfnRegisterVariable("camera_movement_smooth", "0", FCVAR_ARCHIVE);
-}
-
-float EstimateFrame(cl_entity_t *entity, mstudioseqdesc_t *seqdesc)
-{
-	float time;
-	float dfdt, f;
-
-	time = clientTime;
-
-	if (time < entity->curstate.animtime)
-		dfdt = 0.0f;
-	else
-		dfdt = (time - entity->curstate.animtime) * entity->curstate.framerate * seqdesc->fps;
-
-	if (seqdesc->numframes <= 1)
-		f = 0.0f;
-	else
-		f = (entity->curstate.frame * (seqdesc->numframes - 1)) / 256.0f;
-
-	f += dfdt;
-
-	if (seqdesc->flags & STUDIO_LOOPING)
-	{
-		if (seqdesc->numframes > 1)
-			f -= (int)(f / (seqdesc->numframes - 1)) * (seqdesc->numframes - 1);
-
-		if (f < 0)
-			f += (seqdesc->numframes - 1);
-	}
-	else
-	{
-		if (f >= seqdesc->numframes - 1.001f)
-			f = seqdesc->numframes - 1.001f;
-
-		if (f < 0.0f)
-			f = 0.0f;
-	}
-
-	return f;
 }
 
 mstudioanim_t *GetAnim(studiohdr_t *hdr, model_t *model, mstudioseqdesc_t *seqdesc)
 {
-	cache_user_t *sequences;
+	byte *data;
+	cache_user_t *seqs;
 
-	if (seqdesc->seqgroup == 0)
+	if (!seqdesc->seqgroup)
 		return (mstudioanim_t *)((byte *)hdr + seqdesc->animindex);
 
-	sequences = (cache_user_t *)model->submodels;
+	seqs = (cache_user_t *)model->submodels;
+	data = (byte *)seqs[seqdesc->seqgroup].data;
 
-	return (mstudioanim_t *)((byte *)sequences[seqdesc->seqgroup].data + seqdesc->animindex);
+	return (mstudioanim_t *)&data[seqdesc->animindex];
 }
 
-void CalcBoneAngles(int frame, float s, mstudiobone_t *bone, mstudioanim_t *anim, vec3_t angles)
+void CalcBoneAngles(int frame, mstudiobone_t *bone, mstudioanim_t *anim, vec3_t angles)
 {
 	int j, k;
-	vec3_t angle1, angle2;
 	mstudioanimvalue_t *animvalue;
 
 	for (j = 0; j < 3; j++)
 	{
 		if (anim->offset[j + 3] == 0)
-			angle2[j] = angle1[j] = bone->value[j + 3];
+			angles[j] = bone->value[j + 3];
 		else
 		{
 			animvalue = (mstudioanimvalue_t *)((byte *)anim + anim->offset[j + 3]);
@@ -91,41 +51,20 @@ void CalcBoneAngles(int frame, float s, mstudiobone_t *bone, mstudioanim_t *anim
 
 			if (animvalue->num.valid > k)
 			{
-				angle1[j] = animvalue[k + 1].value;
-
-				if (animvalue->num.valid > k + 1)
-					angle2[j] = animvalue[k + 2].value;
-				else
-				{
-					if (animvalue->num.total > k + 1)
-						angle2[j] = angle1[j];
-					else
-						angle2[j] = animvalue[animvalue->num.valid + 2].value;
-				}
+				angles[j] = animvalue[k + 1].value;
 			}
 			else
 			{
-				angle1[j] = animvalue[animvalue->num.valid].value;
-
-				if (animvalue->num.total > k + 1)
-					angle2[j] = angle1[j];
-				else
-					angle2[j] = animvalue[animvalue->num.valid + 2].value;
+				angles[j] = animvalue[animvalue->num.valid].value;
 			}
 
-			angle1[j] = bone->value[j + 3] + angle1[j] * bone->scale[j + 3];
-			angle2[j] = bone->value[j + 3] + angle2[j] * bone->scale[j + 3];
+			angles[j] = bone->value[j + 3] + angles[j] * bone->scale[j + 3];
 		}
 	}
 
-	angle1[0] = DEG(angle1[0]);
-	angle1[1] = DEG(angle1[1]);
-	angle1[2] = DEG(angle1[2]);
-	angle2[0] = DEG(angle2[0]);
-	angle2[1] = DEG(angle2[1]);
-	angle2[2] = DEG(angle2[2]);
-
-	VectorLerp(angle1, angle2, s, angles);
+	angles[0] = DEG(angles[0]);
+	angles[1] = DEG(angles[1]);
+	angles[2] = DEG(angles[2]);
 }
 
 int GetCameraBone(studiohdr_t *hdr)
@@ -146,7 +85,97 @@ int GetCameraBone(studiohdr_t *hdr)
 	return -1;
 }
 
-bool CameraCalcMovementHelper(cl_entity_t *vm, vec_t *angles)
+/* these are probably from wikipedia */
+
+void AnglesToQuat(vec_t *in, vec_t *out)
+{
+	float yaw, pitch, roll;
+	float sy, cy, sp, cp, sr, cr;
+
+	yaw = RAD(in[1]);
+	pitch = RAD(in[0]);
+	roll = RAD(in[2]);
+
+	/* Abbreviations for the various angular functions */
+	cy = cos(yaw * 0.5);
+	sy = sin(yaw * 0.5);
+	cp = cos(pitch * 0.5);
+	sp = sin(pitch * 0.5);
+	cr = cos(roll * 0.5);
+	sr = sin(roll * 0.5);
+
+	out[3] = cr * cp * cy + sr * sp * sy;
+	out[0] = sr * cp * cy - cr * sp * sy;
+	out[1] = cr * sp * cy + sr * cp * sy;
+	out[2] = cr * cp * sy - sr * sp * cy;
+}
+
+void QuatToAngles(vec_t *in, vec_t *out)
+{
+	double sinr_cosp, cosr_cosp;
+	double sinp;
+	double siny_cosp, cosy_cosp;
+
+	/* roll (x-axis rotation) */
+	sinr_cosp = 2 * (in[3] * in[0] + in[1] * in[2]);
+	cosr_cosp = 1 - 2 * (in[0] * in[0] + in[1] * in[1]);
+	out[ROLL] = DEG(atan2(sinr_cosp, cosr_cosp));
+
+	/* pitch (y-axis rotation) */
+	sinp = 2 * (in[3] * in[1] - in[2] * in[0]);
+	if (abs(sinp) >= 1)
+		out[PITCH] = DEG(copysign(M_PI / 2, sinp)); /* use 90 degrees if out of range */
+	else
+		out[PITCH] = DEG(asin(sinp));
+
+	/* yaw (z-axis rotation) */
+	siny_cosp = 2 * (in[3] * in[2] + in[0] * in[1]);
+	cosy_cosp = 1 - 2 * (in[1] * in[1] + in[2] * in[2]);
+	out[YAW] = DEG(atan2(siny_cosp, cosy_cosp));
+}
+
+void QuatSlerp(vec_t *a, vec_t *b, float t, vec_t *out)
+{
+	float angle;
+
+	angle = acos(a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]);
+
+	if (fabs(angle) >= 0.00001)
+	{
+		float sine;
+		float s1, s2;
+
+		sine = sin(angle);
+		s1 = sin((1 - t) * angle) / sine;
+		s2 = sin(t * angle) / sine;
+
+		out[0] = s1 * a[0] + s2 * b[0];
+		out[1] = s1 * a[1] + s2 * b[1];
+		out[2] = s1 * a[2] + s2 * b[2];
+		out[3] = s1 * a[3] + s2 * b[3];
+	}
+	else
+	{
+		float s = 1.0f - t;
+
+		out[0] = (a[0] * s) + (b[0] * t);
+		out[1] = (a[1] * s) + (b[1] * t);
+		out[2] = (a[2] * s) + (b[2] * t);
+		out[3] = (a[3] * s) + (b[3] * t);
+	}
+}
+
+void SlerpAngles(vec_t *a, vec_t *b, float f, vec_t *out)
+{
+	vec4_t qa, qb, qout;
+
+	AnglesToQuat(a, qa);
+	AnglesToQuat(b, qb);
+	QuatSlerp(qa, qb, f, qout);
+	QuatToAngles(qout, out);
+}
+
+bool CameraCalcMovement(cl_entity_t *vm, vec_t *angles)
 {
 	model_t *model;
 	studiohdr_t *hdr;
@@ -154,141 +183,65 @@ bool CameraCalcMovementHelper(cl_entity_t *vm, vec_t *angles)
 	int sequence;
 	mstudioseqdesc_t *seqdesc;
 	mstudioanim_t *anim;
-	int frame;
 	mstudiobone_t *bone;
-	float f, s;
+	float anim_time, t;
+	int frame, next_frame;
+	vec3_t angles1, angles2;
 
 	model = vm->model;
 	if (!model)
-	{
-		angles[2] = angles[1] = angles[0] = 0.0f;
 		return false;
-	}
 
 	hdr = (studiohdr_t *)model->cache.data;
 	if (!hdr)
-	{
-		angles[2] = angles[1] = angles[0] = 0.0f;
 		return false;
-	}
 
 	bone_index = GetCameraBone(hdr);
-
 	if (bone_index == -1)
-	{
-		angles[2] = angles[1] = angles[0] = 0.0f;
 		return false;
-	}
 
 	sequence = vm->curstate.sequence;
-
 	if (sequence >= hdr->numseq)
 		sequence = 0;
 
 	seqdesc = (mstudioseqdesc_t *)((byte *)hdr + hdr->seqindex) + sequence;
 
-	f = EstimateFrame(vm, seqdesc);
-
-	if (f > seqdesc->numframes - 1)
-		f = 0.0f;
-	else if (f < -0.01f)
-		f = -0.01f;
-
 	anim = GetAnim(hdr, model, seqdesc) + bone_index;
 	bone = (mstudiobone_t *)((byte *)hdr + hdr->boneindex) + bone_index;
 
-	frame = (int)f;
-	s = (f - frame);
+	anim_time = (clientTime - vm->curstate.animtime) * seqdesc->fps;
 
-	CalcBoneAngles(frame, s, bone, anim, angles);
-	return true;
-}
+	frame = (int)floor(anim_time);
+	next_frame = frame + 1;
+	t = anim_time - frame;
 
-/* mikkotodo wtf is is this code */
-/* mikkotodo maybe don't treat angles as vectors, big enough difference? */
-
-#define ZERO_VEC(v) (!v[0] && !v[1] && !v[2])
-
-static float AngleDelta(vec_t *v1, vec_t *v2)
-{
-	vec3_t dt;
-
-	dt[0] = fabs(v1[0] - v2[0]);
-	dt[1] = fabs(v1[1] - v2[1]);
-	dt[2] = fabs(v1[2] - v2[2]);
-
-	return MAX(MAX(dt[0], dt[1]), dt[2]);
-}
-
-vec3_t cameraAngles;
-
-void CameraCalcMovement(cl_entity_t *vm)
-{
-	float delta;
-	vec3_t angle;
-	static float lerpTime;
-	static vec3_t prevAngles;
-	static float prevTime = -FLT_MAX;
-
-	CameraCalcMovementHelper(vm, angle);
-
-	if (!camera_movement_smooth->value)
+	if (seqdesc->flags & STUDIO_LOOPING)
 	{
-		/* apply angles directly */
-		cameraAngles[0] = angle[0];
-		cameraAngles[1] = angle[1];
-		cameraAngles[2] = angle[2];
-		return;
-	}
-
-	if (clientTime < prevTime)
-	{
-		prevTime = -FLT_MAX;
-		cameraAngles[0] = 0.0f;
-		cameraAngles[1] = 0.0f;
-		cameraAngles[2] = 0.0f;
-		return;
-	}
-
-	/* lerp if we're doing that */
-	if (clientTime < prevTime + lerpTime)
-	{
-		VectorLerp(prevAngles,
-			angle,
-			(clientTime - prevTime) / lerpTime,
-			cameraAngles);
-
-		return;
-	}
-
-	/* see how different the new angle is to the current one */
-	delta = AngleDelta(angle, cameraAngles);
-
-	/* fudge, not based on anything */
-	if ((delta > 0.5f && ZERO_VEC(angle)) || delta > 2.0f)
-	{
-		/* yikes, need to lerp so it doesn't snap and look like ass */
-		prevTime = clientTime;
-		lerpTime = (delta / 25.0f) * camera_movement_smooth->value;
-
-		prevAngles[0] = cameraAngles[0];
-		prevAngles[1] = cameraAngles[1];
-		prevAngles[2] = cameraAngles[2];
+		frame %= seqdesc->numframes;
+		next_frame %= seqdesc->numframes;
 	}
 	else
 	{
-		/* small enough difference, apply directly */
-		cameraAngles[0] = angle[0];
-		cameraAngles[1] = angle[1];
-		cameraAngles[2] = angle[2];
-	}	
+		frame = MIN(frame, seqdesc->numframes - 1);
+		next_frame = MIN(next_frame, seqdesc->numframes - 1);
+	}
+
+	CalcBoneAngles(frame, bone, anim, angles1);
+	CalcBoneAngles(next_frame, bone, anim, angles2);
+
+	SlerpAngles(angles1, angles2, t, angles);
+
+	return true;
 }
 
 void CameraApplyMovement(ref_params_t *pparams)
 {
 	float scale;
+	vec3_t cameraAngles;
 
-	CameraCalcMovement(gEngfuncs.GetViewModel());
+	if (!CameraCalcMovement(gEngfuncs.GetViewModel(), cameraAngles))
+		return; /* no movement */
+
 	scale = camera_movement_scale->value;
 
 	pparams->viewangles[0] += cameraAngles[0] * scale;

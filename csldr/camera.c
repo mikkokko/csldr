@@ -3,10 +3,12 @@
 /* animate camera using a viewmodel attachment */
 
 cvar_t *camera_movement_scale;
+cvar_t *camera_movement_interp;
 
 void CameraInit(void)
 {
 	camera_movement_scale = gEngfuncs.pfnRegisterVariable("camera_movement_scale", "1", FCVAR_ARCHIVE);
+	camera_movement_interp = gEngfuncs.pfnRegisterVariable("camera_movement_interp", "0", FCVAR_ARCHIVE);
 }
 
 mstudioanim_t *GetAnim(studiohdr_t *hdr, model_t *model, mstudioseqdesc_t *seqdesc)
@@ -165,17 +167,7 @@ void QuatSlerp(vec_t *a, vec_t *b, float t, vec_t *out)
 	}
 }
 
-void SlerpAngles(vec_t *a, vec_t *b, float f, vec_t *out)
-{
-	vec4_t qa, qb, qout;
-
-	AnglesToQuat(a, qa);
-	AnglesToQuat(b, qb);
-	QuatSlerp(qa, qb, f, qout);
-	QuatToAngles(qout, out);
-}
-
-bool CameraCalcMovement(cl_entity_t *vm, vec_t *angles)
+bool CameraCalcMovement(cl_entity_t *vm, vec_t *quat)
 {
 	model_t *model;
 	studiohdr_t *hdr;
@@ -187,6 +179,7 @@ bool CameraCalcMovement(cl_entity_t *vm, vec_t *angles)
 	float anim_time, t;
 	int frame, next_frame;
 	vec3_t angles1, angles2;
+	vec4_t quat1, quat2;
 
 	model = vm->model;
 	if (!model)
@@ -228,23 +221,74 @@ bool CameraCalcMovement(cl_entity_t *vm, vec_t *angles)
 
 	CalcBoneAngles(frame, bone, anim, angles1);
 	CalcBoneAngles(next_frame, bone, anim, angles2);
+	AnglesToQuat(angles1, quat1);
+	AnglesToQuat(angles2, quat2);
 
-	SlerpAngles(angles1, angles2, t, angles);
-
+	QuatSlerp(quat1, quat2, t, quat);
 	return true;
+}
+
+void QuatCopy(vec_t *dst, vec_t *src)
+{
+	dst[0] = src[0];
+	dst[1] = src[1];
+	dst[2] = src[2];
+	dst[3] = src[3];
+}
+
+void QuatClear(vec_t *dst)
+{
+	dst[0] = 0;
+	dst[1] = 0;
+	dst[2] = 0;
+	dst[3] = 0;
 }
 
 void CameraApplyMovement(ref_params_t *pparams)
 {
-	float scale;
-	vec3_t cameraAngles;
+	vec4_t quat;
+	vec3_t angles;
+	float scale, timeStep;
+	float newTime, frameTime;
+	static float lastTime;
+	static float accum;
+	static vec4_t prevQuat, curQuat;
 
-	if (!CameraCalcMovement(gEngfuncs.GetViewModel(), cameraAngles))
-		return; /* no movement */
+	if (!camera_movement_interp->value)
+	{
+		QuatClear(quat);
+		CameraCalcMovement(gEngfuncs.GetViewModel(), quat);
+	}
+	else
+	{
+		newTime = clientTime;
 
+		/* fix time if needed */
+		if (newTime < lastTime)
+			lastTime = newTime;
+
+		frameTime = newTime - lastTime;
+		lastTime = newTime;
+
+		accum += frameTime;
+
+		timeStep = 1.0f / camera_movement_interp->value;
+
+		while (accum >= timeStep)
+		{
+			QuatCopy(prevQuat, curQuat);
+			QuatClear(curQuat);
+			CameraCalcMovement(gEngfuncs.GetViewModel(), curQuat);
+			accum -= timeStep;
+		}
+
+		QuatSlerp(prevQuat, curQuat, accum / timeStep, quat);
+	}
+
+	QuatToAngles(quat, angles);
 	scale = camera_movement_scale->value;
 
-	pparams->viewangles[0] += cameraAngles[0] * scale;
-	pparams->viewangles[1] += cameraAngles[1] * scale;
-	pparams->viewangles[2] += cameraAngles[2] * scale;
+	pparams->viewangles[0] += angles[0] * scale;
+	pparams->viewangles[1] += angles[1] * scale;
+	pparams->viewangles[2] += angles[2] * scale;
 }

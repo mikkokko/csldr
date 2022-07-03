@@ -1,4 +1,4 @@
-/* client.dll passthrough */
+/* client.dll proxy */
 #include "pch.h"
 
 void *clientOrig;
@@ -12,7 +12,7 @@ void *clientOrig;
 		return; \
 	}
 
-void PassInit(void)
+void ProxyInit(void)
 {
 	char name[256];
 	char *dot;
@@ -91,7 +91,7 @@ void PassInit(void)
 	CLIENT_DLSYM_VALIDATE(cl_funcs.pClientFactory, "ClientFactory");
 }
 
-void PassQuit(void)
+void ProxyQuit(void)
 {
 	Plat_Dlclose(clientOrig);
 }

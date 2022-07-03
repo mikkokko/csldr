@@ -45,7 +45,7 @@ void HudInit(void)
 int ScaleForRes(int value, int height)
 {
 	/* "default" resolution is 640x480 */
-	return (int)((float)value * ((float)height / 480.0f));
+	return (int)((float)value * ((float)height / 480));
 }
 
 void DrawQuad(int x0, int y0, int x1, int y1, float r, float g, float b)
@@ -61,7 +61,7 @@ void DrawQuad(int x0, int y0, int x1, int y1, float r, float g, float b)
 	glVertex2i(x0, y1);
 	glEnd();
 
-	glColor3f(1.0f, 1.0f, 1.0f);
+	glColor3f(1, 1, 1);
 
 	glEnable(GL_TEXTURE_2D);
 }
@@ -75,7 +75,7 @@ void DrawCrosshairPadding(int x0, int y0, int x1, int y1)
 {
 	int pad = (int)xhair_pad->value;
 
-	DrawQuad(x0 - pad, y0 - pad, x1 + pad, y1 + pad, 0.0f, 0.0f, 0.0f);
+	DrawQuad(x0 - pad, y0 - pad, x1 + pad, y1 + pad, 0, 0, 0);
 }
 
 void DrawCrosshair(void)
@@ -165,7 +165,7 @@ int Hk_HudRedraw(float time, int intermission)
 	old_color[1] = color_str[1];
 
 	/* spoof the values so the crosshair will be invisible */
-	cl_crosshair_translucent->value = 1.0f;
+	cl_crosshair_translucent->value = 1;
 	color_str[0] = '0'; /* the 0 as ascii character */
 	color_str[1] = '\0'; /* the 0 as null terminator */
 

@@ -47,11 +47,11 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 	{
 		case DLL_PROCESS_ATTACH:
 			hModule = hinstDLL;
-			PassInit();
+			ProxyInit();
 			RemoveGTlib();
 			break;
 		case DLL_PROCESS_DETACH:
-			PassQuit();
+			ProxyQuit();
 			break;
 	}
 

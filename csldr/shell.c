@@ -20,32 +20,34 @@ int Hk_MsgFunc_Brass(const char *pszName, int iSize, void *pbuf)
 {
 	if (!isSoftware && mirror_shell->value)
 	{
+		msg_read_t read;
+
 		/* save origin and velocity, we'll flip them later in R_TempModel */
-		BEGIN_READ(pbuf, iSize);
+		Msg_ReadInit(&read, pbuf, iSize);
 
 		if (isCzero)
 		{
-			shellOrigin[0] = READ_COORD();
-			shellOrigin[1] = READ_COORD();
-			shellOrigin[2] = READ_COORD();
-			shellVelocity[0] = READ_COORD();
-			shellVelocity[1] = READ_COORD();
-			shellVelocity[2] = READ_COORD();
-			shellRotation = READ_ANGLE();
+			shellOrigin[0] = Msg_ReadCoord(&read);
+			shellOrigin[1] = Msg_ReadCoord(&read);
+			shellOrigin[2] = Msg_ReadCoord(&read);
+			shellVelocity[0] = Msg_ReadCoord(&read);
+			shellVelocity[1] = Msg_ReadCoord(&read);
+			shellVelocity[2] = Msg_ReadCoord(&read);
+			shellRotation = Msg_ReadAngle(&read);
 		}
 		else
 		{
-			READ_BYTE(); /* stupid */
-			shellOrigin[0] = READ_COORD();
-			shellOrigin[1] = READ_COORD();
-			shellOrigin[2] = READ_COORD();
-			READ_COORD(); /* stupid */
-			READ_COORD(); /* stupid */
-			READ_COORD(); /* stupid */
-			shellVelocity[0] = READ_COORD();
-			shellVelocity[1] = READ_COORD();
-			shellVelocity[2] = READ_COORD();
-			shellRotation = READ_ANGLE();
+			Msg_ReadByte(&read); /* stupid */
+			shellOrigin[0] = Msg_ReadCoord(&read);
+			shellOrigin[1] = Msg_ReadCoord(&read);
+			shellOrigin[2] = Msg_ReadCoord(&read);
+			Msg_ReadCoord(&read); /* stupid */
+			Msg_ReadCoord(&read); /* stupid */
+			Msg_ReadCoord(&read); /* stupid */
+			shellVelocity[0] = Msg_ReadCoord(&read);
+			shellVelocity[1] = Msg_ReadCoord(&read);
+			shellVelocity[2] = Msg_ReadCoord(&read);
+			shellRotation = Msg_ReadAngle(&read);
 		}
 
 		recalcShell = true;
@@ -66,28 +68,28 @@ TEMPENTITY *Hk_TempModel(float *pos,
 	if (recalcShell)
 	{
 		float rot;
-		float sini, kosini;
+		float sine, cosine;
 		float x, y;
 
 		recalcShell = false;
 
-		rot = RAD(shellRotation);
+		rot = RADIANS(shellRotation);
 
-		sini = sin(rot);
-		kosini = cos(rot);
+		sine = sin(rot);
+		cosine = cos(rot);
 
 		if (!cl_righthand->value)
 		{
-			shellVelocity[0] = shellVelocity[0] - sini * 120.0f;
-			shellVelocity[1] = kosini * 120.0f + shellVelocity[1];
+			shellVelocity[0] = shellVelocity[0] - sine * 120;
+			shellVelocity[1] = cosine * 120 + shellVelocity[1];
 
-			x = -9.0f * sini;
-			y = 9.0f * kosini;
+			x = -9 * sine;
+			y = 9 * cosine;
 		}
 		else
 		{
-			x = 9.0f * sini;
-			y = -9.0f * kosini;
+			x = 9 * sine;
+			y = -9 * cosine;
 		}
 
 		shellOrigin[0] += x;

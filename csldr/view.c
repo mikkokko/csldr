@@ -92,42 +92,33 @@ void V_CalcBob(ref_params_t *pparams)
 	if ((!pparams->frametime))
 		return;
 
-	speed = sqrt(
-			pparams->simvel[0] * pparams->simvel[0] + pparams->simvel[1] *
-			pparams->simvel[1]);
+	speed = Vec2_Length(pparams->simvel);
 
-	maxSpeedDelta = MAX(0.0f,
-			(pparams->time - g_bobVars.lastBobTime) * 620.0f);
+	maxSpeedDelta = MAX(0, (pparams->time - g_bobVars.lastBobTime) * 620);
 
-	speed = CLAMP(speed,
-			g_bobVars.lastSpeed - maxSpeedDelta,
-			g_bobVars.lastSpeed + maxSpeedDelta);
-	speed = CLAMP(speed, -320.0f, 320.0f);
+	speed = CLAMP(speed, g_bobVars.lastSpeed - maxSpeedDelta, g_bobVars.lastSpeed + maxSpeedDelta);
+	speed = CLAMP(speed, -320, 320);
 
 	g_bobVars.lastSpeed = speed;
 
 	lowerAmt = cl_bob_lower_amt->value * (speed * 0.001f);
 
-	bobOffset = Map(speed, 0.0f, 320.0f, 0.0f, 1.0f);
+	bobOffset = Map(speed, 0, 320, 0, 1);
 
 	g_bobVars.bobTime += (pparams->time - g_bobVars.lastBobTime) * bobOffset;
 	g_bobVars.lastBobTime = pparams->time;
 
 	/* scale the bob by 1.25, this wasn't in 10040 but this way
 	cs 1.6's default cl_bobcycle value (0.8) will look right */
-	bobCycle = (((1000.0f - 150.0f) / 3.5f) * 0.001f) *
-			   cl_bobcycle->value * 1.25f;
+	bobCycle = (((1000.0f - 150.0f) / 3.5f) * 0.001f) * cl_bobcycle->value * 1.25f;
 
-	cycle = g_bobVars.bobTime - (int)(g_bobVars.bobTime / bobCycle) *
-			bobCycle;
-
+	cycle = g_bobVars.bobTime - (int)(g_bobVars.bobTime / bobCycle) * bobCycle;
 	cycle /= bobCycle;
 
 	if (cycle < cl_bobup->value)
 		cycle = M_PI * cycle / cl_bobup->value;
 	else
-		cycle = M_PI + M_PI * (cycle - cl_bobup->value) /
-				(1.0f - cl_bobup->value);
+		cycle = M_PI + M_PI * (cycle - cl_bobup->value) / (1.0f - cl_bobup->value);
 
 	bobScale = 0.00625f;
 
@@ -135,39 +126,35 @@ void V_CalcBob(ref_params_t *pparams)
 		bobScale = 0.00125f;
 
 	g_bobVars.vertBob = speed * (bobScale * cl_bobamt_vert->value);
-	g_bobVars.vertBob =
-		(g_bobVars.vertBob * 0.3f + g_bobVars.vertBob * 0.7f * sin(cycle));
-	g_bobVars.vertBob = CLAMP(g_bobVars.vertBob - lowerAmt, -8.0f, 4.0f);
+	g_bobVars.vertBob = (g_bobVars.vertBob * 0.3f + g_bobVars.vertBob * 0.7f * sin(cycle));
+	g_bobVars.vertBob = CLAMP(g_bobVars.vertBob - lowerAmt, -8, 4);
 
-	cycle = g_bobVars.bobTime - (int)(g_bobVars.bobTime / bobCycle * 2.0f) *
-			bobCycle * 2.0f;
-	cycle /= bobCycle * 2.0f;
+	cycle = g_bobVars.bobTime - (int)(g_bobVars.bobTime / bobCycle * 2) * bobCycle * 2;
+	cycle /= bobCycle * 2;
 
 	if (cycle < cl_bobup->value)
 		cycle = M_PI * cycle / cl_bobup->value;
 	else
-		cycle = M_PI + M_PI * (cycle - cl_bobup->value) /
-				(1.0f - cl_bobup->value);
+		cycle = M_PI + M_PI * (cycle - cl_bobup->value) / (1.0f - cl_bobup->value);
 
 	g_bobVars.horBob = speed * (bobScale * cl_bobamt_lat->value);
-	g_bobVars.horBob = g_bobVars.horBob * 0.3f + g_bobVars.horBob * 0.7f * sin(
-			cycle);
-	g_bobVars.horBob = CLAMP(g_bobVars.horBob, -7.0f, 4.0f);
+	g_bobVars.horBob = g_bobVars.horBob * 0.3f + g_bobVars.horBob * 0.7f * sin( cycle);
+	g_bobVars.horBob = CLAMP(g_bobVars.horBob, -7, 4);
 }
 
 void V_AddBob(ref_params_t *pparams, vec3_t origin, vec3_t angles)
 {
-	vec3_t forward, right;
+	vec3_t forward, side;
 
 	V_CalcBob(pparams);
 
-	AngleVectors(angles, forward, right, NULL);
+	AnglesToMatrix(angles, forward, side, NULL);
 
-	InverseRollVectorMA(origin, g_bobVars.vertBob * 0.4f, forward, origin);
+	Vec3_MulAddAlt(origin, forward, g_bobVars.vertBob * 0.4f);
 
 	origin[2] += g_bobVars.vertBob * 0.1f;
 
-	InverseRollVectorMA(origin, g_bobVars.horBob * 0.2f, right, origin);
+	Vec3_MulAddAlt(origin, side, g_bobVars.horBob * 0.2f);
 }
 
 void V_AddLag(ref_params_t *pparams, vec3_t origin, vec3_t angles)
@@ -176,14 +163,14 @@ void V_AddLag(ref_params_t *pparams, vec3_t origin, vec3_t angles)
 	vec3_t delta_angles;
 	static vec3_t last_angles;
 
-	AngleVectors(angles, forward, NULL, NULL);
+	AnglesToMatrix(angles, forward, NULL, NULL);
 
 	delta_angles[0] = forward[0] - last_angles[0];
 	delta_angles[1] = forward[1] - last_angles[1];
 	delta_angles[2] = forward[2] - last_angles[2];
 
-	VectorMA(last_angles, viewmodel_lag_speed->value * pparams->frametime, delta_angles, last_angles);
-	InverseRollVectorMA(origin, -1.0f * viewmodel_lag_scale->value, delta_angles, origin);
+	Vec3_MulAdd(last_angles, delta_angles, viewmodel_lag_speed->value * pparams->frametime);
+	Vec3_MulAddAlt(origin, delta_angles, -1 * viewmodel_lag_scale->value);
 }
 
 void Hk_CalcRefdef(ref_params_t *pparams)
@@ -199,9 +186,9 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 		bobup = cl_bobup->value;
 		bob = cl_bob->value;
 	
-		cl_bobcycle->value = 0.0f;
-		cl_bobup->value = 0.0f;
-		cl_bob->value = 0.0f;
+		cl_bobcycle->value = 0;
+		cl_bobup->value = 0;
+		cl_bob->value = 0;
 	
 		cl_funcs.pCalcRefdef(pparams);
 	

@@ -3,11 +3,11 @@
 extern cvar_t *fov_horplus;
 extern cvar_t *fov_lerp;
 
-float fovDifference = 1.0f;
+float fovDifference = 1;
 
-float currentFov = 90.0f;
-float destFov = 90.0f;
-float initialFov = 90.0f;
+float currentFov = 90;
+float destFov = 90;
+float initialFov = 90;
 float fovTime;
 float fovLerp;
 
@@ -22,15 +22,15 @@ float GetCurrentFov(void)
 	w = (float)scr.iWidth;
 	h = (float)scr.iHeight;
 
-	if (!isSoftware && fov_horplus->value && ((w / h) != 0.75))
-		return DEG(atan(tan(RAD(currentFov) / 2.0f) * (w / h * 0.75f))) * 2.0f;
+	if (!isSoftware && fov_horplus->value && ((float)(w / h) != 0.75f))
+		return DEGREES(atan(tan(RADIANS(currentFov) / 2) * (w / h * 0.75f))) * 2;
 	else
 		return currentFov;
 }
 
 void SetFov(float fov)
 {
-	fovDifference = fov / 90.0f;
+	fovDifference = fov / 90;
 	currentFov = fov;
 }
 
@@ -42,7 +42,7 @@ void ForceDestFov(void)
 
 static float FovInterp(float a, float b, float f)
 {
-	f -= 1.0f;
+	f -= 1;
 	return (b - a) * sqrt(1.0f - f * f) + a;
 }
 
@@ -53,7 +53,7 @@ void FovThink(void)
 	if ((int)destFov == (int)initialFov)
 		return;
 
-	if (fovLerp == 0.0f)
+	if (!fovLerp)
 	{
 		ForceDestFov();
 		return;
@@ -68,7 +68,7 @@ void FovThink(void)
 
 	f = (clientTime - fovTime) / fovLerp;
 
-	if (f >= 1.0f)
+	if (f >= 1)
 	{
 		ForceDestFov();
 		return;
@@ -95,8 +95,8 @@ int Hk_MsgFunc_SetFOV(const char *pszName, int iSize, void *pbuf)
 {
 	float fov = (float)(*(byte *)pbuf);
 
-	if (fov < 1.0f || fov > 180.0f)
-		fov = 90.0f;
+	if (fov < 1 || fov > 180)
+		fov = 90;
 
 	SetLerpFov(fov, fov_lerp->value);
 	return Og_MsgFunc_SetFOV(pszName, iSize, pbuf);

@@ -25,48 +25,45 @@ mstudioanim_t *GetAnim(studiohdr_t *hdr, model_t *model, mstudioseqdesc_t *seqde
 	return (mstudioanim_t *)&data[seqdesc->animindex];
 }
 
-void CalcBoneAngles(int frame, mstudiobone_t *bone, mstudioanim_t *anim, vec3_t angles)
+static float UnpackScale(int frame, mstudioanim_t *anim, int offset)
 {
-	int j, k;
-	mstudioanimvalue_t *animvalue;
+	int index;
+	mstudioanimvalue_t *bone_frame;
 
-	for (j = 0; j < 3; j++)
+	if (!offset)
+		return 0;
+
+	bone_frame = (mstudioanimvalue_t *)((byte *)anim + offset);
+	index = frame;
+
+	while (1)
 	{
-		if (anim->offset[j + 3] == 0)
-			angles[j] = bone->value[j + 3];
-		else
-		{
-			animvalue = (mstudioanimvalue_t *)((byte *)anim + anim->offset[j + 3]);
-			k = frame;
-
-			if (animvalue->num.total < animvalue->num.valid)
-				k = 0;
-
-			while (animvalue->num.total <= k)
-			{
-				k -= animvalue->num.total;
-				animvalue += animvalue->num.valid + 1;
-
-				if (animvalue->num.total < animvalue->num.valid)
-					k = 0;
-			}
-
-			if (animvalue->num.valid > k)
-			{
-				angles[j] = animvalue[k + 1].value;
-			}
-			else
-			{
-				angles[j] = animvalue[animvalue->num.valid].value;
-			}
-
-			angles[j] = bone->value[j + 3] + angles[j] * bone->scale[j + 3];
-		}
+		if (index < bone_frame->num.total)
+			break;
+		index -= bone_frame->num.total;
+		bone_frame += bone_frame->num.valid;
+		bone_frame++;
 	}
 
-	angles[0] = DEG(angles[0]);
-	angles[1] = DEG(angles[1]);
-	angles[2] = DEG(angles[2]);
+	if (index >= bone_frame->num.valid)
+		index = bone_frame->num.valid;
+	else
+		index += 1;
+
+	return (float)bone_frame[index].value;
+}
+
+void UnpackRotation(vec_t *angles, int frame, mstudiobone_t *bone, mstudioanim_t *anim)
+{
+	/* unpack the bone rotation */
+	angles[0] = DEGREES(bone->value[3] + bone->scale[3] *
+		UnpackScale(frame, anim, anim->offset[3]));
+
+	angles[1] = DEGREES(bone->value[4] + bone->scale[4] *
+		UnpackScale(frame, anim, anim->offset[4]));
+
+	angles[2] = DEGREES(bone->value[5] + bone->scale[5] *
+		UnpackScale(frame, anim, anim->offset[5]));
 }
 
 int GetCameraBone(studiohdr_t *hdr)
@@ -85,86 +82,6 @@ int GetCameraBone(studiohdr_t *hdr)
 	}
 
 	return -1;
-}
-
-/* these are probably from wikipedia */
-
-void AnglesToQuat(vec_t *in, vec_t *out)
-{
-	float yaw, pitch, roll;
-	float sy, cy, sp, cp, sr, cr;
-
-	yaw = RAD(in[1]);
-	pitch = RAD(in[0]);
-	roll = RAD(in[2]);
-
-	/* Abbreviations for the various angular functions */
-	cy = cos(yaw * 0.5);
-	sy = sin(yaw * 0.5);
-	cp = cos(pitch * 0.5);
-	sp = sin(pitch * 0.5);
-	cr = cos(roll * 0.5);
-	sr = sin(roll * 0.5);
-
-	out[3] = cr * cp * cy + sr * sp * sy;
-	out[0] = sr * cp * cy - cr * sp * sy;
-	out[1] = cr * sp * cy + sr * cp * sy;
-	out[2] = cr * cp * sy - sr * sp * cy;
-}
-
-void QuatToAngles(vec_t *in, vec_t *out)
-{
-	double sinr_cosp, cosr_cosp;
-	double sinp;
-	double siny_cosp, cosy_cosp;
-
-	/* roll (x-axis rotation) */
-	sinr_cosp = 2 * (in[3] * in[0] + in[1] * in[2]);
-	cosr_cosp = 1 - 2 * (in[0] * in[0] + in[1] * in[1]);
-	out[ROLL] = DEG(atan2(sinr_cosp, cosr_cosp));
-
-	/* pitch (y-axis rotation) */
-	sinp = 2 * (in[3] * in[1] - in[2] * in[0]);
-	if (abs(sinp) >= 1)
-		out[PITCH] = DEG(copysign(M_PI / 2, sinp)); /* use 90 degrees if out of range */
-	else
-		out[PITCH] = DEG(asin(sinp));
-
-	/* yaw (z-axis rotation) */
-	siny_cosp = 2 * (in[3] * in[2] + in[0] * in[1]);
-	cosy_cosp = 1 - 2 * (in[1] * in[1] + in[2] * in[2]);
-	out[YAW] = DEG(atan2(siny_cosp, cosy_cosp));
-}
-
-void QuatSlerp(vec_t *a, vec_t *b, float t, vec_t *out)
-{
-	float angle;
-
-	angle = acos(a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]);
-
-	if (fabs(angle) >= 0.00001)
-	{
-		float sine;
-		float s1, s2;
-
-		sine = sin(angle);
-		s1 = sin((1 - t) * angle) / sine;
-		s2 = sin(t * angle) / sine;
-
-		out[0] = s1 * a[0] + s2 * b[0];
-		out[1] = s1 * a[1] + s2 * b[1];
-		out[2] = s1 * a[2] + s2 * b[2];
-		out[3] = s1 * a[3] + s2 * b[3];
-	}
-	else
-	{
-		float s = 1.0f - t;
-
-		out[0] = (a[0] * s) + (b[0] * t);
-		out[1] = (a[1] * s) + (b[1] * t);
-		out[2] = (a[2] * s) + (b[2] * t);
-		out[3] = (a[3] * s) + (b[3] * t);
-	}
 }
 
 bool CameraCalcMovement(cl_entity_t *vm, vec_t *quat)
@@ -219,29 +136,14 @@ bool CameraCalcMovement(cl_entity_t *vm, vec_t *quat)
 		next_frame = MIN(next_frame, seqdesc->numframes - 1);
 	}
 
-	CalcBoneAngles(frame, bone, anim, angles1);
-	CalcBoneAngles(next_frame, bone, anim, angles2);
+	UnpackRotation(angles1, frame, bone, anim);
+	UnpackRotation(angles2, next_frame, bone, anim);
+
 	AnglesToQuat(angles1, quat1);
 	AnglesToQuat(angles2, quat2);
 
 	QuatSlerp(quat1, quat2, t, quat);
 	return true;
-}
-
-void QuatCopy(vec_t *dst, vec_t *src)
-{
-	dst[0] = src[0];
-	dst[1] = src[1];
-	dst[2] = src[2];
-	dst[3] = src[3];
-}
-
-void QuatClear(vec_t *dst)
-{
-	dst[0] = 0;
-	dst[1] = 0;
-	dst[2] = 0;
-	dst[3] = 0;
 }
 
 void CameraApplyMovement(ref_params_t *pparams)

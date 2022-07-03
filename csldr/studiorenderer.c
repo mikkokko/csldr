@@ -25,8 +25,8 @@ float CalcVerticalFov(float fov)
 	/* hardcoded 4:3 aspect ratio so i don't need to do hor+ on vm fov */
 	float x;
 
-	x = 4.0f / tan(RAD(fov) / 2.0f);
-	return DEG(atan(3.0f / x)) * 2.0f;
+	x = 4.0f / tan(RADIANS(fov) / 2);
+	return DEGREES(atan(3.0f / x)) * 2;
 }
 
 static vec3_t origin_backup[128];
@@ -140,10 +140,10 @@ int Hk_StudioDrawModel(int flags)
 		glLoadIdentity();
 
 		fov1 = viewmodel_fov->value * fovDifference;
-		fov2 = CLAMP(fov1, 1.0f, 170.0f);
+		fov2 = CLAMP(fov1, 1, 170);
 		fov = CalcVerticalFov(fov2);
 
-		top = tan(RAD(fov) / 2.0f) * Z_NEAR;
+		top = tan(RADIANS(fov) / 2) * Z_NEAR;
 
 		glFrustum(-top * aspect, top * aspect, -top, top, Z_NEAR, Z_FAR);
 

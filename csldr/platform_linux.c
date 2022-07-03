@@ -38,12 +38,12 @@ void Plat_Error(const char *error)
 
 void __attribute__((constructor)) Init(void)
 {
-	PassInit();
+	ProxyInit();
 }
 
 void __attribute__((destructor)) Quit(void)
 {
-	PassQuit();
+	ProxyQuit();
 }
 
 #endif

@@ -51,7 +51,10 @@ typedef struct
 #define CVAR_ARHCIVE_FAST(name, value) \
 	name = gEngfuncs.pfnRegisterVariable(#name, #value, FCVAR_ARCHIVE)
 
-#include "../sdk/mathlib.h"
+
+#include "maths.h"
+#include "msg.h"
+
 #include "../sdk/weaponinfo.h"
 #include "../sdk/entity_state.h"
 #include "../sdk/com_model.h"
@@ -64,14 +67,13 @@ typedef struct
 #include "../sdk/event_api.h"
 #include "../sdk/cdll_int.h"
 #include "../sdk/studio.h"
-#include "../sdk/parsemsg.h"
 #include "../sdk/cs_weapon.h"
 
 #include "camera.h"
 #include "cl_dll.h"
 #include "fov.h"
 #include "inspect.h"
-#include "passthrough.h"
+#include "proxy.h"
 #include "platform.h"
 #include "player_info.h"
 #include "shell.h"

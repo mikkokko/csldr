@@ -173,6 +173,28 @@ void V_AddLag(ref_params_t *pparams, vec3_t origin, vec3_t angles)
 	Vec3_MulAddAlt(origin, delta_angles, -1 * viewmodel_lag_scale->value);
 }
 
+void V_OffsetViewmodel(cl_entity_t *vm, vec3_t angles)
+{
+	vec3_t front, side, up;
+	float x, y, z;
+
+	AnglesToMatrix(angles, front, side, up);
+
+	if (!isSoftware && currentWeapon.m_iId == WEAPON_KNIFE && cl_mirror_knife->value)
+	{
+		x = -viewmodel_offset_x->value;
+	}
+	else
+		x = viewmodel_offset_x->value;
+
+	y = viewmodel_offset_y->value;
+	z = viewmodel_offset_z->value;
+
+	Vec3_MulAdd(vm->origin, side, x);
+	Vec3_MulAdd(vm->origin, front, y);
+	Vec3_MulAdd(vm->origin, up, z);
+}
+
 void Hk_CalcRefdef(ref_params_t *pparams)
 {
 	pparams->movevars->rollangle = cl_rollangle->value;
@@ -206,6 +228,8 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 		cl_entity_t *vm;
 	
 		vm = gEngfuncs.GetViewModel();
+
+		V_OffsetViewmodel(vm, pparams->viewangles);
 	
 		/* fuck this annoying shift */
 		if (!viewmodel_shift->value)

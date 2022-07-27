@@ -29,67 +29,6 @@ float CalcVerticalFov(float fov)
 	return DEGREES(atan(3.0f / x)) * 2;
 }
 
-static vec3_t origin_backup[128];
-
-bool ChangeModelOrigin(studiohdr_t *hdr)
-{
-	int i;
-	float x, y, z;
-	mstudiobone_t *bone;
-
-	if (!hdr)
-		return false;
-
-	if (!isSoftware && currentWeapon.m_iId == WEAPON_KNIFE && cl_mirror_knife->value)
-	{
-		x = -viewmodel_offset_x->value;
-	}
-	else
-		x = viewmodel_offset_x->value;
-
-	y = viewmodel_offset_y->value;
-	z = viewmodel_offset_z->value;
-
-	bone = (mstudiobone_t *)((byte *)hdr + hdr->boneindex);
-
-	for (i = 0; i < hdr->numbones; i++, bone++)
-	{
-		if (bone->parent == -1)
-		{
-			origin_backup[i][0] = bone->value[0];
-			origin_backup[i][1] = bone->value[1];
-			origin_backup[i][2] = bone->value[2];
-
-			bone->value[0] += y;
-			bone->value[1] += x;
-			bone->value[2] += z;
-		}
-	}
-
-	return true;
-}
-
-void RestoreModelOrigin(studiohdr_t *hdr)
-{
-	int i;
-	mstudiobone_t *bone;
-
-	if (!hdr)
-		return;
-
-	bone = (mstudiobone_t *)((byte *)hdr + hdr->boneindex);
-
-	for (i = 0; i < hdr->numbones; i++, bone++)
-	{
-		if (bone->parent == -1)
-		{
-			bone->value[0] = origin_backup[i][0];
-			bone->value[1] = origin_backup[i][1];
-			bone->value[2] = origin_backup[i][2];
-		}
-	}
-}
-
 void UnflipKnife(float *value)
 {
 	if (isSoftware)
@@ -120,7 +59,6 @@ int Hk_StudioDrawModel(int flags)
 	double top, aspect;
 	float fov, fov1, fov2;
 	float old_righthand;
-	bool ofs_restore;
 
 	cl_entity_t *entity = IEngineStudio.GetCurrentEntity();
 
@@ -155,14 +93,7 @@ int Hk_StudioDrawModel(int flags)
 
 	UnflipKnife(&old_righthand);
 
-	/* worse than hitler */
-	ofs_restore = ChangeModelOrigin((studiohdr_t *)entity->model->cache.data);
-
 	result = studio.StudioDrawModel(flags);
-
-	/* worse than hitler */
-	if (ofs_restore)
-		RestoreModelOrigin((studiohdr_t *)entity->model->cache.data);
 
 	ReflipKnife(old_righthand);
 

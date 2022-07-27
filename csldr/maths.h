@@ -17,6 +17,13 @@ typedef vec_t vec4_t[4];
 
 #define Vec2_Length(v) sqrt(v[0] * v[0] + v[1] * v[1])
 
+#define Vec3_Clear(dst) do { \
+	dst[0] = 0; \
+	dst[1] = 0; \
+	dst[2] = 0; \
+} while(0)
+
+
 #define Vec3_MulAdd(dst, b, t) do { \
 	dst[0] += t * b[0];\
 	dst[1] += t * b[1];\

@@ -37,6 +37,7 @@
 
 ## Cvar/command list
 
+        camera_movement_interp
         camera_movement_scale
         cl_bob_lower_amt
         cl_bobamt_lat

@@ -11,7 +11,7 @@ vec3_t shellVelocity;
 void ShellInit(void)
 {
 	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
-	mirror_shell = gEngfuncs.pfnRegisterVariable("mirror_shell", "1", FCVAR_ARCHIVE);
+	CVAR_ARHCIVE_FAST(mirror_shell, 1);
 }
 
 int (*Og_MsgFunc_Brass)(const char *pszName, int iSize, void *pbuf);

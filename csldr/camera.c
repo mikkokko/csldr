@@ -7,8 +7,8 @@ cvar_t *camera_movement_interp;
 
 void CameraInit(void)
 {
-	camera_movement_scale = gEngfuncs.pfnRegisterVariable("camera_movement_scale", "1", FCVAR_ARCHIVE);
-	camera_movement_interp = gEngfuncs.pfnRegisterVariable("camera_movement_interp", "0", FCVAR_ARCHIVE);
+	CVAR_ARHCIVE_FAST(camera_movement_scale, 1);
+	CVAR_ARHCIVE_FAST(camera_movement_interp, 0);
 }
 
 mstudioanim_t *GetAnim(studiohdr_t *hdr, model_t *model, mstudioseqdesc_t *seqdesc)

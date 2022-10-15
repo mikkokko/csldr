@@ -1,18 +1,18 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(csldr)
+project(csldr C)
 
 set(OUTDIR CACHE STRING "Directory to output library to")
 
 if (MSVC)
-	add_compile_options(/W4 /WX /wd4244)
+	add_compile_options(/W4 /wd4244)
+	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
-	add_compile_options(-m32 -std=c89 -pedantic -Wall -Wextra -Werror)
+	add_compile_options(-m32 -std=c89 -pedantic -Wall -Wextra)
 	add_link_options(-m32)
 endif()
 
 set(SRCDIR ${CMAKE_CURRENT_LIST_DIR})
-set(GAMEDIR ${CMAKE_CURRENT_LIST_DIR}/../game)
 
 #
 # csldr
@@ -21,15 +21,13 @@ set(GAMEDIR ${CMAKE_CURRENT_LIST_DIR}/../game)
 file(GLOB CSLDR_SRC ${SRCDIR}/csldr/*.c)
 file(GLOB CSLDR_HDR ${SRCDIR}/csldr/*.h)
 
-file(GLOB SDK_SRC ${SRCDIR}/sdk/*.c)
-
-add_library(csldr SHARED ${CSLDR_SRC} ${CSLDR_HDR} ${SDK_SRC})
+add_library(csldr SHARED ${CSLDR_SRC} ${CSLDR_HDR})
 
 if (MSVC)
 	foreach(src ${CSLDR_SRC})
-		set_source_files_properties(${src} PROPERTIES COMPILE_FLAGS "/Yupch.h")			
+		set_source_files_properties(${src} PROPERTIES COMPILE_FLAGS "/Yupch.h")
 	endforeach(src ${CSLDR_SRC})
-	
+
 	set_source_files_properties(${SRCDIR}/csldr/pch.c PROPERTIES COMPILE_FLAGS "/Ycpch.h")
 endif()
 

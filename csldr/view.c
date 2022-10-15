@@ -5,10 +5,10 @@ enum { BOB_DEFAULT, BOB_OLD, BOB_CSTRIKE15 };
 
 cvar_t *viewmodel_fov;
 cvar_t *viewmodel_shift;
-
 cvar_t *viewmodel_offset_x;
 cvar_t *viewmodel_offset_y;
 cvar_t *viewmodel_offset_z;
+cvar_t *viewmodel_hands;
 
 cvar_t *cl_bobstyle;
 
@@ -34,11 +34,11 @@ cvar_t *cl_mirror_knife;
 void ViewInit(void)
 {
 	CVAR_ARHCIVE_FAST(viewmodel_fov, 68);
-
 	CVAR_ARHCIVE_FAST(viewmodel_shift, 0);
 	CVAR_ARHCIVE_FAST(viewmodel_offset_x, 0);
 	CVAR_ARHCIVE_FAST(viewmodel_offset_y, 0);
 	CVAR_ARHCIVE_FAST(viewmodel_offset_z, 0);
+	CVAR_ARHCIVE_FAST(viewmodel_hands, );
 
 	CVAR_ARHCIVE_FAST(cl_bobstyle, 0);
 

@@ -11,13 +11,11 @@ extern cvar_t *viewmodel_fov;
 extern cvar_t *viewmodel_offset_x;
 extern cvar_t *viewmodel_offset_y;
 extern cvar_t *viewmodel_offset_z;
+extern cvar_t *viewmodel_hands;
 
 extern cvar_t *cl_mirror_knife;
 
-/* mikkotodo yank these from elsewhere? */
-
-/* was 4 but fucked up my ads */
-#define Z_NEAR 1.0
+#define Z_NEAR 1.0 /* was 4 but that's too far for viewmodels */
 #define Z_FAR 4096.0
 
 float CalcVerticalFov(float fov)
@@ -50,6 +48,48 @@ void ReflipKnife(float value)
 		return;
 
 	cl_righthand->value = value;
+}
+
+static void DrawHands(cl_entity_t *weapon, int flags)
+{
+	bool changed;
+	model_t *model;
+	cl_entity_t backup;
+	static char hands_path[64] = "";
+	static bool hands_valid = false;
+
+	if (!*viewmodel_hands->string)
+		return;
+
+	/* skip "models/" for comparison */
+	changed = strncmp(hands_path + 7, viewmodel_hands->string, sizeof(hands_path) - 7);
+
+	if (changed)
+	{
+		/* update path */
+		sprintf(hands_path, "models/%s", viewmodel_hands->string);
+	}
+	else if (!hands_valid)
+	{
+		/* no change and the last hands were invalid; don't even try */
+		return;
+	}
+
+	/* abuse existing bonemerge functionality */
+	model = IEngineStudio.Mod_ForName(hands_path, false);;
+	hands_valid = model != NULL;
+	if (!hands_valid)
+		return;
+
+	/* should probably see what changes and only backup the necessary */
+	backup = *weapon;
+
+	weapon->model = model;
+	weapon->curstate.movetype = 12; /* MOVETYPE_FOLLOW */
+
+	studio.StudioDrawModel(flags);
+
+	*weapon = backup;
 }
 
 int Hk_StudioDrawModel(int flags)
@@ -94,6 +134,9 @@ int Hk_StudioDrawModel(int flags)
 	UnflipKnife(&old_righthand);
 
 	result = studio.StudioDrawModel(flags);
+
+	/* draw hands now that the scene is properly set up */
+	DrawHands(entity, flags);
 
 	ReflipKnife(old_righthand);
 

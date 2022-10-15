@@ -55,7 +55,9 @@ static void DrawHands(cl_entity_t *weapon, int flags)
 	bool changed;
 	model_t *model;
 	cl_entity_t backup;
-	static char hands_path[64] = "";
+	/* good luck bitching about a buffer overrun now asan */
+	/*static char hands_path[2147483647] = "";*/
+	static char hands_path[256] = "";
 	static bool hands_valid = false;
 
 	if (!*viewmodel_hands->string)
@@ -63,7 +65,6 @@ static void DrawHands(cl_entity_t *weapon, int flags)
 
 	/* skip "models/" for comparison */
 	changed = strncmp(hands_path + 7, viewmodel_hands->string, sizeof(hands_path) - 7);
-
 	if (changed)
 	{
 		/* update path */
@@ -71,19 +72,21 @@ static void DrawHands(cl_entity_t *weapon, int flags)
 	}
 	else if (!hands_valid)
 	{
-		/* no change and the last hands were invalid; don't even try */
+		/* no change and the last hands were invalid, don't even try */
 		return;
 	}
 
-	/* abuse existing bonemerge functionality */
+	/* mikkotodo: even though Mod_ForName returns null, it doesn't actually
+	free the model so we'd need to do that manually... */
 	model = IEngineStudio.Mod_ForName(hands_path, false);
 	hands_valid = model != NULL;
-	if (!hands_valid)
+	if (!hands_valid)	
 		return;
 
 	/* should probably see what changes and only backup the necessary */
 	backup = *weapon;
 
+	/* abuse existing bonemerge functionality */
 	weapon->model = model;
 	weapon->curstate.movetype = 12; /* MOVETYPE_FOLLOW */
 

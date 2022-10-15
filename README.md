@@ -8,6 +8,7 @@
 - Viewmodel shifting can be disabled
 - Alternative crosshair
 - Bodygroup-based arm changing depending on team
+- Separate hand models for viewmodels (CS:GO/GMod style)
 - Client-side weapon inspecting
 - Bone controlled camera movement
 - Mirrored shell ejects
@@ -20,13 +21,13 @@
 - Some features will not work when running the game in D3D or software mode (viewmodel FOV, crosshair...).
 - Some features will not work when cl_lw is set to 0 (inspecting, crosshair...).
 - Other client-side mods like MetaHook might interfere with this.
-- Some pirated clients (warzone) come with a program called gtlib which starts bitching when csldr is installed. To avoid this, csldr will remove GTLib.asi automatically when the game is launched. I'm not sure if this has any consequences but it has worked for me so far.
+- Some pirated clients (warzone) come with a program called gtlib which starts bitching when csldr is installed. To avoid this, csldr will remove GTLib.asi automatically when the game is launched. I'm not sure if this has any consequences but it seemed to work fine when I tested it.
 
 ## Installation
 
-1. Download Windows binary from the [releases page](https://github.com/mikkokko/csldr/releases) or compile it yourself
+1. Download Windows binary from the [releases page](https://github.com/mikkokko/csldr/releases) or compile it from source
 2. Navigate to "cstrike/cl_dlls" (or "czero/cl_dlls" if you're playing Condition Zero)
-3. Rename the existing client.dll to client_orig.dll (On Linux, client.so to client_orig.so)
+3. Rename the existing client.dll to client_orig.dll (client.so to client_orig.so on Linux)
 4. Play
 
 ## Other stuff
@@ -51,6 +52,7 @@
         lookat
         mirror_shell
         viewmodel_fov
+        viewmodel_hands
         viewmodel_lag_scale
         viewmodel_lag_speed
         viewmodel_offset_x

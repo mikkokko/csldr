@@ -74,12 +74,12 @@ struct
 	float horBob;
 } g_bobVars;
 
-float Map(float value, float low1, float high1, float low2, float high2)
+static float Map(float value, float low1, float high1, float low2, float high2)
 {
 	return low2 + (value - low1) * (high2 - low2) / (high1 - low1);
 }
 
-void V_CalcBob(ref_params_t *pparams)
+static void V_CalcBob(ref_params_t *pparams)
 {
 	float speed;
 	float maxSpeedDelta;
@@ -142,7 +142,7 @@ void V_CalcBob(ref_params_t *pparams)
 	g_bobVars.horBob = CLAMP(g_bobVars.horBob, -7, 4);
 }
 
-void V_AddBob(ref_params_t *pparams, vec3_t origin, vec3_t angles)
+static void V_AddBob(ref_params_t *pparams, vec3_t origin, vec3_t angles)
 {
 	vec3_t forward, side;
 
@@ -157,7 +157,7 @@ void V_AddBob(ref_params_t *pparams, vec3_t origin, vec3_t angles)
 	Vec3_MulAddAlt(origin, side, g_bobVars.horBob * 0.2f);
 }
 
-void V_AddLag(ref_params_t *pparams, vec3_t origin, vec3_t angles)
+static void V_AddLag(ref_params_t *pparams, vec3_t origin, vec3_t angles)
 {
 	vec3_t forward;
 	vec3_t delta_angles;
@@ -173,7 +173,7 @@ void V_AddLag(ref_params_t *pparams, vec3_t origin, vec3_t angles)
 	Vec3_MulAddAlt(origin, delta_angles, -1 * viewmodel_lag_scale->value);
 }
 
-void V_OffsetViewmodel(cl_entity_t *vm, vec3_t angles)
+static void V_OffsetViewmodel(cl_entity_t *vm, vec3_t angles)
 {
 	vec3_t front, side, up;
 	float x, y, z;

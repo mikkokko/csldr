@@ -42,13 +42,13 @@ void HudInit(void)
 	can_xhair = (cl_crosshair_color && cl_crosshair_translucent);
 }
 
-int ScaleForRes(int value, int height)
+static int ScaleForRes(int value, int height)
 {
 	/* "default" resolution is 640x480 */
 	return (int)((float)value * ((float)height / 480));
 }
 
-void DrawQuad(int x0, int y0, int x1, int y1, float r, float g, float b)
+static void DrawQuad(int x0, int y0, int x1, int y1, float r, float g, float b)
 {
 	glDisable(GL_TEXTURE_2D);
 
@@ -66,19 +66,19 @@ void DrawQuad(int x0, int y0, int x1, int y1, float r, float g, float b)
 	glEnable(GL_TEXTURE_2D);
 }
 
-void DrawCrosshairSection(int x0, int y0, int x1, int y1)
+static void DrawCrosshairSection(int x0, int y0, int x1, int y1)
 {
 	DrawQuad(x0, y0, x1, y1, xhair_color_r->value, xhair_color_b->value, xhair_color_g->value);
 }
 
-void DrawCrosshairPadding(int x0, int y0, int x1, int y1)
+static void DrawCrosshairPadding(int x0, int y0, int x1, int y1)
 {
 	int pad = (int)xhair_pad->value;
 
 	DrawQuad(x0 - pad, y0 - pad, x1 + pad, y1 + pad, 0, 0, 0);
 }
 
-void DrawCrosshair(void)
+static void DrawCrosshair(void)
 {
 	SCREENINFO scr;
 	int center_x, center_y;

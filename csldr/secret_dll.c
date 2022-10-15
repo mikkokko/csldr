@@ -35,7 +35,7 @@ typedef struct
 	uint32 unknown;
 } secretsec_t;
 
-bool Secret_LoadFromBuffer(byte *buf, void *pv, size_t len)
+static bool Secret_LoadFromBuffer(byte *buf, void *pv, size_t len)
 {
 	size_t i;
 	byte key;
@@ -125,7 +125,7 @@ bool Secret_LoadFromBuffer(byte *buf, void *pv, size_t len)
 	return true;
 }
 
-bool Secret_LoadLibrary(const char *fileName, void *pv)
+static bool Secret_LoadLibrary(const char *fileName, void *pv)
 {
 	HANDLE file;
 	DWORD len;
@@ -179,7 +179,7 @@ bool Secret_LoadLibrary(const char *fileName, void *pv)
 
 typedef void (*dummyfunc_t)(void);
 
-void Dummy(void)
+static void Dummy(void)
 {
 }
 

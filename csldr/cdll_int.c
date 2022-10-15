@@ -17,7 +17,7 @@ cvar_t *cl_lw;
 -------------------------------------------------
 */
 
-int Hk_HookUserMsg(const char *szMsgName, pfnUserMsgHook pfn)
+static int Hk_HookUserMsg(const char *szMsgName, pfnUserMsgHook pfn)
 {
 	pfnUserMsgHook hook = pfn;
 

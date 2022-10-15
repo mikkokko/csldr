@@ -28,13 +28,13 @@ float GetCurrentFov(void)
 		return currentFov;
 }
 
-void SetFov(float fov)
+static void SetFov(float fov)
 {
 	fovDifference = fov / 90;
 	currentFov = fov;
 }
 
-void ForceDestFov(void)
+static void ForceDestFov(void)
 {
 	initialFov = destFov;
 	SetFov(destFov);
@@ -78,7 +78,7 @@ void FovThink(void)
 	SetFov(fov);
 }
 
-void SetLerpFov(float fov, float lerp)
+static void SetLerpFov(float fov, float lerp)
 {
 	if ((int)destFov == (int)fov)
 		return;

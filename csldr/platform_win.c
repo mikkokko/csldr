@@ -33,7 +33,7 @@ void Plat_Error(const char *error)
 }
 
 /* warzone */
-void RemoveGTlib(void)
+static void RemoveGTlib(void)
 {
 	if (SetFileAttributesW(L"GTlib.asi", FILE_ATTRIBUTE_NORMAL))
 		DeleteFileW(L"GTlib.asi");

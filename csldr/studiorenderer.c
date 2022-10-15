@@ -18,7 +18,7 @@ extern cvar_t *cl_mirror_knife;
 #define Z_NEAR 1.0 /* was 4 but that's too far for viewmodels */
 #define Z_FAR 4096.0
 
-float CalcVerticalFov(float fov)
+static float CalcVerticalFov(float fov)
 {
 	/* hardcoded 4:3 aspect ratio so i don't need to do hor+ on vm fov */
 	float x;
@@ -27,7 +27,7 @@ float CalcVerticalFov(float fov)
 	return DEGREES(atan(3.0f / x)) * 2;
 }
 
-void UnflipKnife(float *value)
+static void UnflipKnife(float *value)
 {
 	if (isSoftware)
 		return;
@@ -39,7 +39,7 @@ void UnflipKnife(float *value)
 	cl_righthand->value = (float)!cl_righthand->value;
 }
 
-void ReflipKnife(float value)
+static void ReflipKnife(float value)
 {
 	if (isSoftware)
 		return;
@@ -76,7 +76,7 @@ static void DrawHands(cl_entity_t *weapon, int flags)
 	}
 
 	/* abuse existing bonemerge functionality */
-	model = IEngineStudio.Mod_ForName(hands_path, false);;
+	model = IEngineStudio.Mod_ForName(hands_path, false);
 	hands_valid = model != NULL;
 	if (!hands_valid)
 		return;

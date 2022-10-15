@@ -11,7 +11,7 @@ void CameraInit(void)
 	CVAR_ARHCIVE_FAST(camera_movement_interp, 0);
 }
 
-mstudioanim_t *GetAnim(studiohdr_t *hdr, model_t *model, mstudioseqdesc_t *seqdesc)
+static mstudioanim_t *GetAnim(studiohdr_t *hdr, model_t *model, mstudioseqdesc_t *seqdesc)
 {
 	byte *data;
 	cache_user_t *seqs;
@@ -53,7 +53,7 @@ static float UnpackScale(int frame, mstudioanim_t *anim, int offset)
 	return (float)bone_frame[index].value;
 }
 
-void UnpackRotation(vec_t *angles, int frame, mstudiobone_t *bone, mstudioanim_t *anim)
+static void UnpackRotation(vec_t *angles, int frame, mstudiobone_t *bone, mstudioanim_t *anim)
 {
 	/* unpack the bone rotation */
 	angles[0] = DEGREES(bone->value[3] + bone->scale[3] *
@@ -66,7 +66,7 @@ void UnpackRotation(vec_t *angles, int frame, mstudiobone_t *bone, mstudioanim_t
 		UnpackScale(frame, anim, anim->offset[5]));
 }
 
-int GetCameraBone(studiohdr_t *hdr)
+static int GetCameraBone(studiohdr_t *hdr)
 {
 	int i;
 	mstudioattachment_t *a;
@@ -84,7 +84,7 @@ int GetCameraBone(studiohdr_t *hdr)
 	return -1;
 }
 
-bool CameraCalcMovement(cl_entity_t *vm, vec_t *quat)
+static bool CameraCalcMovement(cl_entity_t *vm, vec_t *quat)
 {
 	model_t *model;
 	studiohdr_t *hdr;

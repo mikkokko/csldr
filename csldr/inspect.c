@@ -4,7 +4,7 @@ float inspectEndTime;
 float oldViewAnimTime;
 int oldViewSequence;
 
-void SetInspectTime(studiohdr_t *hdr, int seq)
+static void SetInspectTime(studiohdr_t *hdr, int seq)
 {
 	float duration;
 	mstudioseqdesc_t *desc;
@@ -57,7 +57,7 @@ int inspectAnims[] =
 #endif
 };
 
-int LookupInspect(int curSequence, int weaponID)
+static int LookupInspect(int curSequence, int weaponID)
 {
 	if (weaponID == WEAPON_USP)
 	{
@@ -73,7 +73,7 @@ int LookupInspect(int curSequence, int weaponID)
 	return inspectAnims[weaponID];
 }
 
-void Inspect_f(void)
+static void Inspect_f(void)
 {
 	cl_entity_t *vm;
 	studiohdr_t *studiohdr;
@@ -139,7 +139,7 @@ void Inspect_f(void)
 	gEngfuncs.pEventAPI->EV_WeaponAnimation(sequence, vm->curstate.body);
 }
 
-bool IsIdleSequence(int seq)
+static bool IsIdleSequence(int seq)
 {
 	/* most idle animations have index of 0 */
 	if (seq == 0)

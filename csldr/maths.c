@@ -64,7 +64,7 @@ void AnglesToQuat(vec_t *in, vec_t *out)
 }
 
 /* mikkotodo cringe */
-double CopySign(double x, double y)
+static double CopySign(double x, double y)
 {
     return y < 0 ? -fabs(x) : fabs(x);
 }

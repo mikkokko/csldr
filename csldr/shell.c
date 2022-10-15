@@ -109,7 +109,7 @@ TEMPENTITY *Hk_TempModel(float *pos,
 /* i almost did not include shell mirroring because of this */
 #define FLIP_SHELL_ON_EVENT(name) \
 	void(*Og_ ## name)(event_args_t * args); \
-	void Hk_ ## name(event_args_t * args) \
+	static void Hk_ ## name(event_args_t * args) \
 	{ \
 		float value; \
 		if (isSoftware || !mirror_shell->value) \
@@ -124,24 +124,24 @@ TEMPENTITY *Hk_TempModel(float *pos,
 	}
 
 FLIP_SHELL_ON_EVENT(FireAK47)
-FLIP_SHELL_ON_EVENT(FireAug)
+/* FLIP_SHELL_ON_EVENT(FireAug) */
 FLIP_SHELL_ON_EVENT(FireDeagle)
 FLIP_SHELL_ON_EVENT(FireEliteLeft)
 FLIP_SHELL_ON_EVENT(FireEliteRight)
-FLIP_SHELL_ON_EVENT(FireFamas)
+/* FLIP_SHELL_ON_EVENT(FireFamas) */
 FLIP_SHELL_ON_EVENT(FireFiveSeven)
 FLIP_SHELL_ON_EVENT(FireG3SG1)
 FLIP_SHELL_ON_EVENT(FireGalil)
 FLIP_SHELL_ON_EVENT(FireGlock1)
 FLIP_SHELL_ON_EVENT(FireGlock2)
 FLIP_SHELL_ON_EVENT(FireGlock18)
-FLIP_SHELL_ON_EVENT(FireM249)
+/* FLIP_SHELL_ON_EVENT(FireM249) */
 FLIP_SHELL_ON_EVENT(FireM4A1)
 FLIP_SHELL_ON_EVENT(FireMP5)
 FLIP_SHELL_ON_EVENT(FireMP5N)
 FLIP_SHELL_ON_EVENT(FireMac10)
 FLIP_SHELL_ON_EVENT(FireP228)
-FLIP_SHELL_ON_EVENT(FireP90)
+/* FLIP_SHELL_ON_EVENT(FireP90) */
 FLIP_SHELL_ON_EVENT(FireSG550)
 FLIP_SHELL_ON_EVENT(FireSG552)
 FLIP_SHELL_ON_EVENT(FireShotGunSingle)
@@ -160,7 +160,7 @@ FLIP_SHELL_ON_EVENT(FireXM1014)
 
 typedef void (*pfnEvent_t)(event_args_t *);
 
-pfnEvent_t CheckForShellEvent(const char *name, pfnEvent_t pfnEvent)
+static pfnEvent_t CheckForShellEvent(const char *name, pfnEvent_t pfnEvent)
 {
 	const char *partialName;
 

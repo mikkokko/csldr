@@ -148,7 +148,7 @@ static void V_AddBob(ref_params_t *pparams, vec3_t origin, vec3_t angles)
 
 	V_CalcBob(pparams);
 
-    AngleVector(angles, forward, side, NULL);
+	AngleVector(angles, forward, side, NULL);
 
 	Vec3_MulAddAlt(origin, forward, g_bobVars.vertBob * 0.4f);
 
@@ -163,7 +163,7 @@ static void V_AddLag(ref_params_t *pparams, vec3_t origin, vec3_t angles)
 	vec3_t delta_angles;
 	static vec3_t last_angles;
 
-    AngleVector(angles, forward, NULL, NULL);
+	AngleVector(angles, forward, NULL, NULL);
 
 	delta_angles[0] = forward[0] - last_angles[0];
 	delta_angles[1] = forward[1] - last_angles[1];
@@ -178,7 +178,7 @@ static void V_OffsetViewmodel(cl_entity_t *vm, vec3_t angles)
 	vec3_t front, side, up;
 	float x, y, z;
 
-    AngleVector(angles, front, side, up);
+	AngleVector(angles, front, side, up);
 
 	if (!isSoftware && currentWeapon.m_iId == WEAPON_KNIFE && cl_mirror_knife->value)
 	{
@@ -231,37 +231,37 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 
 		V_OffsetViewmodel(vm, pparams->viewangles);
 
-        /* fuck this annoying shift */
-        if ((int)viewmodel_shift->value == 1)
-        {
-            matrix3x4_t final_transform;
+		/* fuck this annoying shift */
+		if ((int)viewmodel_shift->value == 1)
+		{
+			matrix3x4_t final_transform;
 
-            // remove shift from origin
-            vm->origin[2] += 1;
+			// remove shift from origin
+			vm->origin[2] += 1;
 
-            vec3_t zShift = { 0, 0, -1 };
+			vec3_t zShift = { 0, 0, -1 };
 
-            // make a translate to z -1
-            matrix3x4_t translate;
-            SetIdentityMatrix(translate);
-            PositionMatrix(zShift, translate);
+			// make a translate to z -1
+			matrix3x4_t translate;
+			SetIdentityMatrix(translate);
+			PositionMatrix(zShift, translate);
 
-            // make rotate on view angle
-            matrix3x4_t rotate;
-            memset(rotate, 0, sizeof(matrix3x4_t));
-            AngleMatrix(pparams->viewangles, rotate);
+			// make rotate on view angle
+			matrix3x4_t rotate;
+			memset(rotate, 0, sizeof(matrix3x4_t));
+			AngleMatrix(pparams->viewangles, rotate);
 
-            // combine
-            MatrixMultiply(rotate, translate, final_transform);
+			// combine
+			MatrixMultiply(rotate, translate, final_transform);
 
-            // extract origin which is shift for current position
-            vec3_t shift;
-            MatrixPosition(final_transform, shift);
+			// extract origin which is shift for current position
+			vec3_t shift;
+			MatrixPosition(final_transform, shift);
 
-            vm->origin[0] += shift[0];
-            vm->origin[1] += shift[1];
-            vm->origin[2] += shift[2];
-        }
+			vm->origin[0] += shift[0];
+			vm->origin[1] += shift[1];
+			vm->origin[2] += shift[2];
+		}
 	
 		if (cl_bobstyle->value == BOB_CSTRIKE15)
 			V_AddBob(pparams, vm->origin, vm->angles);

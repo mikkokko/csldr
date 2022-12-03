@@ -8,7 +8,7 @@ if (MSVC)
 	add_compile_options(/W4 /wd4244)
 	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
-	add_compile_options(-m32 -std=c89 -pedantic -Wall -Wextra)
+	add_compile_options(-m32 -Wall -Wextra)
 	add_link_options(-m32)
 endif()
 

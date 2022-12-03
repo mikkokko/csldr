@@ -14,6 +14,7 @@
 typedef float vec_t;
 typedef vec_t vec3_t[3];
 typedef vec_t vec4_t[4];
+typedef float matrix3x4_t[3][4];
 
 #define Vec2_Length(v) sqrt(v[0] * v[0] + v[1] * v[1])
 
@@ -22,7 +23,6 @@ typedef vec_t vec4_t[4];
 	dst[1] = 0; \
 	dst[2] = 0; \
 } while(0)
-
 
 #define Vec3_MulAdd(dst, b, t) do { \
 	dst[0] += t * b[0];\
@@ -52,7 +52,13 @@ typedef vec_t vec4_t[4];
 } while(0)
 
 
-void AnglesToMatrix(vec_t * angles, vec_t * forward, vec_t * side, vec_t * up);
+void AngleVector(vec_t * angles, vec_t * forward, vec_t * side, vec_t * up);
 void AnglesToQuat(vec_t * in, vec_t * out);
 void QuatToAngles(vec_t *in, vec_t *out);
 void QuatSlerp(vec_t *a, vec_t *b, float t, vec_t * out);
+
+void SetIdentityMatrix(matrix3x4_t matrix);
+void SetTranslationMatrix(const vec3_t translation, matrix3x4_t matrix);
+void SetAngleMatrix(const vec3_t angles, matrix3x4_t matrix);
+void GetMatrixTranslation(const matrix3x4_t matrix, vec3_t translation);
+void MatrixMultiply(const matrix3x4_t in1, const matrix3x4_t in2, matrix3x4_t out);

@@ -1,28 +1,5 @@
 #include "pch.h"
 
-void inline SinCos( float radians, float *sine, float *cosine )
-{
-#if defined( PLATFORM_WINDOWS_PC32 )
-	_asm
-	{
-		fld		DWORD PTR [radians]
-		fsincos
-
-		mov edx, DWORD PTR [cosine]
-		mov eax, DWORD PTR [sine]
-
-		fstp DWORD PTR [edx]
-		fstp DWORD PTR [eax]
-	}
-#elif defined( POSIX )
-	double __cosr, __sinr;
-	__asm ("fsincos" : "=t" (__cosr), "=u" (__sinr) : "0" (radians));
-
-	*sine = __sinr;
-	*cosine = __cosr;
-#endif
-}
-
 void AngleVector(vec_t *angles, vec_t *forward, vec_t *side, vec_t *up)
 {
 	float yaw, pitch, roll;
@@ -143,78 +120,80 @@ void QuatSlerp(vec_t *a, vec_t *b, float t, vec_t *out)
 	out[3] = s1 * a[3] + s2 * b[3];
 }
 
-void MatrixCopy(const matrix3x4_t in, matrix3x4_t out)
-{
-	memcpy(out, in, sizeof( float ) * 3 * 4 );
-}
-
-void MatrixSetColumn(const vec3_t in, int column, matrix3x4_t out)
-{
-	out[0][column] = in[0];
-	out[1][column] = in[1];
-	out[2][column] = in[2];
-}
-
-void MatrixGetColumn(const matrix3x4_t in, int column, vec3_t out)
-{
-	out[0] = in[0][column];
-	out[1] = in[1][column];
-	out[2] = in[2][column];
-}
-
 void SetIdentityMatrix(matrix3x4_t matrix)
 {
-	memset(matrix, 0, sizeof(matrix3x4_t));
 	matrix[0][0] = 1.f;
 	matrix[1][1] = 1.f;
 	matrix[2][2] = 1.f;
 }
 
-void AngleMatrix(const vec3_t angles, matrix3x4_t matrix)
+void SetTranslationMatrix(const vec3_t translation, matrix3x4_t matrix)
 {
-	float sr, sp, sy, cr, cp, cy;
+    matrix[0][3] = translation[0];
+    matrix[1][3] = translation[1];
+    matrix[2][3] = translation[2];
+}
 
-	SinCos( RADIANS( angles[YAW] ), &sy, &cy );
-	SinCos( RADIANS( angles[PITCH] ), &sp, &cp );
-	SinCos( RADIANS( angles[ROLL] ), &sr, &cr );
+void SetAngleMatrix(const vec3_t angles, matrix3x4_t matrix)
+{
+    float yaw, pitch, roll;
+    float sr, sp, sy, cr, cp, cy;
+
+    yaw = RADIANS(angles[1]);
+    pitch = RADIANS(angles[0]);
+    roll = RADIANS(angles[2]);
+
+    sy = sin(yaw);
+    cy = cos(yaw);
+    sp = sin(pitch);
+    cp = cos(pitch);
+    sr = sin(roll);
+    cr = cos(roll);
 
 	// matrix = (YAW * PITCH) * ROLL
-	matrix[0][0] = cp*cy;
-	matrix[1][0] = cp*sy;
+	matrix[0][0] = cp * cy;
+	matrix[1][0] = cp * sy;
 	matrix[2][0] = -sp;
 
-	float crcy = cr*cy;
-	float crsy = cr*sy;
-	float srcy = sr*cy;
-	float srsy = sr*sy;
-	matrix[0][1] = sp*srcy-crsy;
-	matrix[1][1] = sp*srsy+crcy;
-	matrix[2][1] = sr*cp;
+	float crcy = cr * cy;
+	float crsy = cr * sy;
+	float srcy = sr * cy;
+	float srsy = sr * sy;
+	matrix[0][1] = sp * srcy - crsy;
+	matrix[1][1] = sp * srsy + crcy;
+	matrix[2][1] = sr * cp;
 
-	matrix[0][2] = (sp*crcy+srsy);
-	matrix[1][2] = (sp*crsy-srcy);
-	matrix[2][2] = cr*cp;
+	matrix[0][2] = (sp * crcy + srsy);
+	matrix[1][2] = (sp * crsy - srcy);
+	matrix[2][2] = cr * cp;
 
 	matrix[0][3] = 0.0f;
 	matrix[1][3] = 0.0f;
 	matrix[2][3] = 0.0f;
 }
 
-void ConcatTransforms(const matrix3x4_t in1, const matrix3x4_t in2, matrix3x4_t out)
+void GetMatrixTranslation(const matrix3x4_t matrix, vec3_t translation)
+{
+    translation[0] = matrix[0][3];
+    translation[1] = matrix[1][3];
+    translation[2] = matrix[2][3];
+}
+
+void MatrixMultiply(const matrix3x4_t in1, const matrix3x4_t in2, matrix3x4_t out)
 {
 	if (in1 == out)
 	{
 		matrix3x4_t in1b;
-		MatrixCopy( in1, in1b );
-		ConcatTransforms( in1b, in2, out );
+        memcpy(in1b, in1, sizeof(matrix3x4_t));
+        MatrixMultiply(in1b, in2, out);
 		return;
 	}
 
 	if (in2 == out)
 	{
 		matrix3x4_t in2b;
-		MatrixCopy( in2, in2b );
-		ConcatTransforms( in1, in2b, out );
+        memcpy(in2b, in2, sizeof(matrix3x4_t));
+        MatrixMultiply(in1, in2b, out);
 		return;
 	}
 

@@ -233,6 +233,8 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 
 		/* fuck this annoying shift */
 		if ((int)viewmodel_shift->value == 1)
+            vm->origin[2] += 1;
+        else if ((int)viewmodel_shift->value == 2)
 		{
 			matrix3x4_t final_transform;
 
@@ -243,20 +245,21 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 
 			// make a translate to z -1
 			matrix3x4_t translate;
+            memset(translate, 0, sizeof(matrix3x4_t));
 			SetIdentityMatrix(translate);
-			PositionMatrix(zShift, translate);
+            SetTranslationMatrix(zShift, translate);
 
 			// make rotate on view angle
 			matrix3x4_t rotate;
 			memset(rotate, 0, sizeof(matrix3x4_t));
-			AngleMatrix(pparams->viewangles, rotate);
+            SetAngleMatrix(pparams->viewangles, rotate);
 
 			// combine
-			MatrixMultiply(rotate, translate, final_transform);
+            MatrixMultiply(rotate, translate, final_transform);
 
 			// extract origin which is shift for current position
 			vec3_t shift;
-			MatrixPosition(final_transform, shift);
+            GetMatrixTranslation(final_transform, shift);
 
 			vm->origin[0] += shift[0];
 			vm->origin[1] += shift[1];

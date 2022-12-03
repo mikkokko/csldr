@@ -24,7 +24,6 @@ typedef float matrix3x4_t[3][4];
 	dst[2] = 0; \
 } while(0)
 
-
 #define Vec3_MulAdd(dst, b, t) do { \
 	dst[0] += t * b[0];\
 	dst[1] += t * b[1];\
@@ -58,13 +57,8 @@ void AnglesToQuat(vec_t * in, vec_t * out);
 void QuatToAngles(vec_t *in, vec_t *out);
 void QuatSlerp(vec_t *a, vec_t *b, float t, vec_t * out);
 
-void MatrixCopy(const matrix3x4_t in, matrix3x4_t out);
-void MatrixSetColumn(const vec3_t in, int column, matrix3x4_t out);
-void MatrixGetColumn(const matrix3x4_t in, int column, vec3_t out);
-void ConcatTransforms(const matrix3x4_t in1, const matrix3x4_t in2, matrix3x4_t out);
-
 void SetIdentityMatrix(matrix3x4_t matrix);
-void AngleMatrix(const vec3_t angles, matrix3x4_t matrix);
-inline void PositionMatrix(const vec3_t position, matrix3x4_t mat) { MatrixSetColumn( position, 3, mat ); }
-inline void MatrixPosition(const matrix3x4_t matrix, vec3_t position ) { MatrixGetColumn( matrix, 3, position ); }
-inline void MatrixMultiply(const matrix3x4_t in1, const matrix3x4_t in2, matrix3x4_t out) { ConcatTransforms( in1, in2, out ); }
+void SetTranslationMatrix(const vec3_t translation, matrix3x4_t matrix);
+void SetAngleMatrix(const vec3_t angles, matrix3x4_t matrix);
+void GetMatrixTranslation(const matrix3x4_t matrix, vec3_t translation);
+void MatrixMultiply(const matrix3x4_t in1, const matrix3x4_t in2, matrix3x4_t out);

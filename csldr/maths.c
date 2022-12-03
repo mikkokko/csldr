@@ -129,26 +129,26 @@ void SetIdentityMatrix(matrix3x4_t matrix)
 
 void SetTranslationMatrix(const vec3_t translation, matrix3x4_t matrix)
 {
-    matrix[0][3] = translation[0];
-    matrix[1][3] = translation[1];
-    matrix[2][3] = translation[2];
+	matrix[0][3] = translation[0];
+	matrix[1][3] = translation[1];
+	matrix[2][3] = translation[2];
 }
 
 void SetAngleMatrix(const vec3_t angles, matrix3x4_t matrix)
 {
-    float yaw, pitch, roll;
-    float sr, sp, sy, cr, cp, cy;
+	float yaw, pitch, roll;
+	float sr, sp, sy, cr, cp, cy;
 
-    yaw = RADIANS(angles[1]);
-    pitch = RADIANS(angles[0]);
-    roll = RADIANS(angles[2]);
+	yaw = RADIANS(angles[1]);
+	pitch = RADIANS(angles[0]);
+	roll = RADIANS(angles[2]);
 
-    sy = sin(yaw);
-    cy = cos(yaw);
-    sp = sin(pitch);
-    cp = cos(pitch);
-    sr = sin(roll);
-    cr = cos(roll);
+	sy = sin(yaw);
+	cy = cos(yaw);
+	sp = sin(pitch);
+	cp = cos(pitch);
+	sr = sin(roll);
+	cr = cos(roll);
 
 	// matrix = (YAW * PITCH) * ROLL
 	matrix[0][0] = cp * cy;
@@ -174,9 +174,9 @@ void SetAngleMatrix(const vec3_t angles, matrix3x4_t matrix)
 
 void GetMatrixTranslation(const matrix3x4_t matrix, vec3_t translation)
 {
-    translation[0] = matrix[0][3];
-    translation[1] = matrix[1][3];
-    translation[2] = matrix[2][3];
+	translation[0] = matrix[0][3];
+	translation[1] = matrix[1][3];
+	translation[2] = matrix[2][3];
 }
 
 void MatrixMultiply(const matrix3x4_t in1, const matrix3x4_t in2, matrix3x4_t out)
@@ -184,16 +184,16 @@ void MatrixMultiply(const matrix3x4_t in1, const matrix3x4_t in2, matrix3x4_t ou
 	if (in1 == out)
 	{
 		matrix3x4_t in1b;
-        memcpy(in1b, in1, sizeof(matrix3x4_t));
-        MatrixMultiply(in1b, in2, out);
+		memcpy(in1b, in1, sizeof(matrix3x4_t));
+		MatrixMultiply(in1b, in2, out);
 		return;
 	}
 
 	if (in2 == out)
 	{
 		matrix3x4_t in2b;
-        memcpy(in2b, in2, sizeof(matrix3x4_t));
-        MatrixMultiply(in1, in2b, out);
+		memcpy(in2b, in2, sizeof(matrix3x4_t));
+		MatrixMultiply(in1, in2b, out);
 		return;
 	}
 

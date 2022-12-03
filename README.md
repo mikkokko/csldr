@@ -1,6 +1,6 @@
 ## Main features
 
-- Hor+ FOV calculation for widescreen
+- Hor+ FOV scaling for widescreen
 - Separately calculated viewmodel FOV
 - Adjustable viewmodel origin
 - Alternative viewmodel bob from CS:GO 1.0.0.40
@@ -32,40 +32,41 @@
 
 ## Other stuff
 
-- To get bone controlled camera movement working, make a bone called "camera" and make an attachment on it. It sucks to rely on bone name but studiomdl doesn't support attachment names even though the format supports them.
+- To get bone controlled camera movement working, make a bone called "camera" and make an attachment on it.
 - You can make hand bodygroups change depending on what team you're in by naming the bodygroup so that is starts with "arms".
 - Inspect sequence indices are hardcoded for compatibility, it's always the sequence after the last default sequence. Check inspectAnims array in inspect.c if in doubt.
 
-## Cvar/command list
-
-        camera_movement_interp
-        camera_movement_scale
-        cl_bob_lower_amt
-        cl_bobamt_lat
-        cl_bobamt_vert
-        cl_bobstyle
-        cl_mirror_knife
-        cl_rollangle
-        cl_rollspeed
-        fov_horplus
-        fov_lerp
-        lookat
-        mirror_shell
-        viewmodel_fov
-        viewmodel_hands
-        viewmodel_lag_scale
-        viewmodel_lag_speed
-        viewmodel_offset_x
-        viewmodel_offset_y
-        viewmodel_offset_z
-        viewmodel_shift
-        xhair_color_b
-        xhair_color_g
-        xhair_color_r
-        xhair_dot
-        xhair_enable
-        xhair_gap
-        xhair_pad
-        xhair_size
-        xhair_t
-        xhair_thick
+## Cvars and commands
+| Name | Description |
+|-|-|
+| camera_movement_interp | Smoots out camera movement. Recommended value is 30. Set to 0 to update camera movement every frame (no interpolation). |
+| camera_movement_scale | Camera movement scale. |
+| cl_bob_lower_amt | Specifies how much viewmodel moves inwards for CS:GO style bob. |
+| cl_bobamt_lat | Lateral scale for CS:GO style bob. |
+| cl_bobamt_vert | Vertical scale for CS:GO style bob. |
+| cl_bobstyle | 0 for default bob, 1 for old style bob and 2 for CS:GO style bob. |
+| cl_mirror_knife | Mirrors the knife viewmodel. |
+| cl_rollangle | Viewmodel roll angle. |
+| cl_rollspeed | Viewmodel roll speed. |
+| fov_horplus | Enables Hor+ scaling for FOV. Fixes the FOV when playing with aspect ratios besides 4:3. |
+| fov_lerp | FOV interpolation time in seconds. |
+| lookat | Inspects weapon if the animation is present. |
+| mirror_shell | Switches the direction of shell ejects. |
+| viewmodel_fov | Viewmodel FOV. |
+| viewmodel_hands | Specifies external hand model, for example "v_hands.mdl". Set to empty string ("") to disable. |
+| viewmodel_lag_scale | Scale of the viewmodel sway. |
+| viewmodel_lag_speed | Speed of the viewmodel sway. |
+| viewmodel_offset_x | Viewmodel's x offset. |
+| viewmodel_offset_y | Viewmodel's y offset. |
+| viewmodel_offset_z | Viewmodel's z offset. |
+| viewmodel_shift | Fixes the viewmodel shift when looking up and down. 1 disables the shift without fixing the viewmodel position, 2 disables the shift and fixes the viewmodel position. |
+| xhair_color_b | Crosshair's blue value (0-1). |
+| xhair_color_g | Crosshair's green value (0-1). |
+| xhair_color_r | Crosshair's red value (0-1). |
+| xhair_dot | Enables crosshair dot. |
+| xhair_enable | Enables enhanced crosshair. |
+| xhair_gap | Space between crosshair's lines. |
+| xhair_pad | Border around crosshair. |
+| xhair_size | Crosshair size. |
+| xhair_t | Enables T-shaped crosshair. |
+| xhair_thick | Crosshair thickness. |

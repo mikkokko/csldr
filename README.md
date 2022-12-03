@@ -39,9 +39,9 @@
 ## Cvars and commands
 | Name | Description |
 |-|-|
-| camera_movement_interp | Smoots out camera movement. Recommended value is 30. Set to 0 to update camera movement every frame (no interpolation). |
+| camera_movement_interp | Smooths out camera movement. Recommended value is 30. Set to 0 to update camera movement every frame (no interpolation). |
 | camera_movement_scale | Camera movement scale. |
-| cl_bob_lower_amt | Specifies how much viewmodel moves inwards for CS:GO style bob. |
+| cl_bob_lower_amt | Specifies how much the viewmodel moves inwards for CS:GO style bob. |
 | cl_bobamt_lat | Lateral scale for CS:GO style bob. |
 | cl_bobamt_vert | Vertical scale for CS:GO style bob. |
 | cl_bobstyle | 0 for default bob, 1 for old style bob and 2 for CS:GO style bob. |
@@ -53,16 +53,16 @@
 | lookat | Inspects weapon if the animation is present. |
 | mirror_shell | Switches the direction of shell ejects. |
 | viewmodel_fov | Viewmodel FOV. |
-| viewmodel_hands | Specifies external hand model, for example "v_hands.mdl". Set to empty string ("") to disable. |
+| viewmodel_hands | Specifies an external hand model, for example "v_hands.mdl". Can be disabled with an empty string (""). |
 | viewmodel_lag_scale | Scale of the viewmodel sway. |
 | viewmodel_lag_speed | Speed of the viewmodel sway. |
 | viewmodel_offset_x | Viewmodel's x offset. |
 | viewmodel_offset_y | Viewmodel's y offset. |
 | viewmodel_offset_z | Viewmodel's z offset. |
 | viewmodel_shift | Fixes the viewmodel shift when looking up and down. 1 disables the shift without fixing the viewmodel position, 2 disables the shift and fixes the viewmodel position. |
-| xhair_color_b | Crosshair's blue value (0-1). |
-| xhair_color_g | Crosshair's green value (0-1). |
-| xhair_color_r | Crosshair's red value (0-1). |
+| xhair_color_b | Crosshair color's blue value (0-1). |
+| xhair_color_g | Crosshair color's green value (0-1). |
+| xhair_color_r | Crosshair color's red value (0-1). |
 | xhair_dot | Enables crosshair dot. |
 | xhair_enable | Enables enhanced crosshair. |
 | xhair_gap | Space between crosshair's lines. |

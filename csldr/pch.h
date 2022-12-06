@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define STATIC_ASSERT(expr, msg) typedef int static_assert_##msg[(expr) ? (1) : (-1)];
+
 /* mikkotodo move */
 #if !defined(__cplusplus)
 typedef enum {false, true} bool;
@@ -47,10 +49,13 @@ typedef struct
 /* for sdk types that i cba to implement */
 #define UNIMPLEMENTED_TYPE(name) typedef void name
 
+/* mfw */
+#define CVAR_ARHCIVE_FAST_STR(name, str) \
+	name = gEngfuncs.pfnRegisterVariable(#name, str, FCVAR_ARCHIVE)
+
 /* bruh */
 #define CVAR_ARHCIVE_FAST(name, value) \
-	name = gEngfuncs.pfnRegisterVariable(#name, #value, FCVAR_ARCHIVE)
-
+	CVAR_ARHCIVE_FAST_STR(name, #value)
 
 #include "maths.h"
 #include "msg.h"

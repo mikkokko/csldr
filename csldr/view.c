@@ -1,8 +1,5 @@
 #include "pch.h"
 
-/* values for cl_bobstyle */
-enum { BOB_DEFAULT, BOB_OLD, BOB_CSTRIKE15 };
-
 cvar_t *viewmodel_fov;
 cvar_t *viewmodel_shift;
 cvar_t *viewmodel_offset_x;
@@ -38,7 +35,7 @@ void ViewInit(void)
 	CVAR_ARHCIVE_FAST(viewmodel_offset_x, 0);
 	CVAR_ARHCIVE_FAST(viewmodel_offset_y, 0);
 	CVAR_ARHCIVE_FAST(viewmodel_offset_z, 0);
-	CVAR_ARHCIVE_FAST(viewmodel_hands, );
+	CVAR_ARHCIVE_FAST_STR(viewmodel_hands, "");
 
 	CVAR_ARHCIVE_FAST(cl_bobstyle, 0);
 
@@ -92,7 +89,7 @@ static void V_CalcBob(ref_params_t *pparams)
 	if ((!pparams->frametime))
 		return;
 
-	speed = Vec2_Length(pparams->simvel);
+	speed = VecLength2d(pparams->simvel);
 
 	maxSpeedDelta = MAX(0, (pparams->time - g_bobVars.lastBobTime) * 620);
 
@@ -116,9 +113,9 @@ static void V_CalcBob(ref_params_t *pparams)
 	cycle /= bobCycle;
 
 	if (cycle < cl_bobup->value)
-		cycle = M_PI * cycle / cl_bobup->value;
+		cycle = F_PI * cycle / cl_bobup->value;
 	else
-		cycle = M_PI + M_PI * (cycle - cl_bobup->value) / (1.0f - cl_bobup->value);
+		cycle = F_PI + F_PI * (cycle - cl_bobup->value) / (1.0f - cl_bobup->value);
 
 	bobScale = 0.00625f;
 
@@ -126,19 +123,19 @@ static void V_CalcBob(ref_params_t *pparams)
 		bobScale = 0.00125f;
 
 	g_bobVars.vertBob = speed * (bobScale * cl_bobamt_vert->value);
-	g_bobVars.vertBob = (g_bobVars.vertBob * 0.3f + g_bobVars.vertBob * 0.7f * sin(cycle));
+	g_bobVars.vertBob = (g_bobVars.vertBob * 0.3f + g_bobVars.vertBob * 0.7f * sinf(cycle));
 	g_bobVars.vertBob = CLAMP(g_bobVars.vertBob - lowerAmt, -8, 4);
 
 	cycle = g_bobVars.bobTime - (int)(g_bobVars.bobTime / bobCycle * 2) * bobCycle * 2;
 	cycle /= bobCycle * 2;
 
 	if (cycle < cl_bobup->value)
-		cycle = M_PI * cycle / cl_bobup->value;
+		cycle = F_PI * cycle / cl_bobup->value;
 	else
-		cycle = M_PI + M_PI * (cycle - cl_bobup->value) / (1.0f - cl_bobup->value);
+		cycle = F_PI + F_PI * (cycle - cl_bobup->value) / (1.0f - cl_bobup->value);
 
 	g_bobVars.horBob = speed * (bobScale * cl_bobamt_lat->value);
-	g_bobVars.horBob = g_bobVars.horBob * 0.3f + g_bobVars.horBob * 0.7f * sin( cycle);
+	g_bobVars.horBob = g_bobVars.horBob * 0.3f + g_bobVars.horBob * 0.7f * sinf(cycle);
 	g_bobVars.horBob = CLAMP(g_bobVars.horBob, -7, 4);
 }
 
@@ -148,13 +145,13 @@ static void V_AddBob(ref_params_t *pparams, vec3_t origin, vec3_t angles)
 
 	V_CalcBob(pparams);
 
-	AngleVector(angles, forward, side, NULL);
+	AngleVectors(angles, forward, side, NULL);
 
-	Vec3_MulAddAlt(origin, forward, g_bobVars.vertBob * 0.4f);
+	VecMultiplyAdd2(origin, forward, g_bobVars.vertBob * 0.4f);
 
 	origin[2] += g_bobVars.vertBob * 0.1f;
 
-	Vec3_MulAddAlt(origin, side, g_bobVars.horBob * 0.2f);
+	VecMultiplyAdd2(origin, side, g_bobVars.horBob * 0.2f);
 }
 
 static void V_AddLag(ref_params_t *pparams, vec3_t origin, vec3_t angles)
@@ -163,14 +160,14 @@ static void V_AddLag(ref_params_t *pparams, vec3_t origin, vec3_t angles)
 	vec3_t delta_angles;
 	static vec3_t last_angles;
 
-	AngleVector(angles, forward, NULL, NULL);
+	AngleVectors(angles, forward, NULL, NULL);
 
 	delta_angles[0] = forward[0] - last_angles[0];
 	delta_angles[1] = forward[1] - last_angles[1];
 	delta_angles[2] = forward[2] - last_angles[2];
 
-	Vec3_MulAdd(last_angles, delta_angles, viewmodel_lag_speed->value * pparams->frametime);
-	Vec3_MulAddAlt(origin, delta_angles, -1 * viewmodel_lag_scale->value);
+	VecMultiplyAdd(last_angles, delta_angles, viewmodel_lag_speed->value * pparams->frametime);
+	VecMultiplyAdd2(origin, delta_angles, -1 * viewmodel_lag_scale->value);
 }
 
 static void V_OffsetViewmodel(cl_entity_t *vm, vec3_t angles)
@@ -178,7 +175,7 @@ static void V_OffsetViewmodel(cl_entity_t *vm, vec3_t angles)
 	vec3_t front, side, up;
 	float x, y, z;
 
-	AngleVector(angles, front, side, up);
+	AngleVectors(angles, front, side, up);
 
 	if (!isSoftware && currentWeapon.m_iId == WEAPON_KNIFE && cl_mirror_knife->value)
 	{
@@ -190,9 +187,9 @@ static void V_OffsetViewmodel(cl_entity_t *vm, vec3_t angles)
 	y = viewmodel_offset_y->value;
 	z = viewmodel_offset_z->value;
 
-	Vec3_MulAdd(vm->origin, side, x);
-	Vec3_MulAdd(vm->origin, front, y);
-	Vec3_MulAdd(vm->origin, up, z);
+	VecMultiplyAdd(vm->origin, side, x);
+	VecMultiplyAdd(vm->origin, front, y);
+	VecMultiplyAdd(vm->origin, up, z);
 }
 
 void Hk_CalcRefdef(ref_params_t *pparams)
@@ -200,7 +197,7 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 	pparams->movevars->rollangle = cl_rollangle->value;
 	pparams->movevars->rollspeed = cl_rollspeed->value;
 	
-	if (cl_bobstyle->value == BOB_CSTRIKE15)
+	if ((int)cl_bobstyle->value == 2)
 	{
 		float bobcycle, bobup, bob;
 	
@@ -236,25 +233,22 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 			vm->origin[2] += 1;
 		else if ((int)viewmodel_shift->value == 2)
 		{
-			matrix3x4_t final_transform;
-
 			// remove shift from origin
 			vm->origin[2] += 1;
 
-			vec3_t zShift = { 0, 0, -1 };
+			const vec3_t zShift = { 0, 0, -1 };
 
 			// make a translate to z -1
 			matrix3x4_t translate;
-			memset(translate, 0, sizeof(matrix3x4_t));
 			SetIdentityMatrix(translate);
 			SetTranslationMatrix(zShift, translate);
 
 			// make rotate on view angle
 			matrix3x4_t rotate;
-			memset(rotate, 0, sizeof(matrix3x4_t));
 			SetAngleMatrix(pparams->viewangles, rotate);
 
 			// combine
+			matrix3x4_t final_transform;
 			MatrixMultiply(rotate, translate, final_transform);
 
 			// extract origin which is shift for current position
@@ -266,9 +260,9 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 			vm->origin[2] += shift[2];
 		}
 	
-		if (cl_bobstyle->value == BOB_CSTRIKE15)
+		if ((int)cl_bobstyle->value == 2)
 			V_AddBob(pparams, vm->origin, vm->angles);
-		else if (cl_bobstyle->value == BOB_OLD)
+		else if ((int)cl_bobstyle->value == 1)
 		{
 			vm->curstate.angles[0] = vm->angles[0];
 			vm->curstate.angles[1] = vm->angles[1];

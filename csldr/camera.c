@@ -53,7 +53,7 @@ static float UnpackScale(int frame, mstudioanim_t *anim, int offset)
 	return (float)bone_frame[index].value;
 }
 
-static void UnpackRotation(vec_t *angles, int frame, mstudiobone_t *bone, mstudioanim_t *anim)
+static void UnpackRotation(vec3_t angles, int frame, mstudiobone_t *bone, mstudioanim_t *anim)
 {
 	/* unpack the bone rotation */
 	angles[0] = DEGREES(bone->value[3] + bone->scale[3] *
@@ -84,7 +84,7 @@ static int GetCameraBone(studiohdr_t *hdr)
 	return -1;
 }
 
-static bool CameraCalcMovement(cl_entity_t *vm, vec_t *quat)
+static bool CameraCalcMovement(cl_entity_t *vm, quat_t quat)
 {
 	model_t *model;
 	studiohdr_t *hdr;
@@ -96,7 +96,7 @@ static bool CameraCalcMovement(cl_entity_t *vm, vec_t *quat)
 	float anim_time, t;
 	int frame, next_frame;
 	vec3_t angles1, angles2;
-	vec4_t quat1, quat2;
+	quat_t quat1, quat2;
 
 	model = vm->model;
 	if (!model)
@@ -148,13 +148,13 @@ static bool CameraCalcMovement(cl_entity_t *vm, vec_t *quat)
 
 void CameraApplyMovement(ref_params_t *pparams)
 {
-	vec4_t quat;
+	quat_t quat;
 	vec3_t angles;
 	float scale, timeStep;
 	float newTime, frameTime;
 	static float lastTime;
 	static float accum;
-	static vec4_t prevQuat, curQuat;
+	static quat_t prevQuat, curQuat;
 
 	if (!camera_movement_interp->value)
 	{

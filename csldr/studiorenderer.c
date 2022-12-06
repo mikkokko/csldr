@@ -23,8 +23,8 @@ static float CalcVerticalFov(float fov)
 	/* hardcoded 4:3 aspect ratio so i don't need to do hor+ on vm fov */
 	float x;
 
-	x = 4.0f / tan(RADIANS(fov) / 2);
-	return DEGREES(atan(3.0f / x)) * 2;
+	x = 4.0f / tanf(RADIANS(fov) / 2);
+	return DEGREES(atanf(3.0f / x)) * 2;
 }
 
 static void UnflipKnife(float *value)
@@ -64,7 +64,7 @@ static void DrawHands(cl_entity_t *weapon, int flags)
 		return;
 
 	/* skip "models/" for comparison */
-	changed = strncmp(hands_path + 7, viewmodel_hands->string, sizeof(hands_path) - 7);
+	changed = strncmp(hands_path + 7, viewmodel_hands->string, sizeof(hands_path) - 7) != 0;
 	if (changed)
 	{
 		/* update path */

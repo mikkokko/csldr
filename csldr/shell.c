@@ -75,8 +75,8 @@ TEMPENTITY *Hk_TempModel(float *pos,
 
 		rot = RADIANS(shellRotation);
 
-		sine = sin(rot);
-		cosine = cos(rot);
+		sine = sinf(rot);
+		cosine = cosf(rot);
 
 		if (!cl_righthand->value)
 		{

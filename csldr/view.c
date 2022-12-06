@@ -226,6 +226,11 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 	
 		vm = gEngfuncs.GetViewModel();
 
+		/* fix the slight difference between view and vm origin */
+		vm->origin[0] += 1.0f / 32;
+		vm->origin[1] += 1.0f / 32;
+		vm->origin[2] += 1.0f / 32;
+
 		V_OffsetViewmodel(vm, pparams->viewangles);
 
 		/* fuck this annoying shift */

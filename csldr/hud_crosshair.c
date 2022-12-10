@@ -14,6 +14,7 @@ cvar_t *xhair_t;
 cvar_t *xhair_color_r;
 cvar_t *xhair_color_g;
 cvar_t *xhair_color_b;
+cvar_t *xhair_alpha;
 
 cvar_t *cl_crosshair_color;
 cvar_t *cl_crosshair_translucent;
@@ -49,6 +50,7 @@ void HudInit(void)
 	CVAR_ARHCIVE_FAST(xhair_color_r, 0);
 	CVAR_ARHCIVE_FAST(xhair_color_g, 1);
 	CVAR_ARHCIVE_FAST(xhair_color_b, 0);
+	CVAR_ARHCIVE_FAST(xhair_alpha, 1);
 
 	/* string spoof */
 	cl_crosshair_color = gEngfuncs.pfnGetCvarPointer("cl_crosshair_color");
@@ -59,50 +61,80 @@ void HudInit(void)
 	can_xhair = (cl_crosshair_color && cl_crosshair_translucent);
 }
 
-static int ScaleForRes(int value, int height)
+/* mikkotodo clean all of this up some day */
+
+static float ScaleForRes(float value, float height)
 {
 	/* "default" resolution is 640x480 */
-	return (int)((float)value * ((float)height / 480));
+	return value * (height / 480);
 }
 
-static void DrawQuad(int x0, int y0, int x1, int y1, float r, float g, float b)
+static void DrawCrosshairSection(float x0, float y0, float x1, float y1)
 {
-	glDisable(GL_TEXTURE_2D);
+	float top_left[2] = { x0, y0 };
+	float top_right[2] = { x1, y0 };
+	float bottom_right[2] = { x1, y1 };
+	float bottom_left[2] = { x0, y1 };
 
-	glColor3f(r, b, g);
+	glColor4f(xhair_color_r->value,
+		xhair_color_g->value,
+		xhair_color_b->value,
+		xhair_alpha->value);
 
-	glBegin(GL_QUADS);
-	glVertex2i(x0, y0);
-	glVertex2i(x1, y0);
-	glVertex2i(x1, y1);
-	glVertex2i(x0, y1);
+	glBegin(GL_TRIANGLE_STRIP);
+	glVertex2fv(top_left);
+	glVertex2fv(bottom_left);
+	glVertex2fv(top_right);
+	glVertex2fv(bottom_right);
 	glEnd();
-
-	glColor3f(1, 1, 1);
-
-	glEnable(GL_TEXTURE_2D);
 }
 
-static void DrawCrosshairSection(int x0, int y0, int x1, int y1)
+static void DrawCrosshairPadding(float x0, float y0, float x1, float y1)
 {
-	DrawQuad(x0, y0, x1, y1, xhair_color_r->value, xhair_color_b->value, xhair_color_g->value);
+	float pad = roundf(xhair_pad->value);
+
+	float out_top_left[2] = { x0 - pad, y0 - pad };
+	float out_top_right[2] = { x1 + pad, y0 - pad };
+	float out_bottom_right[2] = { x1 + pad, y1 + pad };
+	float out_bottom_left[2] = { x0 - pad, y1 + pad };
+	float in_top_left[2] = { x0, y0 };
+	float in_top_right[2] = { x1, y0 };
+	float in_bottom_right[2] = { x1, y1 };
+	float in_bottom_left[2] = { x0, y1 };
+
+	glColor4f(0, 0, 0, xhair_alpha->value);
+
+	glBegin(GL_TRIANGLE_STRIP);
+	glVertex2fv(in_bottom_left);
+	glVertex2fv(out_bottom_right);
+	glVertex2fv(in_bottom_right);
+	glVertex2fv(out_top_right);
+	glVertex2fv(in_top_right);
+	glVertex2fv(out_top_left);
+	glVertex2fv(in_top_left);
+	glVertex2fv(out_bottom_left);
+	glVertex2fv(in_bottom_left);
+	glVertex2fv(out_bottom_right);
+	glEnd();
 }
 
-static void DrawCrosshairPadding(int x0, int y0, int x1, int y1)
+typedef struct
 {
-	int pad = (int)xhair_pad->value;
-
-	DrawQuad(x0 - pad, y0 - pad, x1 + pad, y1 + pad, 0, 0, 0);
-}
+	float left;
+	float right;
+	float top;
+	float bottom;
+} frect_t;
 
 static void DrawCrosshair(void)
 {
 	SCREENINFO scr;
-	int center_x, center_y;
-	int gap, length, thickness;
-	int y0, y1, x0, x1;
-	wrect_t inner;
-	wrect_t outer;
+	float width, height;
+	float center_x, center_y;
+	float gap, length, thickness;
+	float y0, y1, x0, x1;
+	frect_t inner;
+	frect_t outer;
 
 	/* dumb */
 	if (!currentWeaponId || (currentWeaponId == WEAPON_SCOUT) ||
@@ -112,32 +144,47 @@ static void DrawCrosshair(void)
 		return;
 
 	scr.iSize = sizeof(SCREENINFO);
-
 	gEngfuncs.pfnGetScreenInfo(&scr);
+	width = (float)scr.iWidth;
+	height = (float)scr.iHeight;
 
 	/* calculate coordinates */
-	center_x = scr.iWidth / 2;
-	center_y = scr.iHeight / 2;
+	center_x = width / 2;
+	center_y = height / 2;
 
-	gap = ScaleForRes((int)xhair_gap->value, scr.iHeight);
-	length = ScaleForRes((int)xhair_size->value, scr.iHeight);
-	thickness = MAX(1, ScaleForRes((int)xhair_thick->value, scr.iHeight));
+	gap = ScaleForRes(xhair_gap->value, height);
+	length = ScaleForRes(xhair_size->value, height);
+	thickness = ScaleForRes(xhair_thick->value, height);
+	thickness = MAX(1, thickness);
 
-	inner.left = center_x - gap - thickness / 2;
-	inner.right = inner.left + 2 * gap + thickness;
-	inner.top = center_y - gap - thickness / 2;
-	inner.bottom = inner.top + 2 * gap + thickness;
+	inner.left = roundf(center_x - gap - thickness / 2);
+	inner.right = roundf(inner.left + 2 * gap + thickness);
+	inner.top = roundf(center_y - gap - thickness / 2);
+	inner.bottom = roundf(inner.top + 2 * gap + thickness);
 
-	outer.left = inner.left - length;
-	outer.right = inner.right + length;
-	outer.top = inner.top - length;
-	outer.bottom = inner.bottom + length;
+	outer.left = roundf(inner.left - length);
+	outer.right = roundf(inner.right + length);
+	outer.top = roundf(inner.top - length);
+	outer.bottom = roundf(inner.bottom + length);
 
-	y0 = center_y - thickness / 2;
-	y1 = y0 + thickness;
+	y0 = roundf(center_y - thickness / 2);
+	x0 = roundf(center_x - thickness / 2);
+	y1 = roundf(y0 + thickness);
+	x1 = roundf(x0 + thickness);
 
-	x0 = center_x - thickness / 2;
-	x1 = x0 + thickness;
+	glDisable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	if (xhair_dot->value)
+		DrawCrosshairSection(x0, y0, x1, y1);
+	
+	if (!xhair_t->value)
+		DrawCrosshairSection(x0, outer.top, x1, inner.top);
+	
+	DrawCrosshairSection(x0, inner.bottom, x1, outer.bottom);
+	DrawCrosshairSection(outer.left, y0, inner.left, y1);
+	DrawCrosshairSection(inner.right, y0, outer.right, y1);
 
 	/* draw padding if wanted */
 	if (xhair_pad->value)
@@ -153,15 +200,10 @@ static void DrawCrosshair(void)
 		DrawCrosshairPadding(inner.right, y0, outer.right, y1);
 	}
 
-	if (xhair_dot->value)
-		DrawCrosshairSection(x0, y0, x1, y1);
-
-	if (!xhair_t->value)
-		DrawCrosshairSection(x0, outer.top, x1, inner.top);
-
-	DrawCrosshairSection(x0, inner.bottom, x1, outer.bottom);
-	DrawCrosshairSection(outer.left, y0, inner.left, y1);
-	DrawCrosshairSection(inner.right, y0, outer.right, y1);
+	glColor4f(1, 1, 1, 1);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+	glDisable(GL_BLEND);
+	glEnable(GL_TEXTURE_2D);
 }
 
 int Hk_HudRedraw(float time, int intermission)

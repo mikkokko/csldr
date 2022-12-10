@@ -177,7 +177,7 @@ static void V_OffsetViewmodel(cl_entity_t *vm, vec3_t angles)
 
 	AngleVectors(angles, front, side, up);
 
-	if (!isSoftware && currentWeapon.m_iId == WEAPON_KNIFE && cl_mirror_knife->value)
+	if (!isSoftware && currentWeaponId == WEAPON_KNIFE && cl_mirror_knife->value)
 	{
 		x = -viewmodel_offset_x->value;
 	}

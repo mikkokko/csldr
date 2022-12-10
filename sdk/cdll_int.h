@@ -29,7 +29,7 @@ typedef struct
 	int bottom;
 } wrect_t;
 
-typedef int (*pfnUserMsgHook)(const char *, int iSize, void *);
+typedef int (*pfnUserMsgHook)(const char *, int, void *);
 
 /* was HSPRITE but that collided with windows sdk */
 typedef int hsprite_t;

@@ -20,6 +20,19 @@ int Msg_ReadByte(msg_read_t *ctx)
 	return val;
 }
 
+int Msg_ReadChar(msg_read_t *ctx)
+{
+	int val;
+
+	if (ctx->ofs + (int)sizeof(char) > ctx->size)
+		return 0;
+
+	val = *(char *)(&ctx->data[ctx->ofs]);
+	ctx->ofs += sizeof(char);
+
+	return val;
+}
+
 float Msg_ReadAngle(msg_read_t *ctx)
 {
 	int val;

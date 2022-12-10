@@ -15,7 +15,6 @@ extern int localTeam;
 
 extern int user1;
 extern int user2;
-extern int user3;
 
 extern int (*Og_MsgFunc_TeamInfo)(const char *pszName, int iSize, void *pbuf);
 int Hk_MsgFunc_TeamInfo(const char *pszName, int iSize, void *pbuf);

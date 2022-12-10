@@ -82,15 +82,16 @@ static void Inspect_f(void)
 	if (user1) /* spectating, don't inspect */
 		return;
 
+	/* currentWeapon can be used here because
+	this code is never called when spectating */
 	if (currentWeapon.m_fInReload || currentWeapon.m_fInSpecialReload)
 		return;
 
 	vm = gEngfuncs.GetViewModel();
-
 	if (!vm)
 		return;
 
-	switch (currentWeapon.m_iId)
+	switch (currentWeaponId)
 	{
 		/* these weapons have no inspect anims */
 		case WEAPON_NONE:
@@ -129,7 +130,7 @@ static void Inspect_f(void)
 	if (!studiohdr)
 		return;
 
-	sequence = LookupInspect(vm->curstate.sequence, currentWeapon.m_iId);
+	sequence = LookupInspect(vm->curstate.sequence, currentWeaponId);
 
 	if (sequence >= studiohdr->numseq)
 		return; /* no inspect animation in this model */
@@ -146,7 +147,7 @@ static bool IsIdleSequence(int seq)
 		return true;
 
 	/* handle idle animations that aren't 0 */
-	switch (currentWeapon.m_iId)
+	switch (currentWeaponId)
 	{
 		case WEAPON_ELITE:
 			return seq == ELITE_IDLE_LEFTEMPTY;

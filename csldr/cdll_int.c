@@ -36,6 +36,11 @@ static int Hk_HookUserMsg(const char *szMsgName, pfnUserMsgHook pfn)
 		Og_MsgFunc_Brass = pfn;
 		hook = Hk_MsgFunc_Brass;
 	}
+	else if (!strcmp(szMsgName, "CurWeapon"))
+	{
+		Og_MsgFunc_CurWeapon = pfn;
+		hook = Hk_MsgFunc_CurWeapon;
+	}
 
 	return gEngfuncs.pfnHookUserMsg(szMsgName, hook);
 }

@@ -32,7 +32,7 @@ static void UnflipKnife(float *value)
 	if (isSoftware)
 		return;
 
-	if (currentWeapon.m_iId != WEAPON_KNIFE || cl_mirror_knife->value)
+	if (currentWeaponId != WEAPON_KNIFE || cl_mirror_knife->value)
 		return;
 
 	*value = cl_righthand->value;
@@ -44,7 +44,7 @@ static void ReflipKnife(float value)
 	if (isSoftware)
 		return;
 
-	if (currentWeapon.m_iId != WEAPON_KNIFE || cl_mirror_knife->value)
+	if (currentWeaponId != WEAPON_KNIFE || cl_mirror_knife->value)
 		return;
 
 	cl_righthand->value = value;

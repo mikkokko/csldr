@@ -18,6 +18,23 @@ cvar_t *xhair_color_b;
 cvar_t *cl_crosshair_color;
 cvar_t *cl_crosshair_translucent;
 
+int currentWeaponId;
+
+int (*Og_MsgFunc_CurWeapon)(const char *pszName, int iSize, void *pbuf);
+
+int Hk_MsgFunc_CurWeapon(const char *name, int size, void *data)
+{
+	int state = ((byte *)data)[0];
+	int weaponId = ((char *)data)[1];
+
+	if (weaponId < 1)
+		currentWeaponId = 0;
+	else if (state)
+		currentWeaponId = weaponId;
+
+	return Og_MsgFunc_CurWeapon(name,size,data);
+}
+
 void HudInit(void)
 {
 	CVAR_ARHCIVE_FAST(xhair_enable, 0);
@@ -88,10 +105,10 @@ static void DrawCrosshair(void)
 	wrect_t outer;
 
 	/* dumb */
-	if (!currentWeapon.m_iId || (currentWeapon.m_iId == WEAPON_SCOUT) ||
-		(currentWeapon.m_iId == WEAPON_AWP) ||
-		(currentWeapon.m_iId == WEAPON_G3SG1) ||
-		(currentWeapon.m_iId == WEAPON_SG550))
+	if (!currentWeaponId || (currentWeaponId == WEAPON_SCOUT) ||
+		(currentWeaponId == WEAPON_AWP) ||
+		(currentWeaponId == WEAPON_G3SG1) ||
+		(currentWeaponId == WEAPON_SG550))
 		return;
 
 	scr.iSize = sizeof(SCREENINFO);

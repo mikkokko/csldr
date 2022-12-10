@@ -6,7 +6,6 @@ int localTeam;
 
 int user1;
 int user2;
-int user3;
 
 int (*Og_MsgFunc_TeamInfo)(const char *pszName, int iSize, void *pbuf);
 
@@ -40,7 +39,6 @@ void Hk_ProcessPlayerState(entity_state_t *dst, const entity_state_t *src)
 	{
 		user1 = src->iuser1;
 		user2 = src->iuser2;
-		user3 = src->iuser3;
 	}
 
 	cl_funcs.pProcessPlayerState(dst, src);

@@ -60,6 +60,7 @@
 | viewmodel_offset_y | Viewmodel's y offset. |
 | viewmodel_offset_z | Viewmodel's z offset. |
 | viewmodel_shift | Fixes the viewmodel shift when looking up and down. 1 disables the shift without fixing the viewmodel position, 2 disables the shift and fixes the viewmodel position. |
+| xhair_alpha | Crosshair's transparency (0-1). |
 | xhair_color_b | Crosshair color's blue value (0-1). |
 | xhair_color_g | Crosshair color's green value (0-1). |
 | xhair_color_r | Crosshair color's red value (0-1). |

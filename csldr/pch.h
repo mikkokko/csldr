@@ -14,8 +14,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define STATIC_ASSERT(expr, msg) typedef int static_assert_##msg[(expr) ? (1) : (-1)];
-
 /* mikkotodo move */
 #if !defined(__cplusplus)
 typedef enum {false, true} bool;

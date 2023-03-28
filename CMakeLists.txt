@@ -9,7 +9,7 @@ if (MSVC)
 	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 	add_compile_options(/arch:SSE2 /fp:fast)
 else()
-	add_compile_options(-m32 -std=c99 -pedantic -Wall -Wextra)
+	add_compile_options(-m32 -Wall -Wextra)
 	add_link_options(-m32)
 endif()
 

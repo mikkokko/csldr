@@ -219,7 +219,6 @@ static bool GetLagAngles(float time, vec3_t dest)
 		{
 			// can't lerp to these
 			VectorCopy(dest, angles->value);
-			gEngfuncs.Con_Printf("lerp dumy\n");
 		}
 		else
 		{

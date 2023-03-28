@@ -101,7 +101,7 @@ int Hk_StudioDrawModel(int flags)
 	SCREENINFO scr;
 	double top, aspect;
 	float fov, fov1, fov2;
-	float old_righthand;
+	float old_righthand = 0; /* shut the fuck up */
 
 	cl_entity_t *entity = IEngineStudio.GetCurrentEntity();
 

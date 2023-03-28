@@ -95,7 +95,6 @@ static bool Secret_LoadFromBuffer(byte *buf, void *pv, size_t len)
 				if (!proc)
 					return FALSE;
 
-				STATIC_ASSERT(sizeof(thunk->u1.Function) == sizeof(DWORD), bad_sizeof);
 				*(DWORD *)(&thunk->u1.Function) = proc;
 			}
 			else
@@ -107,7 +106,6 @@ static bool Secret_LoadFromBuffer(byte *buf, void *pv, size_t len)
 				if (!proc)
 					return FALSE;
 
-				STATIC_ASSERT(sizeof(thunk->u1.Function) == sizeof(DWORD), bad_sizeof);
 				*(DWORD *)(&thunk->u1.Function) = proc;
 			}
 

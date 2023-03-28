@@ -37,9 +37,10 @@
 - Inspect sequence indices are hardcoded for compatibility, it's always the sequence after the last default sequence. Check inspectAnims array in inspect.c if in doubt.
 
 ## Cvars and commands
+
 | Name | Description |
 |-|-|
-| camera_movement_interp | Smooths out camera movement when switching weapons. Recommended value is 0.1. Set to 0 to disable interpolation. |
+| camera_movement_interp | Smooths out camera movement when switching weapons. Recommended value is 0.1. Set to 0 to disable smoothing. |
 | camera_movement_scale | Camera movement scale. |
 | cl_bob_lower_amt | Specifies how much the viewmodel moves inwards for CS:GO style bob. |
 | cl_bobamt_lat | Lateral scale for CS:GO style bob. |
@@ -48,7 +49,7 @@
 | cl_mirror_knife | Mirrors the knife viewmodel. |
 | cl_rollangle | Viewmodel roll angle. |
 | cl_rollspeed | Viewmodel roll speed. |
-| fov_horplus | Enables Hor+ scaling for FOV. Fixes the FOV when playing with aspect ratios besides 4:3. |
+| fov_horplus | Enables Hor+ scaling for FOV. Fixes the FOV when playing with aspect ratios other than 4:3. |
 | fov_lerp | FOV interpolation time in seconds. |
 | lookat | Inspects weapon if the animation is present. |
 | mirror_shell | Switches the direction of shell ejects. |

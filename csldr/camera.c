@@ -56,13 +56,13 @@ static float UnpackScale(int frame, mstudioanim_t *anim, int offset)
 static void UnpackRotation(vec3_t angles, int frame, mstudiobone_t *bone, mstudioanim_t *anim)
 {
 	/* unpack the bone rotation */
-	angles[0] = DEGREES(bone->value[3] + bone->scale[3] *
+	angles[0] = Degrees(bone->value[3] + bone->scale[3] *
 		UnpackScale(frame, anim, anim->offset[3]));
 
-	angles[1] = DEGREES(bone->value[4] + bone->scale[4] *
+	angles[1] = Degrees(bone->value[4] + bone->scale[4] *
 		UnpackScale(frame, anim, anim->offset[4]));
 
-	angles[2] = DEGREES(bone->value[5] + bone->scale[5] *
+	angles[2] = Degrees(bone->value[5] + bone->scale[5] *
 		UnpackScale(frame, anim, anim->offset[5]));
 }
 
@@ -84,7 +84,7 @@ static int GetCameraBone(studiohdr_t *hdr)
 	return -1;
 }
 
-static bool CameraCalcMovement(cl_entity_t *vm, quat_t quat)
+static void CameraCalcMovement(cl_entity_t *vm, vec3_t angles)
 {
 	model_t *model;
 	studiohdr_t *hdr;
@@ -96,19 +96,20 @@ static bool CameraCalcMovement(cl_entity_t *vm, quat_t quat)
 	float anim_time, t;
 	int frame, next_frame;
 	vec3_t angles1, angles2;
-	quat_t quat1, quat2;
+
+	VectorClear(angles);
 
 	model = vm->model;
 	if (!model)
-		return false;
+		return;
 
 	hdr = (studiohdr_t *)model->cache.data;
 	if (!hdr)
-		return false;
+		return;
 
 	bone_index = GetCameraBone(hdr);
 	if (bone_index == -1)
-		return false;
+		return;
 
 	sequence = vm->curstate.sequence;
 	if (sequence >= hdr->numseq)
@@ -139,58 +140,64 @@ static bool CameraCalcMovement(cl_entity_t *vm, quat_t quat)
 	UnpackRotation(angles1, frame, bone, anim);
 	UnpackRotation(angles2, next_frame, bone, anim);
 
-	AnglesToQuat(angles1, quat1);
-	AnglesToQuat(angles2, quat2);
-
-	QuatSlerp(quat1, quat2, t, quat);
-	return true;
+	AngleLerp(angles1, angles2, t, angles);
+	return;
 }
 
 void CameraApplyMovement(ref_params_t *pparams)
 {
-	quat_t quat;
-	vec3_t angles;
-	float scale, timeStep;
-	float newTime, frameTime;
-	static float lastTime;
-	static float accum;
-	static quat_t prevQuat, curQuat;
+	static studiohdr_t *last_hdr;
+	static vec3_t prevMove, curMove;
+	static float lerpTime;
 
-	if (!camera_movement_interp->value)
+	vec3_t new_movement;
+	float scale;
+	cl_entity_t *vm;
+	model_t *model;
+	studiohdr_t *hdr;
+
+	vm = gEngfuncs.GetViewModel();
+	CameraCalcMovement(vm, new_movement);
+
+	/* check if weapon has changed */
+	model = vm->model;
+	hdr = model ? (studiohdr_t *)model->cache.data : NULL;
+	
+	if (hdr != last_hdr)
 	{
-		QuatClear(quat);
-		CameraCalcMovement(gEngfuncs.GetViewModel(), quat);
+		last_hdr = hdr;
+
+		if (camera_movement_interp->value)
+		{
+			lerpTime = clientTime;
+			VectorCopy(prevMove, curMove);
+		}
+	}
+	
+	if (lerpTime)
+	{
+		float frac = (clientTime - lerpTime) / camera_movement_interp->value;
+
+		if (frac < 0 || frac >= 1)
+		{
+			/* just copy */
+			VectorCopy(curMove, new_movement);
+			lerpTime = 0;
+		}
+		else
+		{
+			AngleLerp(prevMove, new_movement, frac, curMove);
+		}
 	}
 	else
 	{
-		newTime = clientTime;
-
-		/* fix time if needed */
-		if (newTime < lastTime)
-			lastTime = newTime;
-
-		frameTime = newTime - lastTime;
-		lastTime = newTime;
-
-		accum += frameTime;
-
-		timeStep = 1.0f / camera_movement_interp->value;
-
-		while (accum >= timeStep)
-		{
-			QuatCopy(prevQuat, curQuat);
-			QuatClear(curQuat);
-			CameraCalcMovement(gEngfuncs.GetViewModel(), curQuat);
-			accum -= timeStep;
-		}
-
-		QuatSlerp(prevQuat, curQuat, accum / timeStep, quat);
+		/* just copy */
+		VectorCopy(curMove, new_movement);
 	}
 
-	QuatToAngles(quat, angles);
 	scale = camera_movement_scale->value;
 
-	pparams->viewangles[0] += angles[0] * scale;
-	pparams->viewangles[1] += angles[1] * scale;
-	pparams->viewangles[2] += angles[2] * scale;
+	pparams->viewangles[0] += curMove[0] * scale;
+	pparams->viewangles[1] += curMove[1] * scale;
+	pparams->viewangles[2] += curMove[2] * scale;
 }

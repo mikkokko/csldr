@@ -73,7 +73,7 @@ TEMPENTITY *Hk_TempModel(float *pos,
 
 		recalcShell = false;
 
-		rot = RADIANS(shellRotation);
+		rot = Radians(shellRotation);
 
 		sine = sinf(rot);
 		cosine = cosf(rot);

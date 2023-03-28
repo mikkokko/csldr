@@ -23,8 +23,8 @@ static float CalcVerticalFov(float fov)
 	/* hardcoded 4:3 aspect ratio so i don't need to do hor+ on vm fov */
 	float x;
 
-	x = 4.0f / tanf(RADIANS(fov) / 2);
-	return DEGREES(atanf(3.0f / x)) * 2;
+	x = 4.0f / tanf(Radians(fov) / 2);
+	return Degrees(atanf(3.0f / x)) * 2;
 }
 
 static void UnflipKnife(float *value)
@@ -124,7 +124,7 @@ int Hk_StudioDrawModel(int flags)
 		fov2 = CLAMP(fov1, 1, 170);
 		fov = CalcVerticalFov(fov2);
 
-		top = tan(RADIANS(fov) / 2) * Z_NEAR;
+		top = tan(Radians(fov) / 2) * Z_NEAR;
 
 		glFrustum(-top * aspect, top * aspect, -top, top, Z_NEAR, Z_FAR);
 

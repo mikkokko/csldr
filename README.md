@@ -39,7 +39,7 @@
 ## Cvars and commands
 | Name | Description |
 |-|-|
-| camera_movement_interp | Smooths out camera movement. Recommended value is 30. Set to 0 to update camera movement every frame (no interpolation). |
+| camera_movement_interp | Smooths out camera movement when switching weapons. Recommended value is 0.1. Set to 0 to disable interpolation. |
 | camera_movement_scale | Camera movement scale. |
 | cl_bob_lower_amt | Specifies how much the viewmodel moves inwards for CS:GO style bob. |
 | cl_bobamt_lat | Lateral scale for CS:GO style bob. |
@@ -54,7 +54,8 @@
 | mirror_shell | Switches the direction of shell ejects. |
 | viewmodel_fov | Viewmodel FOV. |
 | viewmodel_hands | Specifies an external hand model, for example "v_hands.mdl". Can be disabled with an empty string (""). |
-| viewmodel_lag_scale | Scale of the viewmodel sway. |
+| viewmodel_lag_style | Viewmodel sway style. 0 is off, 1 is HL2 style and 2 is CS:S/CS:GO style. |
+| viewmodel_lag_scale | Scale of the viewmodel sway (HL2 sway only). |
 | viewmodel_lag_speed | Speed of the viewmodel sway. |
 | viewmodel_offset_x | Viewmodel's x offset. |
 | viewmodel_offset_y | Viewmodel's y offset. |

@@ -1,5 +1,10 @@
 #include "pch.h"
 
+/* mikkotodo: other flags can hide the crosshair as well, however
+the way those work is more complicated than just checking the flag
+before drawing the crosshair */
+#define HIDEHUD_CROSSHAIR (1 << 6)
+
 bool can_xhair;
 
 cvar_t *xhair_enable;
@@ -21,20 +26,29 @@ cvar_t *cl_crosshair_translucent;
 cvar_t *hud_draw;
 
 int currentWeaponId;
+static int hideHudFlags;
 
 int (*Og_MsgFunc_CurWeapon)(const char *pszName, int iSize, void *pbuf);
 
-int Hk_MsgFunc_CurWeapon(const char *name, int size, void *data)
+int Hk_MsgFunc_CurWeapon(const char *pszName, int iSize, void *pbuf)
 {
-	int state = ((byte *)data)[0];
-	int weaponId = ((char *)data)[1];
+	int state = ((byte *)pbuf)[0];
+	int weaponId = ((char *)pbuf)[1];
 
 	if (weaponId < 1)
 		currentWeaponId = 0;
 	else if (state)
 		currentWeaponId = weaponId;
 
-	return Og_MsgFunc_CurWeapon(name,size,data);
+	return Og_MsgFunc_CurWeapon(pszName, iSize, pbuf);
+}
+
+int (*Og_MsgFunc_HideWeapon)(const char *pszName, int iSize, void *pbuf);
+
+int Hk_MsgFunc_HideWeapon(const char *pszName, int iSize, void *pbuf)
+{
+	hideHudFlags = ((byte *)pbuf)[0];
+	return Og_MsgFunc_HideWeapon(pszName, iSize, pbuf);
 }
 
 void HudInit(void)
@@ -207,8 +221,14 @@ int Hk_HudRedraw(float time, int intermission)
 	float old_trans;
 	char old_color[2];
 
-	if (!isOpenGL || !can_xhair || !xhair_enable->value || (hud_draw && !hud_draw->value))
+	if (!isOpenGL
+		|| !can_xhair
+		|| !xhair_enable->value
+		|| (hud_draw && !hud_draw->value)
+		|| (hideHudFlags & HIDEHUD_CROSSHAIR))
+	{
 		return cl_funcs.pHudRedrawFunc(time, intermission);
+	}
 
 	/*  stupid hack, the memory is always writable though */
 	color_str = (char *)cl_crosshair_color->string;
@@ -234,4 +254,12 @@ int Hk_HudRedraw(float time, int intermission)
 	DrawCrosshair();
 
 	return 1;
+}
+
+int Hk_HudVidInit(void)
+{
+	currentWeaponId = 0;
+	hideHudFlags = 0;
+
+	return cl_funcs.pHudVidInitFunc();
 }

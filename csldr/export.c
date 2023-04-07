@@ -232,8 +232,8 @@ EXPORT int HUD_UpdateClientData(client_data_t *pcldata, float flTime)
 
 EXPORT int HUD_VidInit(void)
 {
-	/* pass through */
-	return cl_funcs.pHudVidInitFunc();
+	/* hooked */
+	return Hk_HudVidInit();
 }
 
 EXPORT void HUD_VoiceStatus(int entindex, qboolean bTalking)

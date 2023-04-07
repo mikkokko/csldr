@@ -38,19 +38,19 @@ int Hk_MsgFunc_CurWeapon(const char *name, int size, void *data)
 
 void HudInit(void)
 {
-	CVAR_ARHCIVE_FAST(xhair_enable, 0);
+	CVAR_ARCHIVE_FAST(xhair_enable, 0);
 
-	CVAR_ARHCIVE_FAST(xhair_gap, 4);
-	CVAR_ARHCIVE_FAST(xhair_size, 4);
-	CVAR_ARHCIVE_FAST(xhair_thick, 0);
-	CVAR_ARHCIVE_FAST(xhair_pad, 0);
-	CVAR_ARHCIVE_FAST(xhair_dot, 0);
-	CVAR_ARHCIVE_FAST(xhair_t, 0);
+	CVAR_ARCHIVE_FAST(xhair_gap, 4);
+	CVAR_ARCHIVE_FAST(xhair_size, 4);
+	CVAR_ARCHIVE_FAST(xhair_thick, 0);
+	CVAR_ARCHIVE_FAST(xhair_pad, 0);
+	CVAR_ARCHIVE_FAST(xhair_dot, 0);
+	CVAR_ARCHIVE_FAST(xhair_t, 0);
 
-	CVAR_ARHCIVE_FAST(xhair_color_r, 0);
-	CVAR_ARHCIVE_FAST(xhair_color_g, 1);
-	CVAR_ARHCIVE_FAST(xhair_color_b, 0);
-	CVAR_ARHCIVE_FAST(xhair_alpha, 1);
+	CVAR_ARCHIVE_FAST(xhair_color_r, 0);
+	CVAR_ARCHIVE_FAST(xhair_color_g, 1);
+	CVAR_ARCHIVE_FAST(xhair_color_b, 0);
+	CVAR_ARCHIVE_FAST(xhair_alpha, 1);
 
 	/* string spoof */
 	cl_crosshair_color = gEngfuncs.pfnGetCvarPointer("cl_crosshair_color");

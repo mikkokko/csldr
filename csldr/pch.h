@@ -48,12 +48,12 @@ typedef struct
 #define UNIMPLEMENTED_TYPE(name) typedef void name
 
 /* mfw */
-#define CVAR_ARHCIVE_FAST_STR(name, str) \
+#define CVAR_ARCHIVE_FAST_STR(name, str) \
 	name = gEngfuncs.pfnRegisterVariable(#name, str, FCVAR_ARCHIVE)
 
 /* bruh */
-#define CVAR_ARHCIVE_FAST(name, value) \
-	CVAR_ARHCIVE_FAST_STR(name, #value)
+#define CVAR_ARCHIVE_FAST(name, value) \
+	CVAR_ARCHIVE_FAST_STR(name, #value)
 
 #include "maths.h"
 #include "msg.h"

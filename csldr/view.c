@@ -31,14 +31,14 @@ cvar_t *cl_mirror_knife;
 
 void ViewInit(void)
 {
-	CVAR_ARHCIVE_FAST(viewmodel_fov, 68);
-	CVAR_ARHCIVE_FAST(viewmodel_shift, 0);
-	CVAR_ARHCIVE_FAST(viewmodel_offset_x, 0);
-	CVAR_ARHCIVE_FAST(viewmodel_offset_y, 0);
-	CVAR_ARHCIVE_FAST(viewmodel_offset_z, 0);
-	CVAR_ARHCIVE_FAST_STR(viewmodel_hands, "");
+	CVAR_ARCHIVE_FAST(viewmodel_fov, 68);
+	CVAR_ARCHIVE_FAST(viewmodel_shift, 0);
+	CVAR_ARCHIVE_FAST(viewmodel_offset_x, 0);
+	CVAR_ARCHIVE_FAST(viewmodel_offset_y, 0);
+	CVAR_ARCHIVE_FAST(viewmodel_offset_z, 0);
+	CVAR_ARCHIVE_FAST_STR(viewmodel_hands, "");
 
-	CVAR_ARHCIVE_FAST(cl_bobstyle, 0);
+	CVAR_ARCHIVE_FAST(cl_bobstyle, 0);
 
 	cl_bobcycle = gEngfuncs.pfnGetCvarPointer("cl_bobcycle");
 	cl_bobup = gEngfuncs.pfnGetCvarPointer("cl_bobup");
@@ -47,21 +47,21 @@ void ViewInit(void)
 	cl_bobcycle->flags |= FCVAR_ARCHIVE;
 	cl_bobup->flags |= FCVAR_ARCHIVE;
 
-	CVAR_ARHCIVE_FAST(cl_bobamt_vert, 0.13);
-	CVAR_ARHCIVE_FAST(cl_bobamt_lat, 0.32);
-	CVAR_ARHCIVE_FAST(cl_bob_lower_amt, 8);
+	CVAR_ARCHIVE_FAST(cl_bobamt_vert, 0.13);
+	CVAR_ARCHIVE_FAST(cl_bobamt_lat, 0.32);
+	CVAR_ARCHIVE_FAST(cl_bob_lower_amt, 8);
 
-	CVAR_ARHCIVE_FAST(cl_rollangle, 2.0);
-	CVAR_ARHCIVE_FAST(cl_rollspeed, 200);
+	CVAR_ARCHIVE_FAST(cl_rollangle, 2.0);
+	CVAR_ARCHIVE_FAST(cl_rollspeed, 200);
 
-	CVAR_ARHCIVE_FAST(viewmodel_lag_style, 1);
-	CVAR_ARHCIVE_FAST(viewmodel_lag_scale, 1.0);
-	CVAR_ARHCIVE_FAST(viewmodel_lag_speed, 8.0);
+	CVAR_ARCHIVE_FAST(viewmodel_lag_style, 1);
+	CVAR_ARCHIVE_FAST(viewmodel_lag_scale, 1.0);
+	CVAR_ARCHIVE_FAST(viewmodel_lag_speed, 8.0);
 
-	CVAR_ARHCIVE_FAST(fov_horplus, 1);
-	CVAR_ARHCIVE_FAST(fov_lerp, 0.1);
+	CVAR_ARCHIVE_FAST(fov_horplus, 1);
+	CVAR_ARCHIVE_FAST(fov_lerp, 0.1);
 
-	CVAR_ARHCIVE_FAST(cl_mirror_knife, 1);
+	CVAR_ARCHIVE_FAST(cl_mirror_knife, 1);
 }
 
 struct

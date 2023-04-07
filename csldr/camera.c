@@ -7,8 +7,8 @@ cvar_t *camera_movement_interp;
 
 void CameraInit(void)
 {
-	CVAR_ARHCIVE_FAST(camera_movement_scale, 1);
-	CVAR_ARHCIVE_FAST(camera_movement_interp, 0);
+	CVAR_ARCHIVE_FAST(camera_movement_scale, 1);
+	CVAR_ARCHIVE_FAST(camera_movement_interp, 0);
 }
 
 static mstudioanim_t *GetAnim(studiohdr_t *hdr, model_t *model, mstudioseqdesc_t *seqdesc)

@@ -18,6 +18,7 @@ cvar_t *xhair_alpha;
 
 cvar_t *cl_crosshair_color;
 cvar_t *cl_crosshair_translucent;
+cvar_t *hud_draw;
 
 int currentWeaponId;
 
@@ -57,6 +58,8 @@ void HudInit(void)
 
 	/* value spoof */
 	cl_crosshair_translucent = gEngfuncs.pfnGetCvarPointer("cl_crosshair_translucent");
+
+	hud_draw = gEngfuncs.pfnGetCvarPointer("hud_draw");
 
 	can_xhair = (cl_crosshair_color && cl_crosshair_translucent);
 }
@@ -204,7 +207,7 @@ int Hk_HudRedraw(float time, int intermission)
 	float old_trans;
 	char old_color[2];
 
-	if (!isOpenGL || !can_xhair || !xhair_enable->value)
+	if (!isOpenGL || !can_xhair || !xhair_enable->value || (hud_draw && !hud_draw->value))
 		return cl_funcs.pHudRedrawFunc(time, intermission);
 
 	/*  stupid hack, the memory is always writable though */

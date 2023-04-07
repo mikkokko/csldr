@@ -1,10 +1,13 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.15)
 
 project(csldr C)
 
 set(OUTDIR CACHE STRING "Directory to output library to")
 
 if (MSVC)
+	# /MT or /MTd on debug
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+	
 	add_compile_options(/W4)
 	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 	add_compile_options(/arch:SSE2 /fp:fast)

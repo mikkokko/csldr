@@ -63,18 +63,18 @@ void HudInit(void)
 
 /* mikkotodo clean all of this up some day */
 
-static float ScaleForRes(float value, float height)
+static int ScaleForRes(int value, int height)
 {
 	/* "default" resolution is 640x480 */
-	return value * (height / 480);
+	return (int)roundf((float)value * ((float)height / 480.0f));
 }
 
-static void DrawCrosshairSection(float x0, float y0, float x1, float y1)
+static void DrawCrosshairSection(int x0, int y0, int x1, int y1)
 {
-	float top_left[2] = { x0, y0 };
-	float top_right[2] = { x1, y0 };
-	float bottom_right[2] = { x1, y1 };
-	float bottom_left[2] = { x0, y1 };
+	int top_left[2] = { x0, y0 };
+	int top_right[2] = { x1, y0 };
+	int bottom_right[2] = { x1, y1 };
+	int bottom_left[2] = { x0, y1 };
 
 	glColor4f(xhair_color_r->value,
 		xhair_color_g->value,
@@ -82,59 +82,51 @@ static void DrawCrosshairSection(float x0, float y0, float x1, float y1)
 		xhair_alpha->value);
 
 	glBegin(GL_TRIANGLE_STRIP);
-	glVertex2fv(top_left);
-	glVertex2fv(bottom_left);
-	glVertex2fv(top_right);
-	glVertex2fv(bottom_right);
+	glVertex2iv(top_left);
+	glVertex2iv(bottom_left);
+	glVertex2iv(top_right);
+	glVertex2iv(bottom_right);
 	glEnd();
 }
 
-static void DrawCrosshairPadding(float x0, float y0, float x1, float y1)
+static void DrawCrosshairPadding(int x0, int y0, int x1, int y1)
 {
-	float pad = roundf(xhair_pad->value);
+	int pad = (int)xhair_pad->value;
 
-	float out_top_left[2] = { x0 - pad, y0 - pad };
-	float out_top_right[2] = { x1 + pad, y0 - pad };
-	float out_bottom_right[2] = { x1 + pad, y1 + pad };
-	float out_bottom_left[2] = { x0 - pad, y1 + pad };
-	float in_top_left[2] = { x0, y0 };
-	float in_top_right[2] = { x1, y0 };
-	float in_bottom_right[2] = { x1, y1 };
-	float in_bottom_left[2] = { x0, y1 };
+	int out_top_left[2] = { x0 - pad, y0 - pad };
+	int out_top_right[2] = { x1 + pad, y0 - pad };
+	int out_bottom_right[2] = { x1 + pad, y1 + pad };
+	int out_bottom_left[2] = { x0 - pad, y1 + pad };
+	int in_top_left[2] = { x0, y0 };
+	int in_top_right[2] = { x1, y0 };
+	int in_bottom_right[2] = { x1, y1 };
+	int in_bottom_left[2] = { x0, y1 };
 
 	glColor4f(0, 0, 0, xhair_alpha->value);
 
 	glBegin(GL_TRIANGLE_STRIP);
-	glVertex2fv(in_bottom_left);
-	glVertex2fv(out_bottom_right);
-	glVertex2fv(in_bottom_right);
-	glVertex2fv(out_top_right);
-	glVertex2fv(in_top_right);
-	glVertex2fv(out_top_left);
-	glVertex2fv(in_top_left);
-	glVertex2fv(out_bottom_left);
-	glVertex2fv(in_bottom_left);
-	glVertex2fv(out_bottom_right);
+	glVertex2iv(in_bottom_left);
+	glVertex2iv(out_bottom_right);
+	glVertex2iv(in_bottom_right);
+	glVertex2iv(out_top_right);
+	glVertex2iv(in_top_right);
+	glVertex2iv(out_top_left);
+	glVertex2iv(in_top_left);
+	glVertex2iv(out_bottom_left);
+	glVertex2iv(in_bottom_left);
+	glVertex2iv(out_bottom_right);
 	glEnd();
 }
-
-typedef struct
-{
-	float left;
-	float right;
-	float top;
-	float bottom;
-} frect_t;
 
 static void DrawCrosshair(void)
 {
 	SCREENINFO scr;
-	float width, height;
-	float center_x, center_y;
-	float gap, length, thickness;
-	float y0, y1, x0, x1;
-	frect_t inner;
-	frect_t outer;
+	int width, height;
+	int center_x, center_y;
+	int gap, length, thickness;
+	int y0, y1, x0, x1;
+	wrect_t inner;
+	wrect_t outer;
 
 	/* dumb */
 	if (!currentWeaponId || (currentWeaponId == WEAPON_SCOUT) ||
@@ -145,32 +137,32 @@ static void DrawCrosshair(void)
 
 	scr.iSize = sizeof(SCREENINFO);
 	gEngfuncs.pfnGetScreenInfo(&scr);
-	width = (float)scr.iWidth;
-	height = (float)scr.iHeight;
+	width = scr.iWidth;
+	height = scr.iHeight;
 
 	/* calculate coordinates */
 	center_x = width / 2;
 	center_y = height / 2;
 
-	gap = ScaleForRes(xhair_gap->value, height);
-	length = ScaleForRes(xhair_size->value, height);
-	thickness = ScaleForRes(xhair_thick->value, height);
+	gap = ScaleForRes((int)xhair_gap->value, height);
+	length = ScaleForRes((int)xhair_size->value, height);
+	thickness = ScaleForRes((int)xhair_thick->value, height);
 	thickness = MAX(1, thickness);
 
-	inner.left = roundf(center_x - gap - thickness / 2);
-	inner.right = roundf(inner.left + 2 * gap + thickness);
-	inner.top = roundf(center_y - gap - thickness / 2);
-	inner.bottom = roundf(inner.top + 2 * gap + thickness);
+	inner.left = (center_x - gap - thickness / 2);
+	inner.right = (inner.left + 2 * gap + thickness);
+	inner.top = (center_y - gap - thickness / 2);
+	inner.bottom = (inner.top + 2 * gap + thickness);
 
-	outer.left = roundf(inner.left - length);
-	outer.right = roundf(inner.right + length);
-	outer.top = roundf(inner.top - length);
-	outer.bottom = roundf(inner.bottom + length);
+	outer.left = (inner.left - length);
+	outer.right = (inner.right + length);
+	outer.top = (inner.top - length);
+	outer.bottom = (inner.bottom + length);
 
-	y0 = roundf(center_y - thickness / 2);
-	x0 = roundf(center_x - thickness / 2);
-	y1 = roundf(y0 + thickness);
-	x1 = roundf(x0 + thickness);
+	y0 = (center_y - thickness / 2);
+	x0 = (center_x - thickness / 2);
+	y1 = (y0 + thickness);
+	x1 = (x0 + thickness);
 
 	glDisable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);

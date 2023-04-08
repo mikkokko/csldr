@@ -80,10 +80,10 @@ void HudInit(void)
 
 /* mikkotodo clean all of this up some day */
 
-static int ScaleForRes(int value, int height)
+static int ScaleForRes(float value, int height)
 {
 	/* "default" resolution is 640x480 */
-	return (int)roundf((float)value * ((float)height / 480.0f));
+	return (int)roundf(value * ((float)height / 480.0f));
 }
 
 static void DrawCrosshairSection(int x0, int y0, int x1, int y1)
@@ -106,10 +106,8 @@ static void DrawCrosshairSection(int x0, int y0, int x1, int y1)
 	glEnd();
 }
 
-static void DrawCrosshairPadding(int x0, int y0, int x1, int y1)
+static void DrawCrosshairPadding(int pad, int x0, int y0, int x1, int y1)
 {
-	int pad = (int)xhair_pad->value;
-
 	int out_top_left[2] = { x0 - pad, y0 - pad };
 	int out_top_right[2] = { x1 + pad, y0 - pad };
 	int out_bottom_right[2] = { x1 + pad, y1 + pad };
@@ -161,9 +159,9 @@ static void DrawCrosshair(void)
 	center_x = width / 2;
 	center_y = height / 2;
 
-	gap = ScaleForRes((int)xhair_gap->value, height);
-	length = ScaleForRes((int)xhair_size->value, height);
-	thickness = ScaleForRes((int)xhair_thick->value, height);
+	gap = ScaleForRes(xhair_gap->value, height);
+	length = ScaleForRes(xhair_size->value, height);
+	thickness = ScaleForRes(xhair_thick->value, height);
 	thickness = MAX(1, thickness);
 
 	inner.left = (center_x - gap - thickness / 2);
@@ -198,15 +196,18 @@ static void DrawCrosshair(void)
 	/* draw padding if wanted */
 	if (xhair_pad->value)
 	{
+		/* don't scale this */
+		int pad = (int)xhair_pad->value;
+
 		if (xhair_dot->value)
-			DrawCrosshairPadding(x0, y0, x1, y1);
+			DrawCrosshairPadding(pad, x0, y0, x1, y1);
 
 		if (!xhair_t->value)
-			DrawCrosshairPadding(x0, outer.top, x1, inner.top);
+			DrawCrosshairPadding(pad, x0, outer.top, x1, inner.top);
 
-		DrawCrosshairPadding(x0, inner.bottom, x1, outer.bottom);
-		DrawCrosshairPadding(outer.left, y0, inner.left, y1);
-		DrawCrosshairPadding(inner.right, y0, outer.right, y1);
+		DrawCrosshairPadding(pad, x0, inner.bottom, x1, outer.bottom);
+		DrawCrosshairPadding(pad, outer.left, y0, inner.left, y1);
+		DrawCrosshairPadding(pad, inner.right, y0, outer.right, y1);
 	}
 
 	glColor4f(1, 1, 1, 1);

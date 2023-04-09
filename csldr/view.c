@@ -265,13 +265,16 @@ static void V_OffsetViewmodel(cl_entity_t *vm, vec3_t front, vec3_t side, vec3_t
 		x = -viewmodel_offset_x->value;
 	else
 		x = viewmodel_offset_x->value;
+	
+	if (!cl_righthand->value)
+		x = -x;
 
 	y = viewmodel_offset_y->value;
-	z = viewmodel_offset_z->value;
+	z = -viewmodel_offset_z->value;
 
-	VectorMA(vm->origin, side, x);
-	VectorMA(vm->origin, front, y);
-	VectorMA(vm->origin, up, z);
+	VectorMA_2(vm->origin, side, x);
+	VectorMA_2(vm->origin, front, y);
+	VectorMA_2(vm->origin, up, z);
 }
 
 void Hk_CalcRefdef(ref_params_t *pparams)

@@ -81,3 +81,11 @@ typedef struct
 	const char *entities;
 	cache_user_t cache;
 } model_t;
+
+typedef struct
+{
+	int ambientlight;
+	int shadelight;
+	vec3_t color;
+	float *plightvec;
+} alight_t;

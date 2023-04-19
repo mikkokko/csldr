@@ -83,7 +83,11 @@ void Hk_HudInit(void)
 	const char *gamedir;
 
 	cl_funcs.pHudInitFunc();
+	
+	if (!gladLoadGL())
+		Plat_Error("Could not initialize OpenGL\n");
 
+	Mem_Init();
 	ViewInit();
 	HudInit();
 	InspectInit();
@@ -108,6 +112,7 @@ void Hk_HudInit(void)
 void Hk_HudShutdown(void)
 {
 	cl_funcs.pShutdown();
+	Mem_Shutdown();
 }
 
 /*
@@ -141,6 +146,9 @@ void Hk_HudFrame(double time)
 			lw_bitched = false;
 	}
 
+	// mikkotodo might be necessary again if we need extremely expensive tangent calc
+	if (studio_fastpath)
+		UpdateStudioCaches();
 
 	clientTime = gEngfuncs.GetClientTime();
 	cl_funcs.pHudFrame(time);

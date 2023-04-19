@@ -1,5 +1,4 @@
 UNIMPLEMENTED_TYPE(player_info_t);
-UNIMPLEMENTED_TYPE(alight_t);
 
 typedef struct
 {

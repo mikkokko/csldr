@@ -2,17 +2,37 @@ cmake_minimum_required(VERSION 3.15)
 
 project(csldr C)
 
-set(OUTDIR CACHE STRING "Directory to output library to")
-
 if (MSVC)
 	# /MT or /MTd on debug
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-	
+
 	add_compile_options(/W4)
 	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-	add_compile_options(/arch:SSE2 /fp:fast)
+
+	# most of these are enabled implicitly but we set them anyway
+	if (NOT DEBUG_BUILD)
+		add_compile_options(
+			/O2
+			/Ob2
+			/Oi
+			/Ot
+			/Oy
+			/GL
+			/GS-
+			/Gy
+			/Gw
+			/arch:SSE2 # x86
+			/fp:fast
+			/fp:except-)
+	
+		add_link_options(
+			/OPT:REF
+			/OPT:ICF
+			/LTCG)
+	endif()
 else()
-	add_compile_options(-m32 -Wall -Wextra)
+	# just use -march=native, everyone should build this themselves
+	add_compile_options(-m32 -Wall -Wextra -Ofast -march=native)
 	add_link_options(-m32)
 endif()
 
@@ -25,7 +45,12 @@ set(SRCDIR ${CMAKE_CURRENT_LIST_DIR})
 file(GLOB CSLDR_SRC ${SRCDIR}/csldr/*.c)
 file(GLOB CSLDR_HDR ${SRCDIR}/csldr/*.h)
 
-add_library(csldr SHARED ${CSLDR_SRC} ${CSLDR_HDR})
+add_library(csldr SHARED
+	${CSLDR_SRC}
+	${CSLDR_HDR}
+	${SRCDIR}/external/glad/src/glad.c)
+
+target_include_directories(csldr PRIVATE ${SRCDIR}/external/glad/include)
 
 if (MSVC)
 	foreach(src ${CSLDR_SRC})
@@ -36,13 +61,13 @@ if (MSVC)
 endif()
 
 if (WIN32)
+	# still needed for wglGetCurrentContext...
 	target_link_libraries(csldr PRIVATE opengl32)
 endif()
 
 set_target_properties(csldr PROPERTIES OUTPUT_NAME "client")
 set_target_properties(csldr PROPERTIES PREFIX "")
 
-# from csgo-lite
 if (OUTDIR)
 	add_custom_command(TARGET csldr POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy

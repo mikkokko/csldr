@@ -1,4 +1,12 @@
-#define STUDIO_LOOPING 0x0001
+#define STUDIO_NF_FLATSHADE (1<<0)
+#define STUDIO_NF_CHROME (1<<1)
+#define STUDIO_NF_FULLBRIGHT (1<<2)
+#define STUDIO_NF_NOMIPS (1<<3)
+#define STUDIO_NF_ALPHA (1<<4)
+#define STUDIO_NF_ADDITIVE (1<<5)
+#define STUDIO_NF_MASKED (1<<6)
+
+#define STUDIO_LOOPING (1<<0)
 
 typedef struct
 {
@@ -140,3 +148,29 @@ typedef struct
 	int height;
 	int index;
 } mstudiotexture_t;
+
+typedef struct
+{
+	char name[64];
+	int type;
+	float boundingradius;
+	int nummesh;
+	int meshindex;
+	int numverts;
+	int vertinfoindex;
+	int vertindex;
+	int numnorms;
+	int norminfoindex;
+	int normindex;
+	int numgroups;
+	int groupindex;
+} mstudiomodel_t;
+
+typedef struct
+{
+	int numtris;
+	int triindex;
+	int skinref;
+	int numnorms;
+	int normindex;
+} mstudiomesh_t;

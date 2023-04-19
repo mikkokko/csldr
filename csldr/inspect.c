@@ -1,8 +1,8 @@
 #include "pch.h"
 
-float inspectEndTime;
-float oldViewAnimTime;
-int oldViewSequence;
+static float inspectEndTime;
+static float oldViewAnimTime;
+static int oldViewSequence;
 
 static void SetInspectTime(studiohdr_t *hdr, int seq)
 {
@@ -19,7 +19,7 @@ static void SetInspectTime(studiohdr_t *hdr, int seq)
 /* temp, makes this easier to look at */
 #define INSPECT_NO 0
 
-int inspectAnims[] =
+static int inspectAnims[] =
 {
 	INSPECT_NO, /* none */
 	7, /* p228 */

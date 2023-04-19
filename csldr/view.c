@@ -1,5 +1,7 @@
 #include "pch.h"
 
+vec3_t v_vieworg;
+
 cvar_t *viewmodel_fov;
 cvar_t *viewmodel_shift;
 cvar_t *viewmodel_offset_x;
@@ -279,6 +281,8 @@ static void V_OffsetViewmodel(cl_entity_t *vm, vec3_t front, vec3_t side, vec3_t
 
 void Hk_CalcRefdef(ref_params_t *pparams)
 {
+	VectorCopy(v_vieworg, pparams->vieworg);
+
 	pparams->movevars->rollangle = cl_rollangle->value;
 	pparams->movevars->rollspeed = cl_rollspeed->value;
 
@@ -340,9 +344,6 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 			vm->curstate.angles[1] = vm->angles[1];
 			vm->curstate.angles[2] = vm->angles[2];
 		}
-	
-		//if (viewmodel_lag_scale->value)
-		//	V_AddLag(pparams, vm->origin, front);
 
 		switch ((int)viewmodel_lag_style->value)
 		{

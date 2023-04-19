@@ -20,4 +20,4 @@ void *Plat_Dlopen(const char *filename);
 void *Plat_Dlsym(void *handle, const char *name);
 void Plat_Dlclose(void *handle);
 void Plat_CurrentModuleName(char *name, size_t size);
-void Plat_Error(const char *error);
+void Plat_Error(const char *fmt, ...);

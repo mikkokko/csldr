@@ -2,7 +2,9 @@
 
 #if defined(_WIN32)
 
-HMODULE hModule;
+#include <windows.h>
+
+static HMODULE hModule;
 
 void *Plat_Dlopen(const char *filename)
 {
@@ -26,9 +28,16 @@ void Plat_CurrentModuleName(char *name, size_t size)
 	GetModuleFileNameA(hModule, name, size);
 }
 
-void Plat_Error(const char *error)
+void Plat_Error(const char *fmt, ...)
 {
-	MessageBoxA(NULL, error, "Error", MB_OK);
+	va_list ap;
+	char buffer[1024];
+
+	va_start(ap, fmt);
+	vsnprintf(buffer, sizeof(buffer), fmt, ap);
+	va_end(ap);
+
+	MessageBoxA(NULL, buffer, "Error", MB_OK);
 	ExitProcess(1);
 }
 

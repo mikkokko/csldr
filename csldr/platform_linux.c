@@ -30,9 +30,16 @@ void Plat_CurrentModuleName(char *name, size_t size)
 	name[size - 1] = '\0';
 }
 
-void Plat_Error(const char *error)
+void Plat_Error(const char *fmt, ...)
 {
-	fwrite(error, sizeof(*error), strlen(error), stderr);
+	va_list ap;
+	char buffer[1024];
+
+	va_start(ap, fmt);
+	int length = vsnprintf(buffer, sizeof(buffer), fmt, ap);
+	va_end(ap);
+
+	fwrite(buffer, 1, length, stderr);
 	exit(1);
 }
 

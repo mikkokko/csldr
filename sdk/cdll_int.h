@@ -11,9 +11,7 @@ UNIMPLEMENTED_TYPE(sequenceEntry_t);
 UNIMPLEMENTED_TYPE(sentenceEntry_t);
 UNIMPLEMENTED_TYPE(cmdalias_t);
 UNIMPLEMENTED_TYPE(con_nprint_t);
-#if !defined(_WIN32) || !defined(__cplusplus)
 UNIMPLEMENTED_TYPE(tagPOINT);
-#endif
 
 UNIMPLEMENTED_TYPE(playermove_t);
 UNIMPLEMENTED_TYPE(kbutton_t);

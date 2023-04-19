@@ -1,5 +1,10 @@
 #include "pch.h"
 
+#if defined(_WIN32)
+#include <windows.h>
+#include <wingdi.h>
+#endif
+
 bool isSoftware;
 bool isOpenGL;
 
@@ -95,7 +100,7 @@ static void DrawHands(cl_entity_t *weapon, int flags)
 	*weapon = backup;
 }
 
-int Hk_StudioDrawModel(int flags)
+static int Hk_StudioDrawModel(int flags)
 {
 	int result;
 	SCREENINFO scr;
@@ -154,7 +159,7 @@ int Hk_StudioDrawModel(int flags)
 	return result;
 }
 
-void Hk_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
+void My_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 {
 	cl_entity_t *entity;
 	bool viewModel;
@@ -166,10 +171,9 @@ void Hk_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 
 	entity = IEngineStudio.GetCurrentEntity();
 	viewModel = (entity == IEngineStudio.GetViewEntity());
-
-	if (!viewModel) /* we don't want to do anything cool */
+	if (!viewModel) /* we don't want to do anything */
 	{
-		IEngineStudio.StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
+		Hk_StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
 		return;
 	}
 
@@ -177,7 +181,7 @@ void Hk_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 	studiohdr = (studiohdr_t *)entity->model->cache.data;
 	if (!studiohdr) /* what the fuck */
 	{
-		IEngineStudio.StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
+		Hk_StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
 		return;
 	}
 
@@ -186,11 +190,11 @@ void Hk_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 	/* check if the names matches and that there's enough submodels */
 	if (*(uint32 *)body->name != *(uint32 *)"arms" || body->nummodels < 2)
 	{
-		IEngineStudio.StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
+		Hk_StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
 		return;
 	}
 
-	/* bodypart is right one, do cool arm changing stuff */
+	/* bodypart is right one, do arm changing stuff */
 	oldbody = entity->curstate.body;
 
 	if (user1 == 4)
@@ -201,8 +205,8 @@ void Hk_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 	current = (entity->curstate.body / body->base) % body->nummodels;
 	entity->curstate.body = (entity->curstate.body - (current * body->base) + (newbody * body->base));
 
-	/* set the cool arm stuff */
-	IEngineStudio.StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
+	/* set the arm bodygroup */
+	Hk_StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
 
 	/* restore state */
 	entity->curstate.body = oldbody;
@@ -214,9 +218,9 @@ int Hk_GetStudioModelInterface(int version,
 {
 	int result;
 
-	/* backup and change engine stuff */
+	/* install hooks for fast path rendering */
 	memcpy(&IEngineStudio, pstudio, sizeof(engine_studio_api_t));
-	pstudio->StudioSetupModel = Hk_StudioSetupModel;
+	HookEngineStudio(pstudio);
 
 	/* give to client */
 	result = cl_funcs.pStudioInterface(version, ppinterface, pstudio);

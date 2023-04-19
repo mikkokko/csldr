@@ -4,6 +4,8 @@
 
 #if defined(_WIN32)
 
+#include <windows.h>
+
 #define SECRET_MAGIC 0x12345678
 #define SECRET_KEY 0x57
 

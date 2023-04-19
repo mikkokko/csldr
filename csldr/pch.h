@@ -1,18 +1,29 @@
-#if defined(_WIN32)
-#define _WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+// avoid including windows.h by any means necessary
+#ifdef _WIN32
+#define WINAPI __stdcall
+#define APIENTRY WINAPI
 #endif
+#include <glad/glad.h>
 
-#include <GL/gl.h>
+
+// mikkotodo fix once glad is compat
+typedef unsigned int GLuint;
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define CLAMP(a, b, c) (((a) > (c)) ? (c) : (((a) < (b)) ? (b) : (a)))
 
+#define Q_OFFSETOF(s, m) ((size_t) &(((s *)0)->m))
+#define Q_ARRAYSIZE(x) (sizeof(x) / sizeof(x[0]))
+
 #include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+#include <stdarg.h>
+
+#define STATIC_ASSERT(expr, msg) typedef int static_assert_##msg[(expr) ? (1) : (-1)];
 
 /* mikkotodo move */
 #if !defined(__cplusplus)
@@ -80,10 +91,15 @@ typedef struct
 #include "platform.h"
 #include "player_info.h"
 #include "shell.h"
+#include "shader.h"
+#include "studio_cache.h"
+#include "studio_hook.h"
+#include "studio_render.h"
 #include "studiorenderer.h"
 #include "view.h"
 #include "weapon_info.h"
 #include "secret_dll.h"
+#include "memory.h"
 
 /* ui stuff */
 #include "hud_crosshair.h"

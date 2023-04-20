@@ -38,9 +38,10 @@ The shader-based model renderer requires OpenGL 2.0 for GLSL shaders. For GPU sk
 
 Known issues with the renderer:
 - Lighting is way off (some parts are too dark and others too light)
-- Chrome rendering is wrong (haven't bothered to implement it properly yet because chrome is rarely used anywhere)
+- Chrome rendering is wrong (haven't bothered to implement it properly yet, chrome is rarely used anywhere)
 - Custom rendermodes are not implemented (haven't bothered, rarely seen in-game like chrome)
 - Elights are not handled (also rarely seen in-game)
+- Rendering of hulls, bboxes or bones is not supported
 
 The renderer can be enabled with `studio_fastpath 1` if the system supports it. To see information about the renderer's state, use `studio_info`. If you notice any issues with the renderer (models not looking as they should, worse performance, etc.) let me know by opening an issue.
 

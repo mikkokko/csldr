@@ -13,6 +13,8 @@
 - Bone controlled camera movement
 - Mirrored shell ejects
 - FOV lerp
+- Shader-based model renderer
+  - GPU skinning for capable hardware
 
 ## Notes
 
@@ -29,6 +31,18 @@
 2. Navigate to "cstrike/cl_dlls" (or "czero/cl_dlls" if you're playing Condition Zero)
 3. Rename the existing client.dll to client_orig.dll (client.so to client_orig.so on Linux)
 4. Play
+
+## Shader-based model renderer
+
+The shader-based model renderer requires OpenGL 2.0 for GLSL shaders. For GPU skinning to work, OpenGL 2.1 is required for non-square GLSL matrices and the GL_ARB_uniform_buffer_object extension is needed for UBOs. Currently the renderer doesn't have a lot going for it besides improved performance in some cases. Eventually I will add more features to it for modding purposes.
+
+Known issues with the renderer:
+- Lighting is way off (some parts are too dark and others too light)
+- Chrome rendering is wrong (haven't bothered to implement it properly yet because chrome is rarely used anywhere)
+- Custom rendermodes are not implemented (haven't bothered, rarely seen in-game like chrome)
+- Elights are not handled (also rarely seen in-game)
+
+The renderer can be enabled with `studio_fastpath 1` if the system supports it. To see information about the renderer's state, use `studio_info`. If you notice any issues with the renderer (models not looking as they should, worse performance, etc.) let me know by opening an issue.
 
 ## Other stuff
 
@@ -53,6 +67,8 @@
 | fov_lerp | FOV interpolation time in seconds. |
 | lookat | Inspects weapon if the animation is present. |
 | mirror_shell | Switches the direction of shell ejects. |
+| studio_fastpath | Enables the shader-based model renderer. |
+| studio_info | Prints information about the shader-based model renderer. |
 | viewmodel_fov | Viewmodel FOV. |
 | viewmodel_hands | Specifies an external hand model, for example "v_hands.mdl". Can be disabled with an empty string (""). |
 | viewmodel_lag_style | Viewmodel sway style. 0 is off, 1 is HL2 style and 2 is CS:S/CS:GO style. |

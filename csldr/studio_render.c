@@ -1,9 +1,9 @@
 #include "pch.h"
 
 #ifndef SHADERS_FROM_DISK /* xxd'd shaders */
-#include "../shaders/studio_cpu_vert.h"
-#include "../shaders/studio_frag.h"
-#include "../shaders/studio_gpu_vert.h"
+#include "studio_cpu_vert.h"
+#include "studio_frag.h"
+#include "studio_gpu_vert.h"
 #endif
 
 static struct
@@ -311,7 +311,7 @@ studiohdr_t *R_LoadTextures(model_t *model, studiohdr_t *header)
 	char path[128];
 	strcpy(path, model->name);
 
-	// unsafe but the engine does it too...'
+	// unsafe but the engine does it too...
 	// also lower case for linux??? what the fuck
 	strcpy(path + strlen(path) - 4, "t.mdl");
 

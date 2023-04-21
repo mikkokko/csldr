@@ -201,7 +201,7 @@ static pfnEvent_t CheckForShellEvent(const char *name, pfnEvent_t pfnEvent)
 	return NULL;
 }
 
-void Hk_HookEvent(const char *name, void (*pfnEvent)(event_args_t *))
+void Hk_HookEvent(char *name, void (*pfnEvent)(event_args_t *))
 {
 	pfnEvent_t hooked = CheckForShellEvent(name, pfnEvent);
 	if (hooked)

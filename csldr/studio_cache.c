@@ -376,7 +376,7 @@ void UpdateStudioCaches(void)
 {
 	static model_t *last_world = NULL;
 
-	model_t *world = gEngfuncs.GetModelByIndex(1);
+	model_t *world = gEngfuncs.hudGetModelByIndex(1);
 	if (world == last_world)
 		return;
 

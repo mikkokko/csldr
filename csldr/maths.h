@@ -10,6 +10,7 @@
 #define YAW 1
 #define ROLL 2
 
+typedef float vec_t;
 typedef float vec3_t[3];
 typedef float mat3x4_t[3][4];
 

@@ -1,6 +1,6 @@
 typedef struct
 {
-	byte *data;
+	unsigned char *data;
 	int size;
 	int ofs;
 } msg_read_t;

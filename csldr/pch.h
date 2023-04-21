@@ -29,34 +29,6 @@ typedef unsigned int GLuint;
 #if !defined(__cplusplus)
 typedef enum {false, true} bool;
 #endif
-typedef int qboolean;
-
-typedef unsigned char byte;
-
-typedef signed char int8;
-typedef unsigned char uint8;
-typedef short int16;
-typedef unsigned short uint16;
-typedef int int32;
-typedef unsigned int uint32;
-
-typedef struct
-{
-	byte r;
-	byte g;
-	byte b;
-} color24;
-
-typedef struct
-{
-	unsigned int r;
-	unsigned int g;
-	unsigned int b;
-	unsigned int a;
-} colorVec;
-
-/* for sdk types that i cba to implement */
-#define UNIMPLEMENTED_TYPE(name) typedef void name
 
 /* mfw */
 #define CVAR_ARCHIVE_FAST_STR(name, str) \
@@ -66,22 +38,13 @@ typedef struct
 #define CVAR_ARCHIVE_FAST(name, value) \
 	CVAR_ARCHIVE_FAST_STR(name, #value)
 
+// mikkotodo fix
+#define Vector vec3_t
+
 #include "maths.h"
 #include "msg.h"
 
-#include "../sdk/weaponinfo.h"
-#include "../sdk/entity_state.h"
-#include "../sdk/com_model.h"
-#include "../sdk/cl_entity.h"
-#include "../sdk/cvar.h"
-#include "../sdk/pm_movevars.h"
-#include "../sdk/ref_params.h"
-#include "../sdk/r_studioint.h"
-#include "../sdk/r_efx.h"
-#include "../sdk/event_api.h"
-#include "../sdk/cdll_int.h"
-#include "../sdk/studio.h"
-#include "../sdk/cs_weapon.h"
+#include "sdk_include.h"
 
 #include "camera.h"
 #include "cl_dll.h"

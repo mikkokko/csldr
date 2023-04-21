@@ -50,7 +50,10 @@ add_library(csldr SHARED
 	${CSLDR_HDR}
 	${SRCDIR}/external/glad/src/glad.c)
 
-target_include_directories(csldr PRIVATE ${SRCDIR}/external/glad/include)
+target_include_directories(csldr PRIVATE
+	${SRCDIR}/external/glad/include
+	${SRCDIR}/external/sdk
+	${SRCDIR}/shaders)
 
 if (MSVC)
 	foreach(src ${CSLDR_SRC})

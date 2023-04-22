@@ -33,7 +33,7 @@ cvar_t *cl_mirror_knife;
 
 void ViewInit(void)
 {
-	CVAR_ARCHIVE_FAST(viewmodel_fov, 68);
+	CVAR_ARCHIVE_FAST(viewmodel_fov, 90);
 	CVAR_ARCHIVE_FAST(viewmodel_shift, 0);
 	CVAR_ARCHIVE_FAST(viewmodel_offset_x, 0);
 	CVAR_ARCHIVE_FAST(viewmodel_offset_y, 0);

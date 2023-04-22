@@ -279,6 +279,61 @@ static void V_OffsetViewmodel(cl_entity_t *vm, vec3_t front, vec3_t side, vec3_t
 	VectorMA_2(vm->origin, up, z);
 }
 
+static void CalcCustomRefdef(ref_params_t *pparams)
+{
+	cl_entity_t *vm;
+	vec3_t front, side, up;
+
+	vm = gEngfuncs.GetViewModel();
+	AngleVectors(vm->angles, front, side, up);
+
+	/* fix the slight difference between view and vm origin */
+	vm->origin[0] += 1.0f / 32;
+	vm->origin[1] += 1.0f / 32;
+	vm->origin[2] += 1.0f / 32;
+
+	V_OffsetViewmodel(vm, front, side, up);
+
+	/* fuck this annoying shift */
+	if ((int)viewmodel_shift->value == 1)
+	{
+		vm->origin[2] += 1;
+	}
+	else if ((int)viewmodel_shift->value == 2)
+	{
+		// remove shift from origin
+		vm->origin[2] += 1;
+
+		// offset the viewmodel
+		VectorMA_2(vm->origin, up, 1);
+	}
+
+	if ((int)cl_bobstyle->value == 2)
+	{
+		V_AddBob(pparams, vm->origin, front, side);
+	}
+	else if ((int)cl_bobstyle->value == 1)
+	{
+		vm->curstate.angles[0] = vm->angles[0];
+		vm->curstate.angles[1] = vm->angles[1];
+		vm->curstate.angles[2] = vm->angles[2];
+	}
+
+	switch ((int)viewmodel_lag_style->value)
+	{
+	case 1:
+		V_AddLag_HL2(pparams, vm->origin, front);
+		break;
+
+	case 2:
+		V_AddLag_CSS(pparams, vm->origin, vm->angles, front, side, up);
+		break;
+	}
+
+	/* mikkotodo move? */
+	CameraApplyMovement(pparams);
+}
+
 void Hk_CalcRefdef(ref_params_t *pparams)
 {
 	VectorCopy(v_vieworg, pparams->vieworg);
@@ -311,53 +366,7 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 
 	if (!pparams->intermission && !pparams->paused)
 	{
-		cl_entity_t *vm;
-		vec3_t front, side, up;
-	
-		vm = gEngfuncs.GetViewModel();
-		AngleVectors(vm->angles, front, side, up);
-
-		/* fix the slight difference between view and vm origin */
-		vm->origin[0] += 1.0f / 32;
-		vm->origin[1] += 1.0f / 32;
-		vm->origin[2] += 1.0f / 32;
-
-		V_OffsetViewmodel(vm, front, side, up);
-
-		/* fuck this annoying shift */
-		if ((int)viewmodel_shift->value == 1)
-			vm->origin[2] += 1;
-		else if ((int)viewmodel_shift->value == 2)
-		{
-			// remove shift from origin
-			vm->origin[2] += 1;
-
-			// offset the viewmodel
-			VectorMA_2(vm->origin, up, 1);
-		}
-	
-		if ((int)cl_bobstyle->value == 2)
-			V_AddBob(pparams, vm->origin, front, side);
-		else if ((int)cl_bobstyle->value == 1)
-		{
-			vm->curstate.angles[0] = vm->angles[0];
-			vm->curstate.angles[1] = vm->angles[1];
-			vm->curstate.angles[2] = vm->angles[2];
-		}
-
-		switch ((int)viewmodel_lag_style->value)
-		{
-		case 1:
-			V_AddLag_HL2(pparams, vm->origin, front);
-			break;
-
-		case 2:
-			V_AddLag_CSS(pparams, vm->origin, vm->angles, front, side, up);
-			break;
-		}
-	
-		/* mikkotodo move? */
-		CameraApplyMovement(pparams);
+		CalcCustomRefdef(pparams);
 	}
 
 	/* mikkotodo move? */

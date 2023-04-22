@@ -24,7 +24,7 @@ if (MSVC)
 			/arch:SSE2 # x86
 			/fp:fast
 			/fp:except-)
-	
+
 		add_link_options(
 			/OPT:REF
 			/OPT:ICF
@@ -56,10 +56,7 @@ target_include_directories(csldr PRIVATE
 	${SRCDIR}/shaders)
 
 if (MSVC)
-	foreach(src ${CSLDR_SRC})
-		set_source_files_properties(${src} PROPERTIES COMPILE_FLAGS "/Yupch.h")
-	endforeach(src ${CSLDR_SRC})
-
+	set_source_files_properties(${CSLDR_SRC} PROPERTIES COMPILE_FLAGS "/Yupch.h")
 	set_source_files_properties(${SRCDIR}/csldr/pch.c PROPERTIES COMPILE_FLAGS "/Ycpch.h")
 endif()
 

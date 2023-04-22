@@ -7,7 +7,7 @@ static size_t mem_used;
 
 void Mem_Init(void)
 {
-	mem_block = malloc(BLOCK_SIZE);
+	mem_block = (byte *)malloc(BLOCK_SIZE);
 	if (!mem_block)
 		Plat_Error("Memory allocation failed\n");
 }

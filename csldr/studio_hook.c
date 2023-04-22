@@ -20,7 +20,7 @@ static void Hk_StudioSetHeader(void *header)
 	if (FASTPATH_ENABLED)
 	{
 		assert(!s_context);
-		s_header = header;
+		s_header = (studiohdr_t *)header;
 	}
 }
 

@@ -105,7 +105,7 @@ void R_StudioInitContext(studio_context_t *ctx, cl_entity_t *entity, model_t *mo
 	ctx->cache = GetStudioCache(ctx->model, header);
 
 	// mikkotodo move? this never changes
-	ctx->bonetransform = (void *)IEngineStudio.StudioGetBoneTransform();
+	ctx->bonetransform = (mat3x4_t(*)[])IEngineStudio.StudioGetBoneTransform();
 }
 
 void R_StudioSetupLighting(studio_context_t *ctx, alight_t *lighting)
@@ -210,7 +210,7 @@ void R_StudioSetupModel(studio_context_t *ctx, int bodypart_index)
 
 static void R_StudioAnimateCPU(studio_context_t *ctx, mem_model_t *mem_model)
 {
-	studio_cpu_vert_t *anim_verts = Mem_AllocTemp(sizeof(studio_cpu_vert_t) * mem_model->num_verts);
+	studio_cpu_vert_t *anim_verts = (studio_cpu_vert_t *)Mem_AllocTemp(sizeof(studio_cpu_vert_t) * mem_model->num_verts);
 
 	for (unsigned int i = 0; i < mem_model->num_verts; i++)
 	{

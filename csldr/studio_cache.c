@@ -155,9 +155,9 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 	if (!build)
 	{
 		if (studio_gpuskin)
-			build = Mem_Alloc(sizeof(gpu_build_buffer_t));
+			build = (base_build_buffer_t *)Mem_Alloc(sizeof(gpu_build_buffer_t));
 		else
-			build = Mem_Alloc(sizeof(cpu_build_buffer_t));
+			build = (base_build_buffer_t *)Mem_Alloc(sizeof(cpu_build_buffer_t));
 	}
 
 	build->num_verts = 0;
@@ -169,7 +169,7 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 	short *skins = (short *)((byte *)textureheader + textureheader->skinindex);
 	mstudiotexture_t *textures = (mstudiotexture_t *)((byte *)textureheader + textureheader->textureindex);
 
-	cache->bodyparts = Mem_Alloc(sizeof(*cache->bodyparts) * header->numbodyparts);
+	cache->bodyparts = (mem_bodypart_t *)Mem_Alloc(sizeof(*cache->bodyparts) * header->numbodyparts);
 
 	for (int i = 0; i < header->numbodyparts; i++)
 	{
@@ -177,7 +177,7 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 		mstudiomodel_t *models = (mstudiomodel_t *)((byte *)header + bodypart->modelindex);
 
 		mem_bodypart_t *mem_bodypart = &cache->bodyparts[i];
-		mem_bodypart->models = Mem_Alloc(sizeof(*mem_bodypart->models) * bodypart->nummodels);
+		mem_bodypart->models = (mem_model_t *)Mem_Alloc(sizeof(*mem_bodypart->models) * bodypart->nummodels);
 
 		for (int j = 0; j < bodypart->nummodels; j++)
 		{
@@ -191,7 +191,7 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 			byte *norminfo = (byte *)((byte *)header + submodel->norminfoindex);
 
 			mem_model_t *mem_model = &mem_bodypart->models[j];
-			mem_model->meshes = Mem_Alloc(sizeof(*mem_model->meshes) * submodel->nummesh);
+			mem_model->meshes = (mem_mesh_t *)Mem_Alloc(sizeof(*mem_model->meshes) * submodel->nummesh);
 
 			// only for cpu skinning
 			int vert_offset = build->num_verts;
@@ -243,10 +243,10 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 	{
 		cpu_build_buffer_t *cpu_build = (cpu_build_buffer_t *)build;
 
-		cache->verts = Mem_Alloc(sizeof(studio_cpu_vert_t) * build->num_verts);
+		cache->verts = (studio_cpu_vert_t *)Mem_Alloc(sizeof(studio_cpu_vert_t) * build->num_verts);
 		memcpy(cache->verts, cpu_build->verts, sizeof(studio_cpu_vert_t) * build->num_verts);
 
-		cache->vertbones = Mem_Alloc(sizeof(studio_vertbone_t) * build->num_verts);
+		cache->vertbones = (studio_vertbone_t *)Mem_Alloc(sizeof(studio_vertbone_t) * build->num_verts);
 		memcpy(cache->vertbones, cpu_build->vertbones, sizeof(studio_vertbone_t) * build->num_verts);
 	}
 }
@@ -301,7 +301,7 @@ static void LoadTextures(studio_cache_t *cache, model_t *model, studiohdr_t *hea
 	studiohdr_t *textureheader = R_LoadTextures(model, header);
 	mstudiotexture_t *textures = (mstudiotexture_t *)((byte *)textureheader + textureheader->textureindex);
 
-	cache->textures = Mem_Alloc(sizeof(mem_texture_t) * textureheader->numtextures);
+	cache->textures = (mem_texture_t *)Mem_Alloc(sizeof(mem_texture_t) * textureheader->numtextures);
 
 	for (int i = 0; i < textureheader->numtextures; i++)
 	{
@@ -395,7 +395,7 @@ void UpdateStudioCaches(void)
 		if (model->type != mod_studio)
 			continue;
 
-		studiohdr_t *header = IEngineStudio.Mod_Extradata(model);
+		studiohdr_t *header = (studiohdr_t *)IEngineStudio.Mod_Extradata(model);
 		(void)GetStudioCache(model, header);
 	}
 }

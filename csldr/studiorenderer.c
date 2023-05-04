@@ -23,6 +23,18 @@ extern cvar_t *cl_mirror_knife;
 #define Z_NEAR 1.0 /* was 4 but that's too far for viewmodels */
 #define Z_FAR 4096.0
 
+static int Hk_StudioDrawModel(int flags)
+{
+	studio_drawcount++;
+	return studio.StudioDrawModel(flags);
+}
+
+static int Hk_StudioDrawPlayer(int flags, entity_state_t *player)
+{
+	studio_drawcount++;
+	return studio.StudioDrawPlayer(flags, player);
+}
+
 static float CalcVerticalFov(float fov)
 {
 	/* hardcoded 4:3 aspect ratio so i don't need to do hor+ on vm fov */
@@ -60,8 +72,6 @@ static void DrawHands(cl_entity_t *weapon, int flags)
 	bool changed;
 	model_t *model;
 	cl_entity_t backup;
-	/* good luck bitching about a buffer overrun now asan */
-	/*static char hands_path[2147483647] = "";*/
 	static char hands_path[256] = "";
 	static bool hands_valid = false;
 
@@ -95,12 +105,12 @@ static void DrawHands(cl_entity_t *weapon, int flags)
 	weapon->model = model;
 	weapon->curstate.movetype = 12; /* MOVETYPE_FOLLOW */
 
-	studio.StudioDrawModel(flags);
+	Hk_StudioDrawModel(flags);
 
 	*weapon = backup;
 }
 
-static int Hk_StudioDrawModel(int flags)
+static int My_StudioDrawModel(int flags)
 {
 	int result;
 	SCREENINFO scr;
@@ -111,10 +121,9 @@ static int Hk_StudioDrawModel(int flags)
 	cl_entity_t *entity = IEngineStudio.GetCurrentEntity();
 
 	if (entity != IEngineStudio.GetViewEntity())
-		return studio.StudioDrawModel(flags);
+		return Hk_StudioDrawModel(flags);
 
 	scr.iSize = sizeof(SCREENINFO);
-
 	gEngfuncs.pfnGetScreenInfo(&scr);
 	aspect = (double)scr.iWidth / (double)scr.iHeight;
 
@@ -141,7 +150,7 @@ static int Hk_StudioDrawModel(int flags)
 
 	UnflipKnife(&old_righthand);
 
-	result = studio.StudioDrawModel(flags);
+	result = Hk_StudioDrawModel(flags);
 
 	/* draw hands now that the scene is properly set up */
 	DrawHands(entity, flags);
@@ -227,7 +236,8 @@ int Hk_GetStudioModelInterface(int version,
 
 	/* backup and change client stuff */
 	memcpy(&studio, (*ppinterface), sizeof(studio));
-	(*ppinterface)->StudioDrawModel = Hk_StudioDrawModel;
+	(*ppinterface)->StudioDrawModel = My_StudioDrawModel;
+	(*ppinterface)->StudioDrawPlayer = Hk_StudioDrawPlayer;
 
 	isSoftware = !pstudio->IsHardware();
 	if (!isSoftware)

@@ -1,6 +1,7 @@
 #include "pch.h"
 
 vec3_t v_vieworg;
+vec3_t v_viewforward, v_viewright, v_viewup;
 
 cvar_t *viewmodel_fov;
 cvar_t *viewmodel_shift;
@@ -336,8 +337,6 @@ static void CalcCustomRefdef(ref_params_t *pparams)
 
 void Hk_CalcRefdef(ref_params_t *pparams)
 {
-	VectorCopy(v_vieworg, pparams->vieworg);
-
 	pparams->movevars->rollangle = cl_rollangle->value;
 	pparams->movevars->rollspeed = cl_rollspeed->value;
 
@@ -371,4 +370,9 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 
 	/* mikkotodo move? */
 	FovThink();
+
+	VectorCopy(v_vieworg, pparams->vieworg);
+	VectorCopy(v_viewforward, pparams->forward);
+	VectorCopy(v_viewright, pparams->right);
+	VectorCopy(v_viewup, pparams->up);
 }

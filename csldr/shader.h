@@ -14,8 +14,8 @@ typedef struct
 
 GLuint CreateShaderProgram(const char *name,
 #ifdef SHADERS_FROM_DISK
-	const char *vertex_path,
-	const char *fragment_path,
+	char *vertex_path,
+	char *fragment_path,
 #else
 	const char *vertex_source,
 	int vertex_length,

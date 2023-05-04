@@ -21,6 +21,25 @@ inline static float DotProduct(const vec3_t a, const vec3_t b) { return a[0] * b
 
 inline static float VectorLength2D(const vec3_t v) { return sqrtf(v[0] * v[0] + v[1] * v[1]); }
 
+inline static void VectorNormalize(vec3_t v)
+{
+	float len_sq = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+	if (len_sq)
+	{
+		float s = 1 / sqrtf(len_sq);
+		v[0] *= s;
+		v[1] *= s;
+		v[2] *= s;
+	}
+}
+
+inline static void CrossProduct(const vec3_t v1, const vec3_t v2, vec3_t out)
+{
+	out[0] = v1[1] * v2[2] - v1[2] * v2[1];
+	out[1] = -(v1[0] * v2[2] - v1[2] * v2[0]);
+	out[2] = v1[0] * v2[1] - v1[1] * v2[0];
+}
+
 inline static void VectorCopy(vec3_t dst, const vec3_t src)
 {
 	dst[0] = src[0];

@@ -31,9 +31,16 @@ if (MSVC)
 			/LTCG)
 	endif()
 else()
-	# just use -march=native, everyone should build this themselves
-	add_compile_options(-m32 -Wall -Wextra -Ofast -march=native)
+	add_compile_options(-m32 -Wall -Wextra)
 	add_link_options(-m32)
+	
+	if (NOT DEBUG_BUILD)
+		add_compile_options(-Ofast -msse -msse2 -mfpmath=sse)
+	endif()
+
+	if (WIN32)
+		add_link_options(-static -s)
+	endif()
 endif()
 
 set(SRCDIR ${CMAKE_CURRENT_LIST_DIR})

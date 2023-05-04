@@ -3,8 +3,7 @@
 bool studio_gpuskin;
 bool studio_fastpath;
 
-static studio_context_t context_memory;
-static studio_context_t *s_context = NULL;
+static studio_context_t context;
 
 cvar_t *studio_fastpath_enable;
 
@@ -19,7 +18,6 @@ static void Hk_StudioSetHeader(void *header)
 
 	if (FASTPATH_ENABLED)
 	{
-		assert(!s_context);
 		s_header = (studiohdr_t *)header;
 	}
 }
@@ -30,7 +28,6 @@ static void Hk_SetRenderModel(model_t *model)
 
 	if (FASTPATH_ENABLED)
 	{
-		assert(!s_context);
 		s_model = model;
 	}
 }
@@ -58,10 +55,7 @@ static void Hk_StudioSetupLighting(alight_t *lighting)
 {
 	if (FASTPATH_ENABLED)
 	{
-		assert(!s_context);
-		s_context = &context_memory;
-
-		if (!s_model)
+		if (!s_model || (s_model->cache.data && (s_model->cache.data != s_header)))
 		{
 			// this happens with player weapon models... Mod_Extradata is called right
 			// before this so we should be able to get the model pointer from there
@@ -71,8 +65,8 @@ static void Hk_StudioSetupLighting(alight_t *lighting)
 		assert(s_model);
 		assert(s_header);
 
-		R_StudioInitContext(s_context, IEngineStudio.GetCurrentEntity(), s_model, s_header);
-		R_StudioSetupLighting(s_context, lighting);
+		R_StudioInitContext(&context, IEngineStudio.GetCurrentEntity(), s_model, s_header);
+		R_StudioSetupLighting(&context, lighting);
 	}
 	else
 	{
@@ -86,8 +80,7 @@ void Hk_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 
 	if (FASTPATH_ENABLED)
 	{
-		assert(s_context);
-		R_StudioSetupModel(s_context, bodypart);
+		R_StudioSetupModel(&context, bodypart);
 	}
 }
 
@@ -95,8 +88,7 @@ static void Hk_StudioDrawPoints(void)
 {
 	if (FASTPATH_ENABLED)
 	{
-		assert(s_context);
-		R_StudioDrawPoints(s_context);
+		R_StudioDrawPoints(&context);
 	}
 	else
 	{
@@ -104,12 +96,47 @@ static void Hk_StudioDrawPoints(void)
 	}
 }
 
+static void Hk_StudioDrawHulls(void)
+{
+	if (FASTPATH_ENABLED)
+	{
+		// not implmeneted for fast path
+	}
+	else
+	{
+		IEngineStudio.StudioDrawHulls();
+	}
+}
+
+static void Hk_StudioDrawAbsBBox(void)
+{
+	if (FASTPATH_ENABLED)
+	{
+		// not implmeneted for fast path
+	}
+	else
+	{
+		IEngineStudio.StudioDrawAbsBBox();
+	}
+}
+
+static void Hk_StudioDrawBones(void)
+{
+	if (FASTPATH_ENABLED)
+	{
+		// not implmeneted for fast path
+	}
+	else
+	{
+		IEngineStudio.StudioDrawBones();
+	}
+}
+
 static void Hk_SetupRenderer(int rendermode)
 {
 	if (FASTPATH_ENABLED)
 	{
-		assert(s_context);
-		R_StudioSetupRenderer(s_context);
+		R_StudioSetupRenderer(&context);
 	}
 	else
 	{
@@ -121,12 +148,7 @@ static void Hk_RestoreRenderer(void)
 {
 	if (FASTPATH_ENABLED)
 	{
-		assert(s_context);
-		R_StudioRestoreRenderer(s_context);
-		s_context = NULL;
-
-		s_header = NULL;
-		s_model = NULL;
+		R_StudioRestoreRenderer(&context);
 	}
 	else
 	{
@@ -172,6 +194,9 @@ void HookEngineStudio(engine_studio_api_t *studio)
 		studio->SetRenderModel = Hk_SetRenderModel;
 		studio->StudioSetupLighting = Hk_StudioSetupLighting;
 		studio->StudioDrawPoints = Hk_StudioDrawPoints;
+		studio->StudioDrawHulls = Hk_StudioDrawHulls;
+		studio->StudioDrawAbsBBox = Hk_StudioDrawAbsBBox;
+		studio->StudioDrawBones = Hk_StudioDrawBones;
 		studio->SetupRenderer = Hk_SetupRenderer;
 		studio->RestoreRenderer = Hk_RestoreRenderer;
 

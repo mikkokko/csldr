@@ -5,10 +5,6 @@
 #endif
 #include <glad/glad.h>
 
-
-// mikkotodo fix once glad is compat
-typedef unsigned int GLuint;
-
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define CLAMP(a, b, c) (((a) > (c)) ? (c) : (((a) < (b)) ? (b) : (a)))
@@ -22,8 +18,6 @@ typedef unsigned int GLuint;
 #include <string.h>
 #include <assert.h>
 #include <stdarg.h>
-
-#define STATIC_ASSERT(expr, msg) typedef int static_assert_##msg[(expr) ? (1) : (-1)];
 
 /* mikkotodo move */
 #if !defined(__cplusplus)

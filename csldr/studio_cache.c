@@ -205,12 +205,19 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 				float t = 1.0f / (float)textures[skins[mesh->skinref]].height;
 
 				int index_offset = build->num_indices;
+				
+				// only for cpu skinning
+				int vert_offset2 = build->num_verts;
 
 				ParseTricmds(build, tricmds, vertices, normals, vertinfo, norminfo, s, t);
 
 				mem_mesh_t *mem_mesh = &mem_model->meshes[k];
 				mem_mesh->ofs_indices = index_offset * sizeof(*build->indices);
 				mem_mesh->num_indices = build->num_indices - index_offset;
+
+				// only for cpu skinning
+				mem_mesh->ofs_verts = vert_offset2;
+				mem_mesh->num_verts = build->num_verts - vert_offset2;
 			}
 
 			// only for cpu skinning

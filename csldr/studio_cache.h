@@ -2,6 +2,10 @@ typedef struct
 {
 	unsigned ofs_indices;
 	unsigned num_indices;
+
+	// only for cpu skinning
+	unsigned ofs_verts;
+	unsigned num_verts;
 } mem_mesh_t;
 
 typedef struct mem_model_s

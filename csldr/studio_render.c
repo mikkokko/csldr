@@ -20,6 +20,15 @@ int studio_drawcount;
 
 static vec3_t chrome_origin;
 
+static dlight_t *cl_elights;
+
+#define MAX_ELIGHTS 3
+
+// store these globally for unknown reasons
+static int elight_num;
+static float elight_pos[MAX_ELIGHTS][4];
+static float elight_color[MAX_ELIGHTS][3];
+
 static struct
 {
 	GLuint program;
@@ -48,6 +57,10 @@ static struct
 
 	GLuint u_glowshell;
 	GLuint u_glowshell_color;
+
+	GLuint u_elight_num;
+	GLuint u_elight_pos;
+	GLuint u_elight_color;
 } shader_studio;
 
 enum
@@ -96,7 +109,11 @@ static const uniform_t studio_uniforms[] =
 	{ &shader_studio.u_additive, "u_additive" },
 
 	{ &shader_studio.u_glowshell, "u_glowshell" },
-	{ &shader_studio.u_glowshell_color, "u_glowshell_color" }
+	{ &shader_studio.u_glowshell_color, "u_glowshell_color" },
+
+	{ &shader_studio.u_elight_num, "u_elight_num" },
+	{ &shader_studio.u_elight_pos, "u_elight_pos" },
+	{ &shader_studio.u_elight_color, "u_elight_color" }
 };
 
 void R_StudioInit(void)
@@ -131,6 +148,105 @@ void R_StudioInit(void)
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, studio_ubo);
+	}
+
+	// get pointer to first elight
+	cl_elights = gEngfuncs.pEfxAPI->CL_AllocElight(0);
+}
+
+static float GammaCorrect(float x)
+{
+	return powf(x, v_gamma->value);
+}
+
+void R_StudioEntityLight(studio_context_t *ctx)
+{
+	elight_num = 0;
+
+	float lstrength[MAX_ELIGHTS];
+	memset(lstrength, 0, sizeof(lstrength));
+
+	float max_radius = 1000000;
+	float min_radius = 0;
+
+	// ctx->entity is not set yet... mikkotodo revisit
+	(void)ctx;
+	cl_entity_t *entity = IEngineStudio.GetCurrentEntity();
+
+	// asssume that max elights is 64
+	for (int i = 0; i < 64; i++)
+	{
+		dlight_t *elight = &cl_elights[i];
+
+		if (elight->die <= clientTime)
+			continue;
+
+		if (elight->radius <= min_radius)
+			continue;
+
+		if ((elight->key & 0xFFF) == entity->index)
+		{
+			int attachment = (elight->key >> 12) & 0xF;
+
+			if (attachment)
+				VectorCopy(elight->origin, entity->attachment[attachment]);
+			else
+				VectorCopy(elight->origin, entity->origin);
+		}
+
+		vec3_t dir;
+		VectorSubtract(entity->origin, elight->origin, dir);
+
+		float dist = DotProduct(dir, dir);
+
+		float r2 = elight->radius * elight->radius;
+
+		float strength;
+
+		if (dist <= r2)
+		{
+			strength = 1;
+		}
+		else
+		{
+			strength = r2 / dist;
+
+			if (strength <= 0.004f)
+				continue;
+		}
+
+		int index = elight_num;
+
+		if (elight_num >= MAX_ELIGHTS)
+		{
+			index = -1;
+
+			for (int j = 0; j < elight_num; j++)
+			{
+				if (lstrength[j] < max_radius && lstrength[j] < strength)
+				{
+					index = j;
+					max_radius = lstrength[j];
+				}
+			}
+		}
+
+		if (index == -1)
+			continue;
+
+		lstrength[index] = strength;
+
+		VectorCopy(elight_pos[index], elight->origin);
+		elight_pos[index][3] = r2;
+
+		elight_color[index][0] = GammaCorrect((float)elight->color.r / 255.0f);
+		elight_color[index][1] = GammaCorrect((float)elight->color.g / 255.0f);
+		elight_color[index][2] = GammaCorrect((float)elight->color.b / 255.0f);
+
+		if (index >= elight_num)
+		{
+			elight_num = index + 1;
+		}
 	}
 }
 
@@ -385,6 +501,14 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 	}
 
 	glUniform3fv(shader_studio.u_chromeorg, 1, chrome_origin);
+
+	glUniform1i(shader_studio.u_elight_num, elight_num);
+
+	if (elight_num)
+	{
+		glUniform4fv(shader_studio.u_elight_pos, elight_num, &elight_pos[0][0]);
+		glUniform3fv(shader_studio.u_elight_color, elight_num, &elight_color[0][0]);
+	}
 }
 
 void R_StudioRestoreRenderer(studio_context_t *ctx)

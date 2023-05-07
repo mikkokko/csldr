@@ -51,6 +51,18 @@ static model_t *DeduceModel(studiohdr_t *header)
 	return NULL; // never reached
 }
 
+static void Hk_StudioEntityLight(alight_t *lighting)
+{
+	if (FASTPATH_ENABLED)
+	{
+		R_StudioEntityLight(&context);
+	}
+	else
+	{
+		IEngineStudio.StudioEntityLight(lighting);
+	}
+}
+
 static void Hk_StudioSetupLighting(alight_t *lighting)
 {
 	if (FASTPATH_ENABLED)
@@ -134,13 +146,11 @@ static void Hk_StudioDrawBones(void)
 
 static void Hk_SetupRenderer(int rendermode)
 {
+	IEngineStudio.SetupRenderer(rendermode);
+
 	if (FASTPATH_ENABLED)
 	{
 		R_StudioSetupRenderer(&context);
-	}
-	else
-	{
-		IEngineStudio.SetupRenderer(rendermode);
 	}
 }
 
@@ -150,10 +160,8 @@ static void Hk_RestoreRenderer(void)
 	{
 		R_StudioRestoreRenderer(&context);
 	}
-	else
-	{
-		IEngineStudio.RestoreRenderer();
-	}
+
+	IEngineStudio.RestoreRenderer();
 }
 
 static void StudioInfo_f(void)
@@ -192,6 +200,7 @@ void HookEngineStudio(engine_studio_api_t *studio)
 		studio->StudioSetHeader = Hk_StudioSetHeader;
 		studio->Mod_Extradata = Hk_Mod_Extradata;
 		studio->SetRenderModel = Hk_SetRenderModel;
+		studio->StudioEntityLight = Hk_StudioEntityLight;
 		studio->StudioSetupLighting = Hk_StudioSetupLighting;
 		studio->StudioDrawPoints = Hk_StudioDrawPoints;
 		studio->StudioDrawHulls = Hk_StudioDrawHulls;

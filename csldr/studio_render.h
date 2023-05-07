@@ -22,6 +22,7 @@ extern int studio_drawcount;
 void R_StudioInit(void);
 
 void R_StudioInitContext(studio_context_t *ctx, cl_entity_t *entity, model_t *model, studiohdr_t *header);
+void R_StudioEntityLight(studio_context_t *ctx);
 void R_StudioSetupLighting(studio_context_t *ctx, alight_t *lighting);
 void R_StudioSetupRenderer(studio_context_t *ctx);
 void R_StudioRestoreRenderer(studio_context_t *ctx);

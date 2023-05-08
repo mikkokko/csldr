@@ -18,7 +18,7 @@ int (*Og_MsgFunc_Brass)(const char *pszName, int iSize, void *pbuf);
 
 int Hk_MsgFunc_Brass(const char *pszName, int iSize, void *pbuf)
 {
-	if (!isSoftware && mirror_shell->value)
+	if (mirror_shell->value)
 	{
 		msg_read_t read;
 
@@ -112,7 +112,7 @@ TEMPENTITY *Hk_TempModel(float *pos,
 	static void Hk_ ## name(event_args_t * args) \
 	{ \
 		float value; \
-		if (isSoftware || !mirror_shell->value) \
+		if (!mirror_shell->value) \
 		{ \
 			Og_ ## name(args); \
 			return; \

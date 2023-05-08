@@ -123,14 +123,7 @@ void Hk_HudShutdown(void)
 
 void Hk_HudFrame(double time)
 {
-	static bool sw_bitched;
 	static bool lw_bitched;
-
-	if (!isOpenGL && !sw_bitched)
-	{
-		gEngfuncs.Con_Printf("Not running in OpenGL mode. Some features of csldr will not work.\n");
-		sw_bitched = true;
-	}
 
 	if (cl_lw)
 	{

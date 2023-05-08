@@ -222,8 +222,7 @@ int Hk_HudRedraw(float time, int intermission)
 	float old_trans;
 	char old_color[2];
 
-	if (!isOpenGL
-		|| !can_xhair
+	if (!can_xhair
 		|| !xhair_enable->value
 		|| (hud_draw && !hud_draw->value)
 		|| (hideHudFlags & HIDEHUD_CROSSHAIR))

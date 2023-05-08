@@ -5,9 +5,6 @@
 #include <wingdi.h>
 #endif
 
-bool isSoftware;
-bool isOpenGL;
-
 engine_studio_api_t IEngineStudio;
 r_studio_interface_t studio;
 
@@ -46,9 +43,6 @@ static float CalcVerticalFov(float fov)
 
 static void UnflipKnife(float *value)
 {
-	if (isSoftware)
-		return;
-
 	if (currentWeaponId != WEAPON_KNIFE || cl_mirror_knife->value)
 		return;
 
@@ -58,9 +52,6 @@ static void UnflipKnife(float *value)
 
 static void ReflipKnife(float value)
 {
-	if (isSoftware)
-		return;
-
 	if (currentWeaponId != WEAPON_KNIFE || cl_mirror_knife->value)
 		return;
 
@@ -127,23 +118,19 @@ static int My_StudioDrawModel(int flags)
 	gEngfuncs.pfnGetScreenInfo(&scr);
 	aspect = (double)scr.iWidth / (double)scr.iHeight;
 
-	/* viewmodel fov only supported on opengl */
-	if (isOpenGL)
-	{
-		glMatrixMode(GL_PROJECTION);
-		glPushMatrix();
-		glLoadIdentity();
-
-		fov1 = viewmodel_fov->value * fovDifference;
-		fov2 = CLAMP(fov1, 1, 170);
-		fov = CalcVerticalFov(fov2);
-
-		top = tan(Radians(fov) / 2) * Z_NEAR;
-
-		glFrustum(-top * aspect, top * aspect, -top, top, Z_NEAR, Z_FAR);
-
-		glMatrixMode(GL_MODELVIEW);
-	}
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	
+	fov1 = viewmodel_fov->value * fovDifference;
+	fov2 = CLAMP(fov1, 1, 170);
+	fov = CalcVerticalFov(fov2);
+	
+	top = tan(Radians(fov) / 2) * Z_NEAR;
+	
+	glFrustum(-top * aspect, top * aspect, -top, top, Z_NEAR, Z_FAR);
+	
+	glMatrixMode(GL_MODELVIEW);
 
 	/* think about inspecting now since we're about to draw the vm */
 	InspectThink();
@@ -157,13 +144,9 @@ static int My_StudioDrawModel(int flags)
 
 	ReflipKnife(old_righthand);
 
-	/* viewmodel fov only supported on opengl */
-	if (isOpenGL)
-	{
-		glMatrixMode(GL_PROJECTION);
-		glPopMatrix();
-		glMatrixMode(GL_MODELVIEW);
-	}
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
 
 	return result;
 }
@@ -239,15 +222,14 @@ int Hk_GetStudioModelInterface(int version,
 	(*ppinterface)->StudioDrawModel = My_StudioDrawModel;
 	(*ppinterface)->StudioDrawPlayer = Hk_StudioDrawPlayer;
 
-	isSoftware = !pstudio->IsHardware();
-	if (!isSoftware)
-	{
+	/* no one uses software or d3d renderers */
+	if (!pstudio->IsHardware())
+		Plat_Error("Software mode is not supported\n");
+
 #if defined(_WIN32)
-		isOpenGL = wglGetCurrentContext() != NULL;
-#else
-		isOpenGL = true;
+	if (!wglGetCurrentContext())
+		Plat_Error("D3D mode is not supported\n");
 #endif
-	}
 
 	return result;
 }

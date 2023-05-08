@@ -1,6 +1,3 @@
-extern bool isSoftware;
-extern bool isOpenGL;
-
 extern engine_studio_api_t IEngineStudio;
 
 void My_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel);

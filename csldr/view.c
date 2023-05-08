@@ -264,7 +264,7 @@ static void V_OffsetViewmodel(cl_entity_t *vm, vec3_t front, vec3_t side, vec3_t
 {
 	float x, y, z;
 
-	if (!isSoftware && currentWeaponId == WEAPON_KNIFE && !cl_mirror_knife->value)
+	if (currentWeaponId == WEAPON_KNIFE && !cl_mirror_knife->value)
 		x = -viewmodel_offset_x->value;
 	else
 		x = viewmodel_offset_x->value;

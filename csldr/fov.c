@@ -22,7 +22,7 @@ float GetCurrentFov(void)
 	w = (float)scr.iWidth;
 	h = (float)scr.iHeight;
 
-	if (!isSoftware && fov_horplus->value && ((w / h) != 0.75f))
+	if (fov_horplus->value && ((w / h) != 0.75f))
 		return Degrees(atanf(tanf(Radians(currentFov) / 2) * (w / h * 0.75f))) * 2;
 	else
 		return currentFov;

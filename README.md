@@ -14,7 +14,6 @@
 - Mirrored shell ejects
 - FOV lerp
 - Shader-based model renderer
-  - GPU skinning for capable hardware
 
 ## Notes
 
@@ -34,14 +33,17 @@
 
 ## Shader-based model renderer
 
-The shader-based model renderer requires OpenGL 2.0 for GLSL shaders. For GPU skinning to work, OpenGL 2.1 is required for non-square GLSL matrices and the GL_ARB_uniform_buffer_object extension is needed for UBOs. Currently the renderer doesn't have a lot going for it besides improved performance in some cases. Eventually I will add more features to it for modding purposes.
+The shader-based model renderer requires OpenGL 2.0 for GLSL shaders. For GPU skinning to work, OpenGL 2.1 is required for non-square GLSL matrices and the GL_ARB_uniform_buffer_object extension is needed for UBOs. Currently the renderer doesn't have a lot going for it besides a few nice to have things:
+- Improved performance in some cases
+- Support for the fullbright texture flag
+- Chrome textures are no longer limited to 64x64
+- Support for more than 2048 vertices/normals per submodel
+
+Eventually I will add more features to it for modding purposes.
 
 Known issues with the renderer:
-- Lighting is way off (some parts are too dark and others too light)
-- Chrome rendering is wrong (haven't bothered to implement it properly yet, chrome is rarely used anywhere)
-- Custom rendermodes are not implemented (haven't bothered, rarely seen in-game like chrome)
-- Elights are not handled (also rarely seen in-game)
-- Rendering of hulls, bboxes or bones is not supported
+- Glowshell uses model normals instead of computing custom ones
+- Rendering of hulls, bboxes or bones is not supported (r_drawentities > 1)
 
 The renderer can be enabled with `studio_fastpath 1` if the system supports it. To see information about the renderer's state, use `studio_info`. If you notice any issues with the renderer (models not looking as they should, worse performance, etc.) let me know by opening an issue.
 

@@ -44,6 +44,7 @@ Eventually I will add more features to it for modding purposes.
 Known issues with the renderer:
 - Glowshell uses model normals instead of computing custom ones
 - Rendering of hulls, bboxes or bones is not supported (r_drawentities > 1)
+- Fog is not handled
 
 The renderer can be enabled with `studio_fastpath 1` if the system supports it. To see information about the renderer's state, use `studio_info`. If you notice any issues with the renderer (models not looking as they should, worse performance, etc.) let me know by opening an issue.
 

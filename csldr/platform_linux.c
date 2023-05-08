@@ -40,6 +40,21 @@ void Plat_Error(const char *fmt, ...)
 	va_end(ap);
 
 	fwrite(buffer, 1, length, stderr);
+
+	// display a message box if we can
+	// i don't want to link to sdl2 directly nor do i want it as a build dependency
+	void *libSDL2 = dlopen("libSDL2.so", RTLD_LAZY);
+	if (libSDL2)
+	{
+		int (*SDL_ShowSimpleMessageBox)(uint32 flags, const char *title, const char *message, void *window);
+		SDL_ShowSimpleMessageBox = dlsym(libSDL2, "SDL_ShowSimpleMessageBox");
+	
+		if (SDL_ShowSimpleMessageBox)
+		{
+			SDL_ShowSimpleMessageBox(0, "Error", buffer, NULL);
+		}
+	}
+
 	exit(1);
 }
 

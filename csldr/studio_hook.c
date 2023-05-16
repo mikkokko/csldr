@@ -5,12 +5,12 @@ bool studio_fastpath;
 
 static studio_context_t context;
 
-cvar_t *studio_fastpath_enable;
+static cvar_t *studio_fastpath_toggle;
 
 static studiohdr_t *s_header;
 static model_t *s_model;
 
-#define FASTPATH_ENABLED (studio_fastpath && studio_fastpath_enable->value)
+#define FASTPATH_ENABLED (studio_fastpath && studio_fastpath_toggle->value)
 
 static void Hk_StudioSetHeader(void *header)
 {
@@ -210,6 +210,9 @@ void HookEngineStudio(engine_studio_api_t *studio)
 		studio->RestoreRenderer = Hk_RestoreRenderer;
 
 		R_StudioInit();
-		studio_fastpath_enable = gEngfuncs.pfnRegisterVariable("studio_fastpath", "0", FCVAR_ARCHIVE);
+
+		studio_fastpath_toggle = gEngfuncs.pfnRegisterVariable("studio_fastpath", "0", FCVAR_ARCHIVE);
+
+		gEngfuncs.pfnAddCommand("studio_config_flush", StudioConfigFlush_f);
 	}
 }

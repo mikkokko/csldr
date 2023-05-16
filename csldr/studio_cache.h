@@ -24,11 +24,6 @@ typedef struct
 
 typedef struct
 {
-	GLuint diffuse;
-} mem_texture_t;
-
-typedef struct
-{
 	float pos[3];
 	float norm[3];
 	float texcoord[2];
@@ -48,11 +43,25 @@ typedef struct
 	byte bones[2];
 } studio_vertbone_t;
 
+typedef struct
+{
+	char name[64];
+	GLuint diffuse;
+} mem_texture_t;
+
 typedef struct studio_cache_s
 {
 	uint32 hash;
-	mem_bodypart_t *bodyparts;
+
+	// name of the configuration file
+	char config_path[64];
+
+	// renderer specfic stuff
 	mem_texture_t *textures;
+	int numtextures;
+
+	mem_bodypart_t *bodyparts;
+
 	GLuint studio_vbo;
 	GLuint studio_ebo;
 
@@ -67,3 +76,6 @@ studio_cache_t *GetStudioCache(model_t *model, studiohdr_t *header);
 void UpdateStudioCaches(void);
 
 void StudioCacheStats(int *count, int *max);
+void StudioConfigFlush_f(void);
+
+studiohdr_t *R_LoadTextures(model_t *model, studiohdr_t *header);

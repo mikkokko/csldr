@@ -18,6 +18,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdarg.h>
+#include <setjmp.h>
 
 /* mikkotodo move */
 #if !defined(__cplusplus)
@@ -44,6 +45,7 @@ typedef enum {false, true} bool;
 #include "cl_dll.h"
 #include "fov.h"
 #include "inspect.h"
+#include "keyvalue.h"
 #include "proxy.h"
 #include "platform.h"
 #include "player_info.h"
@@ -52,11 +54,14 @@ typedef enum {false, true} bool;
 #include "studio_cache.h"
 #include "studio_hook.h"
 #include "studio_render.h"
+#include "studio_texture.h"
 #include "studiorenderer.h"
 #include "view.h"
 #include "weapon_info.h"
 #include "secret_dll.h"
 #include "memory.h"
+#include "gamma.h"
+#include "tga.h"
 
 /* ui stuff */
 #include "hud_crosshair.h"

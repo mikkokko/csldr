@@ -93,6 +93,7 @@ void Hk_HudInit(void)
 	InspectInit();
 	ShellInit();
 	CameraInit();
+	GammaInit();
 
 	/* is this czero */
 	gamedir = gEngfuncs.pfnGetGameDirectory();
@@ -139,9 +140,21 @@ void Hk_HudFrame(double time)
 			lw_bitched = false;
 	}
 
+#if defined(_WIN32)
+	static bool warzone_bitched;
+
+	if (isWarzone && !warzone_bitched)
+	{
+		warzone_bitched = true;
+		const char *libName = (isWarzone == 2) ? "GTProtector.asi" : "GTLib.asi";
+		gEngfuncs.Con_Printf("csldr found %s and removed it. The game might not work properly. Consider updating to the latest Steam version of the game.\n", libName);
+	}
+#endif
+
+	GammaUpdate();
+
 	// mikkotodo might be necessary again if we need extremely expensive tangent calc
-	if (studio_fastpath)
-		UpdateStudioCaches();
+	UpdateStudioCaches();
 
 	clientTime = gEngfuncs.GetClientTime();
 	cl_funcs.pHudFrame(time);

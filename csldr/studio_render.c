@@ -10,9 +10,7 @@
 static GLuint studio_ubo;
 static GLint bones_offset;
 
-static cvar_t *v_lightgamma;
-static cvar_t *v_brightness;
-static cvar_t *v_gamma;
+// mikkotodo move elsewhere
 static cvar_t *r_glowshellfreq;
 
 // for cpu chrome
@@ -34,25 +32,23 @@ static struct
 	GLuint program;
 
 	GLuint u_chromeorg;
-	GLuint u_viewright;
+	GLuint u_chromeright;
 	GLuint u_ambientlight;
-	GLuint u_shadelight;
-	GLuint u_lightcolor;
 	GLuint u_lightvec;
+	GLuint u_shadelight;
+	GLuint u_colormix;
 
 	GLuint u_texture;
 
 	GLuint u_tex_flatshade;
 	GLuint u_tex_chrome;
 	GLuint u_tex_fullbright;
-	GLuint u_tex_masked;
 
 	GLuint u_lightgamma;
 	GLuint u_brightness;
 	GLuint u_invgamma;
 	GLuint u_g3;
 
-	GLuint u_alpha;
 	GLuint u_additive;
 
 	GLuint u_glowshell;
@@ -73,39 +69,42 @@ enum
 	shader_studio_a_bones = 3
 };
 
-static const attribute_t studio_attributes[] =
+static const attribute_t studio_attributes_cpu[] =
+{
+	{ shader_studio_a_pos, "a_pos" },
+	{ shader_studio_a_normal, "a_normal" },
+	{ shader_studio_a_texcoord, "a_texcoord" }
+};
+
+static const attribute_t studio_attributes_gpu[] =
 {
 	{ shader_studio_a_pos, "a_pos" },
 	{ shader_studio_a_normal, "a_normal" },
 	{ shader_studio_a_texcoord, "a_texcoord" },
-
-	// only for gpu skinning
 	{ shader_studio_a_bones, "a_bones" }
 };
 
 static const uniform_t studio_uniforms[] =
 {
 	{ &shader_studio.u_chromeorg, "u_chromeorg" },
-	{ &shader_studio.u_viewright, "u_viewright" },
+	{ &shader_studio.u_chromeright, "u_chromeright" },
 
 	{ &shader_studio.u_ambientlight, "u_ambientlight" },
 	{ &shader_studio.u_shadelight, "u_shadelight" },
-	{ &shader_studio.u_lightcolor, "u_lightcolor" },
 	{ &shader_studio.u_lightvec, "u_lightvec" },
+	{ &shader_studio.u_colormix, "u_colormix" },
 
 	{ &shader_studio.u_texture, "u_texture" },
 
 	{ &shader_studio.u_tex_flatshade, "u_tex_flatshade" },
 	{ &shader_studio.u_tex_chrome, "u_tex_chrome" },
 	{ &shader_studio.u_tex_fullbright, "u_tex_fullbright" },
-	{ &shader_studio.u_tex_masked, "u_tex_masked" },
 
 	{ &shader_studio.u_lightgamma, "u_lightgamma" },
 	{ &shader_studio.u_brightness, "u_brightness" },
 	{ &shader_studio.u_invgamma, "u_invgamma" },
 	{ &shader_studio.u_g3, "u_g3" },
 
-	{ &shader_studio.u_alpha, "u_alpha" },
 	{ &shader_studio.u_additive, "u_additive" },
 
 	{ &shader_studio.u_glowshell, "u_glowshell" },
@@ -118,18 +117,16 @@ static const uniform_t studio_uniforms[] =
 
 void R_StudioInit(void)
 {
-	v_lightgamma = gEngfuncs.pfnGetCvarPointer("lightgamma");
-	v_brightness = gEngfuncs.pfnGetCvarPointer("brightness");
-	v_gamma = gEngfuncs.pfnGetCvarPointer("gamma");
 	r_glowshellfreq = gEngfuncs.pfnGetCvarPointer("r_glowshellfreq");
 
 	if (studio_gpuskin)
-		LOAD_SHADER(studio, studio_gpu, studio);
+	{
+		LOAD_SHADER(studio, studio_gpu, studio, studio_attributes_gpu, studio_uniforms);
+	}
 	else
-		LOAD_SHADER(studio, studio_cpu, studio);
-
-	// textures stay constant (mikkotodo check)
-	glUniform1i(shader_studio.u_texture, 0);
+	{
+		LOAD_SHADER(studio, studio_cpu, studio, studio_attributes_cpu, studio_uniforms);
+	}
 
 	if (studio_gpuskin)
 	{
@@ -152,11 +149,6 @@ void R_StudioInit(void)
 
 	// get pointer to first elight
 	cl_elights = gEngfuncs.pEfxAPI->CL_AllocElight(0);
-}
-
-static float GammaCorrect(float x)
-{
-	return powf(x, v_gamma->value);
 }
 
 void R_StudioEntityLight(studio_context_t *ctx)
@@ -239,9 +231,9 @@ void R_StudioEntityLight(studio_context_t *ctx)
 		VectorCopy(elight_pos[index], elight->origin);
 		elight_pos[index][3] = r2;
 
-		elight_color[index][0] = GammaCorrect((float)elight->color.r / 255.0f);
-		elight_color[index][1] = GammaCorrect((float)elight->color.g / 255.0f);
-		elight_color[index][2] = GammaCorrect((float)elight->color.b / 255.0f);
+		elight_color[index][0] = (float)gammavars.lineartable[elight->color.r] * (1.0f / 255.0f);
+		elight_color[index][1] = (float)gammavars.lineartable[elight->color.g] * (1.0f / 255.0f);
+		elight_color[index][2] = (float)gammavars.lineartable[elight->color.b] * (1.0f / 255.0f);
 
 		if (index >= elight_num)
 		{
@@ -271,34 +263,6 @@ void R_StudioSetupLighting(studio_context_t *ctx, alight_t *lighting)
 	ctx->shadelight = (float)lighting->shadelight * (1.0f / 255.0f);
 	VectorCopy(ctx->lightcolor, lighting->color);
 	VectorCopy(ctx->lightvec, lighting->plightvec);
-}
-
-static void CalcGamma(float *plightgamma, float *pbrightness, float *pinvgamma, float *pg3)
-{
-	float brightness = v_brightness->value;
-	float lightgamma = v_lightgamma->value;
-	float gamma = v_gamma->value;
-
-	float g = gamma ? (1.0f / gamma) : 0.4f;
-
-	float g3;
-	if (brightness <= 0)
-	{
-		g3 = 0.125f;
-	}
-	else if (brightness > 1)
-	{
-		g3 = 0.05f;
-	}
-	else
-	{
-		g3 = 0.125f - brightness * brightness * 0.075f;	
-	}
-
-	*plightgamma = lightgamma;
-	*pbrightness = brightness;
-	*pinvgamma = g;
-	*pg3 = g3;
 }
 
 // different to engine's but doesn't matter here
@@ -418,66 +382,32 @@ static int CalcFxBlend(const cl_entity_t *ent)
 
 void R_StudioSetupRenderer(studio_context_t *ctx)
 {
+	// done to avoid texture bugs
 	glPushAttrib(GL_TEXTURE_BIT);
 	glActiveTexture(GL_TEXTURE0);
 
+	// setup our 70 different uniforms
 	glUseProgram(shader_studio.program);
-	glUniform3fv(shader_studio.u_viewright, 1, v_viewright);
 
-	glBindBuffer(GL_UNIFORM_BUFFER, studio_ubo);
-
-	// calling GetViewEntity is ok here
-	if (cl_righthand->value && ctx->entity == IEngineStudio.GetViewEntity())
-		glDisable(GL_CULL_FACE);
-
-	glBindBuffer(GL_ARRAY_BUFFER, ctx->cache->studio_vbo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->cache->studio_ebo);
-
-	if (studio_gpuskin)
-	{
-		glEnableVertexAttribArray(shader_studio_a_pos);
-		glEnableVertexAttribArray(shader_studio_a_normal);
-		glEnableVertexAttribArray(shader_studio_a_texcoord);
-		glEnableVertexAttribArray(shader_studio_a_bones);
-
-		glVertexAttribPointer(shader_studio_a_pos, 3, GL_FLOAT, GL_FALSE, sizeof(studio_gpu_vert_t), (void *)Q_OFFSETOF(studio_gpu_vert_t, pos));
-		glVertexAttribPointer(shader_studio_a_normal, 3, GL_FLOAT, GL_FALSE, sizeof(studio_gpu_vert_t), (void *)Q_OFFSETOF(studio_gpu_vert_t, norm));
-		glVertexAttribPointer(shader_studio_a_texcoord, 2, GL_FLOAT, GL_FALSE, sizeof(studio_gpu_vert_t), (void *)Q_OFFSETOF(studio_gpu_vert_t, texcoord));
-		glVertexAttribPointer(shader_studio_a_bones, 2, GL_FLOAT, GL_FALSE, sizeof(studio_gpu_vert_t), (void *)Q_OFFSETOF(studio_gpu_vert_t, bones));
-
-		glBufferSubData(GL_UNIFORM_BUFFER, bones_offset, ctx->header->numbones * sizeof(mat3x4_t), &(*ctx->bonetransform)[0][0][0]);
-	}
-	else
-	{
-		glEnableVertexAttribArray(shader_studio_a_pos);
-		glEnableVertexAttribArray(shader_studio_a_normal);
-		glEnableVertexAttribArray(shader_studio_a_texcoord);
-
-		glVertexAttribPointer(shader_studio_a_pos, 3, GL_FLOAT, GL_FALSE, sizeof(studio_cpu_vert_t), (void *)Q_OFFSETOF(studio_cpu_vert_t, pos));
-		glVertexAttribPointer(shader_studio_a_normal, 3, GL_FLOAT, GL_FALSE, sizeof(studio_cpu_vert_t), (void *)Q_OFFSETOF(studio_cpu_vert_t, norm));
-		glVertexAttribPointer(shader_studio_a_texcoord, 2, GL_FLOAT, GL_FALSE, sizeof(studio_cpu_vert_t), (void *)Q_OFFSETOF(studio_cpu_vert_t, texcoord));
-	}
+	glUniform1i(shader_studio.u_texture, 0);
 
 	glUniform1f(shader_studio.u_ambientlight, ctx->ambientlight);
 	glUniform1f(shader_studio.u_shadelight, ctx->shadelight);
-	glUniform3fv(shader_studio.u_lightcolor, 1, ctx->lightcolor);
 	glUniform3fv(shader_studio.u_lightvec, 1, ctx->lightvec);
 
-	float lightgamma;
-	float brightness;
-	float invgamma;
-	float g3;
+	float colormix[4];
+	colormix[0] = ctx->lightcolor[0];
+	colormix[1] = ctx->lightcolor[1];
+	colormix[2] = ctx->lightcolor[2];
+	colormix[3] = CalcFxBlend(ctx->entity) * (1.0f / 255);
+	glUniform4fv(shader_studio.u_colormix, 1, colormix);
 
-	CalcGamma(&lightgamma, &brightness, &invgamma, &g3);
+	glUniform1f(shader_studio.u_lightgamma, gammavars.lightgamma);
+	glUniform1f(shader_studio.u_brightness, gammavars.brightness);
+	glUniform1f(shader_studio.u_invgamma, gammavars.g);
+	glUniform1f(shader_studio.u_g3, gammavars.g3);
 
-	glUniform1f(shader_studio.u_lightgamma, lightgamma);
-	glUniform1f(shader_studio.u_brightness, brightness);
-	glUniform1f(shader_studio.u_invgamma, invgamma);
-	glUniform1f(shader_studio.u_g3, g3);
-
-	float alpha = CalcFxBlend(ctx->entity) * (1.0f / 255);
-	glUniform1f(shader_studio.u_alpha, alpha);
-	glUniform1i(shader_studio.u_additive, (ctx->entity->curstate.rendermode == 5) ? true : false);
+	glUniform1i(shader_studio.u_additive, (ctx->entity->curstate.rendermode == kRenderTransAdd));
 
 	// bruh
 	if (ctx->entity->curstate.renderfx == kRenderFxGlowShell)
@@ -501,6 +431,7 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 	}
 
 	glUniform3fv(shader_studio.u_chromeorg, 1, chrome_origin);
+	glUniform3fv(shader_studio.u_chromeright, 1, v_viewright);
 
 	glUniform1i(shader_studio.u_elight_num, elight_num);
 
@@ -509,10 +440,52 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 		glUniform4fv(shader_studio.u_elight_pos, elight_num, &elight_pos[0][0]);
 		glUniform3fv(shader_studio.u_elight_color, elight_num, &elight_color[0][0]);
 	}
+
+	// setup other stuff
+
+	// calling GetViewEntity is ok here
+	if (cl_righthand->value && ctx->entity == IEngineStudio.GetViewEntity())
+		glDisable(GL_CULL_FACE);
+
+	glBindBuffer(GL_ARRAY_BUFFER, ctx->cache->studio_vbo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->cache->studio_ebo);
+
+	if (studio_gpuskin)
+	{
+		glBindBuffer(GL_UNIFORM_BUFFER, studio_ubo);
+		glBufferSubData(GL_UNIFORM_BUFFER, bones_offset, ctx->header->numbones * sizeof(mat3x4_t), &(*ctx->bonetransform)[0][0][0]);
+	}
+
+	if (studio_gpuskin)
+	{
+		glEnableVertexAttribArray(shader_studio_a_pos);
+		glEnableVertexAttribArray(shader_studio_a_normal);
+		glEnableVertexAttribArray(shader_studio_a_texcoord);
+		glEnableVertexAttribArray(shader_studio_a_bones);
+
+		glVertexAttribPointer(shader_studio_a_pos, 3, GL_FLOAT, GL_FALSE, sizeof(studio_gpu_vert_t), (void *)Q_OFFSETOF(studio_gpu_vert_t, pos));
+		glVertexAttribPointer(shader_studio_a_normal, 3, GL_FLOAT, GL_FALSE, sizeof(studio_gpu_vert_t), (void *)Q_OFFSETOF(studio_gpu_vert_t, norm));
+		glVertexAttribPointer(shader_studio_a_texcoord, 2, GL_FLOAT, GL_FALSE, sizeof(studio_gpu_vert_t), (void *)Q_OFFSETOF(studio_gpu_vert_t, texcoord));
+		glVertexAttribPointer(shader_studio_a_bones, 2, GL_FLOAT, GL_FALSE, sizeof(studio_gpu_vert_t), (void *)Q_OFFSETOF(studio_gpu_vert_t, bones));
+	}
+	else
+	{
+		glEnableVertexAttribArray(shader_studio_a_pos);
+		glEnableVertexAttribArray(shader_studio_a_normal);
+		glEnableVertexAttribArray(shader_studio_a_texcoord);
+
+		glVertexAttribPointer(shader_studio_a_pos, 3, GL_FLOAT, GL_FALSE, sizeof(studio_cpu_vert_t), (void *)Q_OFFSETOF(studio_cpu_vert_t, pos));
+		glVertexAttribPointer(shader_studio_a_normal, 3, GL_FLOAT, GL_FALSE, sizeof(studio_cpu_vert_t), (void *)Q_OFFSETOF(studio_cpu_vert_t, norm));
+		glVertexAttribPointer(shader_studio_a_texcoord, 2, GL_FLOAT, GL_FALSE, sizeof(studio_cpu_vert_t), (void *)Q_OFFSETOF(studio_cpu_vert_t, texcoord));
+	}
 }
 
 void R_StudioRestoreRenderer(studio_context_t *ctx)
 {
+	glPopAttrib();
+
+	glUseProgram(0);
+
 	// restore opengl state
 	if (cl_righthand->value && ctx->entity == IEngineStudio.GetViewEntity())
 		glEnable(GL_CULL_FACE);
@@ -526,14 +499,13 @@ void R_StudioRestoreRenderer(studio_context_t *ctx)
 		glDisableVertexAttribArray(shader_studio_a_bones);
 	}
 
-	glPopAttrib();
-
-	glUseProgram(0);
-
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	if (studio_gpuskin)
+	{
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
 }
 
 void R_StudioSetupModel(studio_context_t *ctx, int bodypart_index)
@@ -695,9 +667,16 @@ void R_StudioDrawPoints(studio_context_t *ctx)
 		glUniform1i(shader_studio.u_tex_flatshade, (flags & STUDIO_NF_FLATSHADE) ? true : false);
 		glUniform1i(shader_studio.u_tex_chrome, (flags & STUDIO_NF_CHROME) ? true : false);
 		glUniform1i(shader_studio.u_tex_fullbright, (flags & STUDIO_NF_FULLBRIGHT) ? true : false);
-		glUniform1i(shader_studio.u_tex_masked, (flags & STUDIO_NF_MASKED) ? true : false);
 
+		bool alphatest = (flags & STUDIO_NF_MASKED) ? true : false;
 		bool additive = ((flags & STUDIO_NF_ADDITIVE) && ctx->entity->curstate.rendermode == kRenderNormal);
+
+		if (alphatest)
+		{
+			glEnable(GL_ALPHA_TEST);
+			glAlphaFunc(GL_GREATER, 0.5f);
+			glDepthMask(GL_TRUE);
+		}
 
 		if (additive)
 		{
@@ -716,37 +695,16 @@ void R_StudioDrawPoints(studio_context_t *ctx)
 
 		glDrawElements(GL_TRIANGLES, mem_mesh->num_indices, GL_UNSIGNED_INT, (void *)mem_mesh->ofs_indices);
 
+		if (alphatest)
+		{
+			glAlphaFunc(GL_NOTEQUAL, 0);
+			glDisable(GL_ALPHA_TEST);
+		}
+
 		if (additive)
 		{
 			glDisable(GL_BLEND);
 			glDepthMask(GL_TRUE);
 		}
 	}
-}
-
-studiohdr_t *R_LoadTextures(model_t *model, studiohdr_t *header)
-{
-	assert(model);
-
-	if (header->textureindex)
-		return header;
-
-	model_t *texmodel = (model_t *)model->texinfo;
-	if (texmodel && IEngineStudio.Cache_Check(&texmodel->cache))
-		return (studiohdr_t *)texmodel->cache.data;
-
-	char path[128];
-	strcpy(path, model->name);
-
-	// unsafe but the engine does it too...
-	// also lower case for linux??? what the fuck
-	strcpy(path + strlen(path) - 4, "t.mdl");
-
-	texmodel = IEngineStudio.Mod_ForName(path, true);
-	model->texinfo = (mtexinfo_t *)texmodel;
-
-	// not sure why this is done but ok
-	studiohdr_t *textureheader = (studiohdr_t *)texmodel->cache.data;
-	strcpy(textureheader->name, path);
-	return textureheader;
 }

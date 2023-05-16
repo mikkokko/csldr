@@ -15,13 +15,20 @@ void Mem_Init(void)
 void Mem_Shutdown(void)
 {
 	free(mem_block);
-	//Plat_Error("Memory used %f mb\n", (double)mem_used / 1024.0 / 1024.0);
 }
 
 void *Mem_Alloc(size_t size)
 {
 	void *ptr = Mem_AllocTemp(size);
 	mem_used += size;
+	return ptr;
+}
+
+char *Mem_Strdup(const char *s)
+{
+	size_t n = strlen(s) + 1;
+	char *ptr = Mem_Alloc(n);
+	memcpy(ptr, s, n);
 	return ptr;
 }
 

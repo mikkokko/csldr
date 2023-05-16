@@ -54,13 +54,12 @@ file(GLOB CSLDR_HDR ${SRCDIR}/csldr/*.h)
 
 add_library(csldr SHARED
 	${CSLDR_SRC}
-	${CSLDR_HDR}
-	${SRCDIR}/external/glad/src/glad.c)
+	${CSLDR_HDR})
 
-target_include_directories(csldr PRIVATE
-	${SRCDIR}/external/glad/include
-	${SRCDIR}/external/sdk
-	${SRCDIR}/shaders)
+target_include_directories(csldr PRIVATE ${SRCDIR}/external/sdk)
+
+target_sources(csldr PRIVATE ${SRCDIR}/external/glad/src/glad.c)
+target_include_directories(csldr PRIVATE ${SRCDIR}/external/glad/include ${SRCDIR}/shaders)
 
 if (MSVC)
 	set_source_files_properties(${CSLDR_SRC} PROPERTIES COMPILE_FLAGS "/Yupch.h")

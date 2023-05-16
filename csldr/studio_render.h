@@ -29,5 +29,3 @@ void R_StudioRestoreRenderer(studio_context_t *ctx);
 
 void R_StudioSetupModel(studio_context_t *ctx, int bodypart_index);
 void R_StudioDrawPoints(studio_context_t *ctx);
-
-studiohdr_t *R_LoadTextures(model_t *model, studiohdr_t *header);

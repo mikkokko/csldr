@@ -28,23 +28,23 @@ GLuint CreateShaderProgram(const char *name,
 	int num_uniforms);
 
 #ifdef SHADERS_FROM_DISK
-#define LOAD_SHADER(name, vs, fs)					\
+#define LOAD_SHADER(name, vs, fs, atr, un)			\
 shader_##name.program = CreateShaderProgram(#name,	\
 	"shaders/" #vs ".vert",							\
 	"shaders/" #fs ".frag",							\
-	name##_attributes,								\
-	Q_ARRAYSIZE(name##_attributes),					\
-	name##_uniforms,								\
-	Q_ARRAYSIZE(name##_uniforms))
+	atr,								            \
+	Q_ARRAYSIZE(atr),					            \
+	un,								                \
+	Q_ARRAYSIZE(un))
 #else
-#define LOAD_SHADER(name, vs, fs)					\
+#define LOAD_SHADER(name, vs, fs, atr, un)			\
 shader_##name.program = CreateShaderProgram(#name,	\
-	(char *)shaders_##vs##_vert,					\
-	(int)shaders_##vs##_vert_len,					\
-	(char *)shaders_##fs##_frag,					\
-	(int)shaders_##fs##_frag_len,					\
-	name##_attributes,								\
-	Q_ARRAYSIZE(name##_attributes),					\
-	name##_uniforms,								\
-	Q_ARRAYSIZE(name##_uniforms))
+	(char *)vs##_vert,					            \
+	(int)vs##_vert_len,					            \
+	(char *)fs##_frag,					            \
+	(int)fs##_frag_len,					            \
+	atr,								            \
+	Q_ARRAYSIZE(atr),					            \
+	un,								                \
+	Q_ARRAYSIZE(un))
 #endif

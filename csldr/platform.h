@@ -16,6 +16,10 @@
 #define EXPORT EXTERNC __attribute__((visibility("default")))
 #endif
 
+#if defined(_WIN32)
+extern int isWarzone;
+#endif
+
 void *Plat_Dlopen(const char *filename);
 void *Plat_Dlsym(void *handle, const char *name);
 void Plat_Dlclose(void *handle);

@@ -6,6 +6,10 @@
 
 static HMODULE hModule;
 
+#if defined(_WIN32)
+bool isWarzone;
+#endif
+
 void *Plat_Dlopen(const char *filename)
 {
 	return LoadLibraryA(filename);
@@ -45,7 +49,16 @@ void Plat_Error(const char *fmt, ...)
 static void RemoveGTlib(void)
 {
 	if (SetFileAttributesW(L"GTlib.asi", FILE_ATTRIBUTE_NORMAL))
+	{
 		DeleteFileW(L"GTlib.asi");
+		isWarzone = 1;
+	}
+
+	if (SetFileAttributesW(L"GTProtector.asi", FILE_ATTRIBUTE_NORMAL))
+	{
+		DeleteFileW(L"GTProtector.asi");
+		isWarzone = 2;
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)

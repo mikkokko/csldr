@@ -7,7 +7,7 @@
 static HMODULE hModule;
 
 #if defined(_WIN32)
-bool isWarzone;
+int isWarzone;
 #endif
 
 void *Plat_Dlopen(const char *filename)

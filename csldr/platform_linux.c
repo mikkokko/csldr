@@ -2,7 +2,7 @@
 
 #if defined(__linux__)
 
-#define __USE_GNU /* Dl_info */
+#define __USE_GNU 1 /* Dl_info */
 #include <dlfcn.h>
 
 void *Plat_Dlopen(const char *filename)
@@ -46,8 +46,8 @@ void Plat_Error(const char *fmt, ...)
 	void *libSDL2 = dlopen("libSDL2.so", RTLD_LAZY);
 	if (libSDL2)
 	{
-		int (*SDL_ShowSimpleMessageBox)(uint32 flags, const char *title, const char *message, void *window);
-		SDL_ShowSimpleMessageBox = dlsym(libSDL2, "SDL_ShowSimpleMessageBox");
+		typedef int (*SDL_ShowSimpleMessageBox_t)(uint32 flags, const char *title, const char *message, void *window);
+		SDL_ShowSimpleMessageBox_t SDL_ShowSimpleMessageBox = (SDL_ShowSimpleMessageBox_t)dlsym(libSDL2, "SDL_ShowSimpleMessageBox");
 	
 		if (SDL_ShowSimpleMessageBox)
 		{

@@ -61,7 +61,7 @@ static char *RecursiveParse(keyValue_t *kv, char *s)
 	int capacity = DEFAULT_SUBKEY_COUNT;
 
 	kv->type = keyValueKey;
-	kv->subkeys = malloc(sizeof(*kv->subkeys) * capacity);
+	kv->subkeys = (keyValue_t *)malloc(sizeof(*kv->subkeys) * capacity);
 	kv->numSubkeys = 0;
 
 	s = SkipWhite(s);
@@ -80,7 +80,7 @@ static char *RecursiveParse(keyValue_t *kv, char *s)
 			if (kv->numSubkeys >= capacity)
 			{
 				capacity *= 2;
-				kv->subkeys = realloc(kv->subkeys, sizeof(*kv->subkeys) * capacity);
+				kv->subkeys = (keyValue_t *)realloc(kv->subkeys, sizeof(*kv->subkeys) * capacity);
 			}
 
 			subkey = &kv->subkeys[kv->numSubkeys];

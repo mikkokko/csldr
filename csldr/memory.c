@@ -27,7 +27,7 @@ void *Mem_Alloc(size_t size)
 char *Mem_Strdup(const char *s)
 {
 	size_t n = strlen(s) + 1;
-	char *ptr = Mem_Alloc(n);
+	char *ptr = (char *)Mem_Alloc(n);
 	memcpy(ptr, s, n);
 	return ptr;
 }

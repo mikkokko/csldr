@@ -26,14 +26,13 @@ jobs:
         include:
           - os: windows-latest
             name: windows
-            cmake_preset: ci-windows-x86
+            cmake_options: '-A Win32'
             binary_path: 'build/Release/client.dll'
-            build_conf: Release
+            build_options: '--config Release'
           - os: ubuntu-latest
             name: linux
-            cmake_preset: ci-linux-x86
+            cmake_options: '-DCMAKE_BUILD_TYPE=Release'
             binary_path: 'build/client.so'
-            build_conf: Release
 
     steps:
       - uses: actions/checkout@v3
@@ -62,13 +61,13 @@ jobs:
       - name: Install dependencies and generate project files
         working-directory: ${{github.workspace}}/build
         run: |
-          cmake ${{github.workspace}} --preset ${{ matrix.cmake_preset }}
+          cmake ${{github.workspace}} ${{ matrix.cmake_options }}
 
       # Build the whole project with Ninja (which is spawn by CMake). Release configuration.
       - name: Build (Release)
         working-directory: ${{github.workspace}}/build
         run: |
-          cmake --build . --config ${{ matrix.build_conf }}
+          cmake --build . ${{ matrix.build_options }}
 
       # Official action upload-release-asset doesn't support uploading files
       # based on a glob, so use https://github.com/softprops/action-gh-release

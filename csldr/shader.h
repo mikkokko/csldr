@@ -8,7 +8,7 @@ typedef struct
 
 typedef struct
 {
-	GLuint *location;
+	GLint *location;
 	const char *name;
 } uniform_t;
 

@@ -9,7 +9,7 @@
 # custom GitHub actions, but leverages directly the tools that could be easily run on
 # your development machines (i.e. CMake, vcpkg, Ninja) to ensure a perfectly identical
 # and reproducible build locally (on your development machine) and remotely (on build agents).
-name: hosted-pure-workflow
+name: build-release
 on:
   push:
     tags:

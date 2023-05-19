@@ -356,7 +356,7 @@ static void SetConfigPath(studio_cache_t *cache, model_t *model)
 {
 	char modelname[64];
 	CopyWithoutExtension(modelname, model->name); // will fit
-	sprintf(cache->config_path, "%s.txt", modelname); // will fit
+	snprintf(cache->config_path, sizeof(cache->config_path), "%s.txt", modelname); // will fit
 }
 
 static void BuildStudioCache(studio_cache_t *cache, model_t *model, studiohdr_t *header)

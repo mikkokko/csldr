@@ -31,32 +31,32 @@ static struct
 {
 	GLuint program;
 
-	GLuint u_chromeorg;
-	GLuint u_chromeright;
-	GLuint u_ambientlight;
-	GLuint u_lightvec;
-	GLuint u_shadelight;
-	GLuint u_colormix;
+	GLint u_chromeorg;
+	GLint u_chromeright;
+	GLint u_ambientlight;
+	GLint u_lightvec;
+	GLint u_shadelight;
+	GLint u_colormix;
 
-	GLuint u_texture;
+	GLint u_texture;
 
-	GLuint u_tex_flatshade;
-	GLuint u_tex_chrome;
-	GLuint u_tex_fullbright;
+	GLint u_tex_flatshade;
+	GLint u_tex_chrome;
+	GLint u_tex_fullbright;
 
-	GLuint u_lightgamma;
-	GLuint u_brightness;
-	GLuint u_invgamma;
-	GLuint u_g3;
+	GLint u_lightgamma;
+	GLint u_brightness;
+	GLint u_invgamma;
+	GLint u_g3;
 
-	GLuint u_additive;
+	GLint u_additive;
 
-	GLuint u_glowshell;
-	GLuint u_glowshell_color;
+	GLint u_glowshell;
+	GLint u_glowshell_color;
 
-	GLuint u_elight_num;
-	GLuint u_elight_pos;
-	GLuint u_elight_color;
+	GLint u_elight_num;
+	GLint u_elight_pos;
+	GLint u_elight_color;
 } shader_studio;
 
 enum

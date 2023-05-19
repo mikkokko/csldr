@@ -54,7 +54,7 @@ typedef struct studio_cache_s
 	uint32 hash;
 
 	// name of the configuration file
-	char config_path[64];
+	char config_path[256];
 
 	// renderer specfic stuff
 	mem_texture_t *textures;

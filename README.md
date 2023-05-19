@@ -26,7 +26,7 @@
 
 ## Installation
 
-1. Download Windows binary from the [releases page](https://github.com/mikkokko/csldr/releases) or compile it from source
+1. Download the latest Windows or Linux binary from the [releases page](https://github.com/mikkokko/csldr/releases) or compile it from source
 2. Navigate to "cstrike/cl_dlls" (or "czero/cl_dlls" if you're playing Condition Zero)
 3. Rename the existing client.dll to client_orig.dll (client.so to client_orig.so on Linux)
 4. Play
@@ -38,6 +38,7 @@ The shader-based model renderer requires OpenGL 2.0 for GLSL shaders. For GPU sk
 - Support for the fullbright texture flag
 - Chrome textures are no longer limited to 64x64
 - Support for more than 2048 vertices/normals per submodel
+- External texture replacements (see [Model config files](#model-config-files))
 
 Eventually I will add more features to it for modding purposes.
 
@@ -47,6 +48,43 @@ Known issues with the renderer:
 - Fog is not handled
 
 The renderer can be enabled with `studio_fastpath 1` if the system supports it. To see information about the renderer's state, use `studio_info`. If you notice any issues with the renderer (models not looking as they should, worse performance, etc.) let me know by opening an issue.
+
+## Model config files
+
+Model config files allow you to tweak model specific options. Here is an example config file for the ak47 viewmodel (`models/v_ak47.txt`):
+```c
+// subset of valve's keyvalue format
+// c++ style comments are supported (//)
+// strings can be quoted or unquoted (latter is preferred, strings should not contain spaces)
+
+// texture overrides
+textures
+{
+	ak47.bmp // embedded texture name
+	{
+		diffuse textures/models/v_ak47/ak47.tga
+	}
+	
+	view_glove.bmp
+	{
+		diffuse	textures/models/v_hands/view_glove.tga
+	}
+	
+	view_finger.bmp
+	{
+		diffuse	textures/models/v_hands/view_finger.tga
+	}
+	
+	view_skin.bmp
+	{
+		diffuse	textures/models/v_hands/view_skin.tga
+	}
+}
+```
+
+Currently the config files allow for external texture replacements. The texture replacements only work when the shader-based model renderer is active. Only TGA files are supported.
+
+Model config files can be reloaded with the `studio_config_flush` command. This will also reload texture files.
 
 ## Other stuff
 

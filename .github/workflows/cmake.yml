@@ -10,7 +10,10 @@
 # your development machines (i.e. CMake, vcpkg, Ninja) to ensure a perfectly identical
 # and reproducible build locally (on your development machine) and remotely (on build agents).
 name: hosted-pure-workflow
-on: [push, workflow_dispatch]
+on:
+  push:
+    tags:
+      - '*'
 
 jobs:
   job:

@@ -1,0 +1,89 @@
+# Copyright (c) 2021 Luca Cappa
+# Released under the term specified in file LICENSE.txt
+# SPDX short identifier: MIT
+
+# A "pure" GitHub workflow using CMake, Ninja and vcpkg to build a C/C++ codebase.
+# It leverages both CMakePresets.json and vcpkg.json to have consistent build locallly
+# and on continuous integration servers (aka build agents).
+# It is called "pure workflow" because it is an example which minimizes the usage of
+# custom GitHub actions, but leverages directly the tools that could be easily run on
+# your development machines (i.e. CMake, vcpkg, Ninja) to ensure a perfectly identical
+# and reproducible build locally (on your development machine) and remotely (on build agents).
+name: hosted-pure-workflow
+on: [push, workflow_dispatch]
+
+jobs:
+  job:
+    name: ${{ matrix.os }}-${{ github.workflow }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: windows-latest
+            name: windows
+            cmake_preset: ci-windows-x86
+            binary_path: 'build/Release/client.dll'
+            build_conf: Release
+          - os: ubuntu-latest
+            name: linux
+            cmake_preset: ci-linux-x86
+            binary_path: 'build/client.so'
+            build_conf: Release
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      # Setup the build machine with the most recent versions of CMake and Ninja. Both are cached if not already: on subsequent runs both will be quickly restored from GitHub cache service.
+      - uses: lukka/get-cmake@latest
+
+      # On Windows runners, let's ensure to have the Developer Command Prompt environment setup correctly. As used here the Developer Command Prompt created is targeting x64 and using the default the Windows SDK.
+      - uses: ilammy/msvc-dev-cmd@v1
+      
+      - name: Create build environment
+        # Some projects don't allow in-source building, so create a separate build directory
+        # We'll use this as our working directory for all subsequent commands
+        run: cmake -E make_directory ${{github.workspace}}/build
+        
+      # On Linux, we need gcc i386 compiler support
+      - if: matrix.os == 'ubuntu-latest'
+        name: Install Dependencies
+        run: |-
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt install --yes --no-install-recommends gcc-multilib g++-multilib
+      
+      # Run CMake to generate Ninja project files, using the vcpkg's toolchain file to resolve and install the dependencies as specified in vcpkg.json.
+      - name: Install dependencies and generate project files
+        working-directory: ${{github.workspace}}/build
+        run: |
+          cmake ${{github.workspace}} --preset ${{ matrix.cmake_preset }}
+
+      # Build the whole project with Ninja (which is spawn by CMake). Release configuration.
+      - name: Build (Release)
+        working-directory: ${{github.workspace}}/build
+        run: |
+          cmake --build . --config ${{ matrix.build_conf }}
+        
+     # Create release
+      - name: Archive Release
+        uses: thedoctor0/zip-release@0.7.1
+        with:
+          type: 'zip'
+          filename: 'csldr_${{ matrix.os }}_${{ github.ref_name }}.zip'
+          path: ${{ matrix.binary_path }}
+          
+      # Official action upload-release-asset doesn't support uploading files
+      # based on a glob, so use https://github.com/softprops/action-gh-release
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        with:
+          draft: true
+          name: 'csldr_${{ matrix.os }}_${{ github.ref_name }}'
+          files: 'csldr_${{ matrix.os }}_${{ github.ref_name }}.zip'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          

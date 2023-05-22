@@ -176,7 +176,7 @@ typedef struct
   texture_t** textures;
   byte* visdata;
   color24* lightdata;
-  char* entities;
+  sdk_string_const char* entities;
   cache_user_t cache;
 } model_t;
 

@@ -6,19 +6,10 @@
 #endif
 
 engine_studio_api_t IEngineStudio;
-r_studio_interface_t studio;
+static r_studio_interface_t studio;
 
-extern cvar_t *viewmodel_fov;
-
-extern cvar_t *viewmodel_offset_x;
-extern cvar_t *viewmodel_offset_y;
-extern cvar_t *viewmodel_offset_z;
-extern cvar_t *viewmodel_hands;
-
-extern cvar_t *cl_mirror_knife;
-
-#define Z_NEAR 1.0 /* was 4 but that's too far for viewmodels */
-#define Z_FAR 4096.0
+#define Z_NEAR 1.0f /* was 4 but that's too far for viewmodels */
+#define Z_FAR 4096.0f
 
 static int Hk_StudioDrawModel(int flags)
 {
@@ -32,29 +23,18 @@ static int Hk_StudioDrawPlayer(int flags, entity_state_t *player)
 	return studio.StudioDrawPlayer(flags, player);
 }
 
-static float CalcVerticalFov(float fov)
-{
-	/* hardcoded 4:3 aspect ratio so i don't need to do hor+ on vm fov */
-	float x;
-
-	x = 4.0f / tanf(Radians(fov) / 2);
-	return Degrees(atanf(3.0f / x)) * 2;
-}
-
-static void UnflipKnife(float *value)
+static bool UnflipKnife(float *value)
 {
 	if (currentWeaponId != WEAPON_KNIFE || cl_mirror_knife->value)
-		return;
+		return false;
 
 	*value = cl_righthand->value;
 	cl_righthand->value = (float)!cl_righthand->value;
+	return true;
 }
 
 static void ReflipKnife(float value)
 {
-	if (currentWeaponId != WEAPON_KNIFE || cl_mirror_knife->value)
-		return;
-
 	cl_righthand->value = value;
 }
 
@@ -101,52 +81,70 @@ static void DrawHands(cl_entity_t *weapon, int flags)
 	*weapon = backup;
 }
 
+static void SetProjectionMatrix(void)
+{
+	SCREENINFO scr;
+	float aspect, fov, f, fn;
+	float matrix[4][4];
+
+	scr.iSize = sizeof(SCREENINFO);
+	gEngfuncs.pfnGetScreenInfo(&scr);
+	aspect = (float)scr.iWidth / (float)scr.iHeight;
+
+	fov = viewmodel_fov->value * fovScale;
+	fov = CLAMP(fov, 1, 179);
+	fov = 0.75f * tanf(Radians(fov) * 0.5f);
+
+	f = 1.0f / fov;
+	fn = (1.0f / (Z_NEAR - Z_FAR));
+
+	memset(matrix, 0, sizeof(matrix));
+	matrix[0][0] = f / aspect;
+	matrix[1][1] = f;
+	matrix[2][2] = (Z_NEAR + Z_FAR) * fn;
+	matrix[2][3] = -1;
+	matrix[3][2] = 2 * Z_NEAR * Z_FAR * fn;
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadMatrixf(&matrix[0][0]);
+	glMatrixMode(GL_MODELVIEW);
+}
+
+static void RestoreProjectionMatrix(void)
+{
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+}
+
 static int My_StudioDrawModel(int flags)
 {
 	int result;
-	SCREENINFO scr;
-	double top, aspect;
-	float fov, fov1, fov2;
-	float old_righthand = 0; /* shut the fuck up */
+	bool unflip_knife;
+	float old_righthand;
 
 	cl_entity_t *entity = IEngineStudio.GetCurrentEntity();
 
 	if (entity != IEngineStudio.GetViewEntity())
 		return Hk_StudioDrawModel(flags);
 
-	scr.iSize = sizeof(SCREENINFO);
-	gEngfuncs.pfnGetScreenInfo(&scr);
-	aspect = (double)scr.iWidth / (double)scr.iHeight;
-
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	
-	fov1 = viewmodel_fov->value * fovDifference;
-	fov2 = CLAMP(fov1, 1, 170);
-	fov = CalcVerticalFov(fov2);
-	
-	top = tan(Radians(fov) / 2) * Z_NEAR;
-	
-	glFrustum(-top * aspect, top * aspect, -top, top, Z_NEAR, Z_FAR);
-	
-	glMatrixMode(GL_MODELVIEW);
+	SetProjectionMatrix();
 
 	/* think about inspecting now since we're about to draw the vm */
 	InspectThink();
 
-	UnflipKnife(&old_righthand);
+	unflip_knife = UnflipKnife(&old_righthand);
 
 	result = Hk_StudioDrawModel(flags);
 
 	/* draw hands now that the scene is properly set up */
 	DrawHands(entity, flags);
 
-	ReflipKnife(old_righthand);
+	if (unflip_knife)
+		ReflipKnife(old_righthand);
 
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-	glMatrixMode(GL_MODELVIEW);
+	RestoreProjectionMatrix();
 
 	return result;
 }
@@ -171,7 +169,7 @@ void My_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 
 	/* check if bodypart is right */
 	studiohdr = (studiohdr_t *)entity->model->cache.data;
-	if (!studiohdr) /* what the fuck */
+	if (!studiohdr)
 	{
 		Hk_StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
 		return;

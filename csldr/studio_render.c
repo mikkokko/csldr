@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#ifndef SHADERS_FROM_DISK /* xxd'd shaders */
+#ifndef SHADER_DIR /* xxd'd shaders */
 #include "studio_cpu_vert.h"
 #include "studio_frag.h"
 #include "studio_gpu_vert.h"
@@ -43,6 +43,7 @@ static struct
 	GLint u_tex_flatshade;
 	GLint u_tex_chrome;
 	GLint u_tex_fullbright;
+	GLint u_tex_masked;
 
 	GLint u_lightgamma;
 	GLint u_brightness;
@@ -99,6 +100,7 @@ static const uniform_t studio_uniforms[] =
 	{ &shader_studio.u_tex_flatshade, "u_tex_flatshade" },
 	{ &shader_studio.u_tex_chrome, "u_tex_chrome" },
 	{ &shader_studio.u_tex_fullbright, "u_tex_fullbright" },
+	{ &shader_studio.u_tex_masked, "u_tex_masked" },
 
 	{ &shader_studio.u_lightgamma, "u_lightgamma" },
 	{ &shader_studio.u_brightness, "u_brightness" },
@@ -400,6 +402,7 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 	colormix[1] = ctx->lightcolor[1];
 	colormix[2] = ctx->lightcolor[2];
 	colormix[3] = CalcFxBlend(ctx->entity) * (1.0f / 255);
+
 	glUniform4fv(shader_studio.u_colormix, 1, colormix);
 
 	glUniform1f(shader_studio.u_lightgamma, gammavars.lightgamma);
@@ -667,16 +670,9 @@ void R_StudioDrawPoints(studio_context_t *ctx)
 		glUniform1i(shader_studio.u_tex_flatshade, (flags & STUDIO_NF_FLATSHADE) ? true : false);
 		glUniform1i(shader_studio.u_tex_chrome, (flags & STUDIO_NF_CHROME) ? true : false);
 		glUniform1i(shader_studio.u_tex_fullbright, (flags & STUDIO_NF_FULLBRIGHT) ? true : false);
+		glUniform1i(shader_studio.u_tex_masked, (flags & STUDIO_NF_MASKED) ? true : false);
 
-		bool alphatest = (flags & STUDIO_NF_MASKED) ? true : false;
 		bool additive = ((flags & STUDIO_NF_ADDITIVE) && ctx->entity->curstate.rendermode == kRenderNormal);
-
-		if (alphatest)
-		{
-			glEnable(GL_ALPHA_TEST);
-			glAlphaFunc(GL_GREATER, 0.5f);
-			glDepthMask(GL_TRUE);
-		}
 
 		if (additive)
 		{
@@ -694,12 +690,6 @@ void R_StudioDrawPoints(studio_context_t *ctx)
 		}
 
 		glDrawElements(GL_TRIANGLES, mem_mesh->num_indices, GL_UNSIGNED_INT, (void *)mem_mesh->ofs_indices);
-
-		if (alphatest)
-		{
-			glAlphaFunc(GL_NOTEQUAL, 0);
-			glDisable(GL_ALPHA_TEST);
-		}
 
 		if (additive)
 		{

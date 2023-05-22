@@ -19,10 +19,35 @@ static GLuint CompileShader(const char *name, const char *source, int length, GL
 	return shader;
 }
 
+#ifdef SHADER_DIR
+static char *LoadFromDisk(const char *name, int *psize)
+{
+	char path[256];
+	sprintf(path, SHADER_DIR "/%s", name);
+
+	FILE *f = fopen(path, "rb");
+	if (!f)
+	{
+		Plat_Error("Could not load shader file %s\n", path);
+	}
+	
+	fseek(f, 0, SEEK_END);
+	int size = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	char *data = (char *)malloc(size);
+	fread(data, 1, size, f);
+	fclose(f);
+
+	*psize = size;
+	return data;
+}
+#endif
+
 GLuint CreateShaderProgram(const char *name,
-#ifdef SHADERS_FROM_DISK
-	char *vertex_path,
-	char *fragment_path,
+#ifdef SHADER_DIR
+	char *vertex_name,
+	char *fragment_name,
 #else
 	const char *vertex_source,
 	int vertex_length,
@@ -34,23 +59,16 @@ GLuint CreateShaderProgram(const char *name,
 	const uniform_t *uniforms,
 	int num_uniforms)
 {
-#ifdef SHADERS_FROM_DISK
-	// usehunk 2 = Hunk_TempAlloc
+#ifdef SHADER_DIR
 	int vertex_length;
-	char *vertex_source = (char *)gEngfuncs.COM_LoadFile(vertex_path, 2, &vertex_length);
-	if (!vertex_source)
-		Plat_Error("Could not load shader file %s\n", vertex_path);
+	char *vertex_source = LoadFromDisk(vertex_name, &vertex_length);
 #endif
-
 	GLuint vertex_shader = CompileShader(name, vertex_source, vertex_length, GL_VERTEX_SHADER);
 
-#ifdef SHADERS_FROM_DISK
+#ifdef SHADER_DIR
 	int fragment_length;
-	char *fragment_source = (char *)gEngfuncs.COM_LoadFile(fragment_path, 2, &fragment_length);
-	if (!fragment_source)
-		Plat_Error("Could not load shader file %s\n", fragment_path);
+	char *fragment_source = LoadFromDisk(fragment_name, &fragment_length);
 #endif
-
 	GLuint fragment_shader = CompileShader(name, fragment_source, fragment_length, GL_FRAGMENT_SHADER);
 
 	GLuint program = glCreateProgram();

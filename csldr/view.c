@@ -4,28 +4,28 @@ vec3_t v_vieworg;
 vec3_t v_viewforward, v_viewright, v_viewup;
 
 cvar_t *viewmodel_fov;
-cvar_t *viewmodel_shift;
-cvar_t *viewmodel_offset_x;
-cvar_t *viewmodel_offset_y;
-cvar_t *viewmodel_offset_z;
+static cvar_t *viewmodel_shift;
+static cvar_t *viewmodel_offset_x;
+static cvar_t *viewmodel_offset_y;
+static cvar_t *viewmodel_offset_z;
 cvar_t *viewmodel_hands;
 
-cvar_t *cl_bobstyle;
+static cvar_t *cl_bobstyle;
 
-cvar_t *cl_bobcycle;
-cvar_t *cl_bobup;
-cvar_t *cl_bob;
+static cvar_t *cl_bobcycle;
+static cvar_t *cl_bobup;
+static cvar_t *cl_bob;
 
-cvar_t *cl_bobamt_vert;
-cvar_t *cl_bobamt_lat;
-cvar_t *cl_bob_lower_amt;
+static cvar_t *cl_bobamt_vert;
+static cvar_t *cl_bobamt_lat;
+static cvar_t *cl_bob_lower_amt;
 
-cvar_t *cl_rollangle;
-cvar_t *cl_rollspeed;
+static cvar_t *cl_rollangle;
+static cvar_t *cl_rollspeed;
 
-cvar_t *viewmodel_lag_style;
-cvar_t *viewmodel_lag_scale;
-cvar_t *viewmodel_lag_speed;
+static cvar_t *viewmodel_lag_style;
+static cvar_t *viewmodel_lag_scale;
+static cvar_t *viewmodel_lag_speed;
 
 cvar_t *fov_horplus;
 cvar_t *fov_lerp;

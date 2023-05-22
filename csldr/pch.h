@@ -1,3 +1,6 @@
+#ifndef CSLDR_PCH_H
+#define CSLDR_PCH_H
+
 // avoid including windows.h by any means necessary
 #ifdef _WIN32
 #define WINAPI __stdcall
@@ -36,6 +39,9 @@ typedef enum {false, true} bool;
 // mikkotodo fix
 #define Vector vec3_t
 
+// stupid hack to fix compiler warnings
+#define sdk_string_const const
+
 #include "maths.h"
 #include "msg.h"
 
@@ -65,3 +71,5 @@ typedef enum {false, true} bool;
 
 /* ui stuff */
 #include "hud_crosshair.h"
+
+#endif // CSLDR_PCH_H

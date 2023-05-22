@@ -19,7 +19,19 @@ void Mem_Shutdown(void)
 
 void *Mem_Alloc(size_t size)
 {
-	void *ptr = Mem_AllocTemp(size);
+	/* special case */
+	if (!size)
+		return mem_block;
+
+	size = (size + 15) & ~15;
+
+	if (mem_used + size > BLOCK_SIZE)
+	{
+		Plat_Error("Out of memory\n");
+		return NULL; /* never reached */
+	}
+
+	void *ptr = &mem_block[mem_used];
 	mem_used += size;
 	return ptr;
 }

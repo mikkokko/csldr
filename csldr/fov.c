@@ -1,15 +1,13 @@
 #include "pch.h"
 
-extern cvar_t *fov_horplus;
-extern cvar_t *fov_lerp;
+// used to scale the viewmodel fov
+float fovScale = 1;
 
-float fovDifference = 1;
-
-float currentFov = 90;
-float destFov = 90;
-float initialFov = 90;
-float fovTime;
-float fovLerp;
+static float currentFov = 90;
+static float destFov = 90;
+static float initialFov = 90;
+static float fovTime;
+static float fovLerp;
 
 float GetCurrentFov(void)
 {
@@ -30,7 +28,7 @@ float GetCurrentFov(void)
 
 static void SetFov(float fov)
 {
-	fovDifference = fov / 90;
+	fovScale = fov / 90;
 	currentFov = fov;
 }
 

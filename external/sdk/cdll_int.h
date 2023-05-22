@@ -29,12 +29,12 @@ typedef struct
 
 typedef struct
 {
-  char* name;
+  sdk_string_const char* name;
   short ping;
   byte thisplayer;
   byte spectator;
   byte packetloss;
-  char* model;
+  sdk_string_const char* model;
   short topcolor;
   short bottomcolor;
   uint64 m_nSteamID;

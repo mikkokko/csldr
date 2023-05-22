@@ -2,8 +2,8 @@
 
 /* animate camera using a viewmodel attachment */
 
-cvar_t *camera_movement_scale;
-cvar_t *camera_movement_interp;
+static cvar_t *camera_movement_scale;
+static cvar_t *camera_movement_interp;
 
 void CameraInit(void)
 {

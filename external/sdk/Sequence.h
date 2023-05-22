@@ -22,12 +22,12 @@ typedef struct
 typedef struct sequenceCommandLine_ {
   int commandType;
   client_textmessage_t clientMessage;
-  char* speakerName;
-  char* listenerName;
-  char* soundFileName;
-  char* sentenceName;
-  char* fireTargetNames;
-  char* killTargetNames;
+  sdk_string_const char* speakerName;
+  sdk_string_const char* listenerName;
+  sdk_string_const char* soundFileName;
+  sdk_string_const char* sentenceName;
+  sdk_string_const char* fireTargetNames;
+  sdk_string_const char* killTargetNames;
   float delay;
   int repeatCount;
   int textChannel;
@@ -36,8 +36,8 @@ typedef struct sequenceCommandLine_ {
 } sequenceCommandLine_s;
 
 typedef struct sequenceEntry_ {
-  char* fileName;
-  char* entryName;
+  sdk_string_const char* fileName;
+  sdk_string_const char* entryName;
   sequenceCommandLine_s* firstCommand;
   struct sequenceEntry_* nextEntry;
   qboolean isGlobal;

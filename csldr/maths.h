@@ -14,6 +14,8 @@ typedef float vec_t;
 typedef float vec3_t[3];
 typedef float mat3x4_t[3][4];
 
+inline static int Rint(float x) { return (int)((x < 0) ? (x - 0.5f) : (x + 0.5f)); }
+
 inline static float Degrees(float rad) { return (rad * (float)(180.0 / M_PI)); }
 inline static float Radians(float deg) { return (deg * (float)(M_PI / 180.0)); }
 

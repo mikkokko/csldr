@@ -63,7 +63,7 @@ static void RemoveGTlib(void)
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 {
-	UNREFERENCED_PARAMETER(lpReserved);
+	(void)lpReserved;
 
 	switch (fdwReason)
 	{

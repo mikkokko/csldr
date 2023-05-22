@@ -34,8 +34,8 @@ static uint32 HashData(const void *data, int size)
 
 typedef struct
 {
-	int num_verts;
-	int num_indices;
+	unsigned num_verts;
+	unsigned num_indices;
 	GLuint indices[BUILD_NUM_INDICES];
 } base_build_buffer_t;
 
@@ -56,19 +56,21 @@ static void ParseTricmds(base_build_buffer_t *build, short *tricmds, vec3_t *ver
 {
 	while (1)
 	{
-		int count = *tricmds++;
-		if (!count)
+		int value = *tricmds++;
+		if (!value)
 			break;
 
 		bool trifan = false;
 
-		if (count < 0)
+		if (value < 0)
 		{
 			trifan = true;
-			count = -count;
+			value = -value;
 		}
+		
+		unsigned count = (unsigned)value;
 
-		int offset = build->num_verts;
+		unsigned offset = build->num_verts;
 		build->num_verts += count;
 
 		if (studio_gpuskin)
@@ -76,9 +78,9 @@ static void ParseTricmds(base_build_buffer_t *build, short *tricmds, vec3_t *ver
 			gpu_build_buffer_t *gpu_build = (gpu_build_buffer_t *)build;
 			studio_gpu_vert_t *vert = &gpu_build->verts[offset];
 
-			for (int l = 0; l < count; l++)
+			for (unsigned l = 0; l < count; l++)
 			{
-				for (int m = 0; m < 3; m++)
+				for (unsigned m = 0; m < 3; m++)
 				{
 					vert->pos[m] = vertices[tricmds[0]][m];
 					vert->norm[m] = normals[tricmds[1]][m];
@@ -100,9 +102,9 @@ static void ParseTricmds(base_build_buffer_t *build, short *tricmds, vec3_t *ver
 			studio_cpu_vert_t *vert = &cpu_build->verts[offset];
 			studio_vertbone_t *vertbone = &cpu_build->vertbones[offset];
 
-			for (int l = 0; l < count; l++)
+			for (unsigned l = 0; l < count; l++)
 			{
-				for (int m = 0; m < 3; m++)
+				for (unsigned m = 0; m < 3; m++)
 				{
 					vert->pos[m] = vertices[tricmds[0]][m];
 					vert->norm[m] = normals[tricmds[1]][m];
@@ -122,7 +124,7 @@ static void ParseTricmds(base_build_buffer_t *build, short *tricmds, vec3_t *ver
 
 		if (trifan)
 		{
-			for (int i = 2; i < count; i++)
+			for (unsigned i = 2; i < count; i++)
 			{
 				build->indices[build->num_indices++] = offset;
 				build->indices[build->num_indices++] = offset + i - 1;
@@ -131,7 +133,7 @@ static void ParseTricmds(base_build_buffer_t *build, short *tricmds, vec3_t *ver
 		}
 		else
 		{
-			for (int i = 2; i < count; i++)
+			for (unsigned i = 2; i < count; i++)
 			{
 				if (!(i % 2))
 				{
@@ -196,7 +198,7 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 			mem_model->meshes = (mem_mesh_t *)Mem_Alloc(sizeof(*mem_model->meshes) * submodel->nummesh);
 
 			// only for cpu skinning
-			int vert_offset_model = build->num_verts;
+			unsigned vert_offset_model = build->num_verts;
 
 			for (int k = 0; k < submodel->nummesh; k++)
 			{
@@ -206,10 +208,10 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 				float s = 1.0f / (float)textures[skins[mesh->skinref]].width;
 				float t = 1.0f / (float)textures[skins[mesh->skinref]].height;
 
-				int index_offset = build->num_indices;
+				unsigned index_offset = build->num_indices;
 				
 				// only for cpu skinning
-				int vert_offset_mesh = build->num_verts;
+				unsigned vert_offset_mesh = build->num_verts;
 
 				ParseTricmds(build, tricmds, vertices, normals, vertinfo, norminfo, s, t);
 
@@ -356,7 +358,7 @@ static void SetConfigPath(studio_cache_t *cache, model_t *model)
 {
 	char modelname[64];
 	CopyWithoutExtension(modelname, model->name); // will fit
-	snprintf(cache->config_path, sizeof(cache->config_path), "%s.txt", modelname); // will fit
+	sprintf(cache->config_path, "%s.txt", modelname); // will fit
 }
 
 static void BuildStudioCache(studio_cache_t *cache, model_t *model, studiohdr_t *header)

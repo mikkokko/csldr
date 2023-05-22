@@ -29,10 +29,10 @@ typedef struct
   void (*SendRequest)(int, int, int, double, netadr_t*, net_api_response_func_t);
   void (*CancelRequest)(int);
   void (*CancelAllRequests)(void);
-  char* (*AdrToString)(netadr_t*);
+  sdk_string_const char* (*AdrToString)(netadr_t*);
   int (*CompareAdr)(netadr_t*, netadr_t*);
-  int (*StringToAdr)(char*, netadr_t*);
+  int (*StringToAdr)(sdk_string_const char*, netadr_t*);
   const char* (*ValueForKey)(const char*, const char*);
-  void (*RemoveKey)(char*, const char*);
-  void (*SetValueForKey)(char*, const char*, const char*, int);
+  void (*RemoveKey)(sdk_string_const char*, const char*);
+  void (*SetValueForKey)(sdk_string_const char*, const char*, const char*, int);
 } net_api_t;

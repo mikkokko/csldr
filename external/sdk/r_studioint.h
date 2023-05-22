@@ -2,7 +2,7 @@ typedef struct
 {
   void* (*Mem_Calloc)(int, size_t);
   void* (*Cache_Check)(cache_user_t*);
-  void (*LoadCacheFile)(char*, cache_user_t*);
+  void (*LoadCacheFile)(sdk_string_const char*, cache_user_t*);
   model_t* (*Mod_ForName)(const char*, int);
   void* (*Mod_Extradata)(model_t*);
   model_t* (*GetModelByIndex)(int);

@@ -1,5 +1,3 @@
-//#define SHADERS_FROM_DISK
-
 typedef struct
 {
 	GLuint location;
@@ -13,9 +11,9 @@ typedef struct
 } uniform_t;
 
 GLuint CreateShaderProgram(const char *name,
-#ifdef SHADERS_FROM_DISK
-	char *vertex_path,
-	char *fragment_path,
+#ifdef SHADER_DIR
+	char *vertex_name,
+	char *fragment_name,
 #else
 	const char *vertex_source,
 	int vertex_length,
@@ -27,11 +25,11 @@ GLuint CreateShaderProgram(const char *name,
 	const uniform_t *uniforms,
 	int num_uniforms);
 
-#ifdef SHADERS_FROM_DISK
+#ifdef SHADER_DIR
 #define LOAD_SHADER(name, vs, fs, atr, un)			\
 shader_##name.program = CreateShaderProgram(#name,	\
-	"shaders/" #vs ".vert",							\
-	"shaders/" #fs ".frag",							\
+	#vs ".vert",							        \
+	#fs ".frag",							        \
 	atr,								            \
 	Q_ARRAYSIZE(atr),					            \
 	un,								                \

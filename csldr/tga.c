@@ -30,6 +30,15 @@ inline static void ReadSeek(readBuffer_t *buffer, int offset)
 	buffer->offset += offset;
 }
 
+inline static void ReadData(readBuffer_t *buffer, void *dest, int size)
+{
+	if (buffer->offset + size > buffer->size)
+		longjmp(readError, 1);
+
+	memcpy(dest, buffer->data + buffer->offset, size);
+	buffer->offset += size;
+}
+
 inline static byte ReadByte(readBuffer_t *buffer)
 {
 	if (buffer->offset + 1 > buffer->size)
@@ -49,83 +58,6 @@ inline static unsigned short ReadShort(readBuffer_t *buffer)
 	buffer->offset += 2;
 	return value;
 }
-
-typedef union
-{
-	uint8 c8;
-	color24 c24;
-	uint32 c32;
-} pixel_t;
-
-// little endian only but this will never be built on powerpc
-inline static pixel_t BGRToRGB(pixel_t x)
-{
-	pixel_t result;
-	result.c32 = (x.c32 & 0xFF00FF00) | ((x.c32 & 0x00FF0000) >> 16) | ((x.c32 & 0x000000FF) << 16);
-	return result;
-}
-
-// mikkotodo this sucks
-inline static pixel_t ReadPixel(readBuffer_t *buffer, int pixelSize)
-{
-	if (buffer->offset + pixelSize > buffer->size)
-		longjmp(readError, 1);
-
-	pixel_t result;
-	pixel_t *src = (pixel_t *)(buffer->data + buffer->offset);
-
-	switch (pixelSize)
-	{
-	case 1:
-		result.c8 = src->c8;
-		break;
-
-	case 3:
-		result.c24 = src->c24;
-		break;
-
-	case 4:
-		result.c32 = src->c32;
-		break;
-
-	default:
-		assert(false);
-		result.c32 = 0;
-		break;
-	}
-
-	buffer->offset += pixelSize;
-	return result;
-}
-
-inline static byte *WritePixel(byte *buffer, pixel_t pixel, int pixelSize)
-{
-	pixel_t *dest = (pixel_t *)buffer;
-
-	switch (pixelSize)
-	{
-	case 1:
-		dest->c8 = pixel.c8;
-		break;
-
-	case 3:
-		dest->c24 = pixel.c24;
-		*dest = BGRToRGB(*dest);
-		break;
-
-	case 4:
-		dest->c32 = pixel.c32;
-		*dest = BGRToRGB(*dest);
-		break;
-
-	default:
-		assert(false);
-		break;
-	}
-
-	return buffer + pixelSize;
-}
-
 
 static byte *LoadFromBuffer(void *buffer, int size, int *pwidth, int *pheight, int *pcomp)
 {
@@ -203,33 +135,53 @@ static byte *LoadFromBuffer(void *buffer, int size, int *pwidth, int *pheight, i
 	{
 		for (int i = height - 1; i >= 0; i--)
 		{
-			for (int j = 0; j < width; )
+			int count;
+
+			for (int j = 0; j < width; j += count)
 			{
-				int count = ReadByte(&read);
+				count = ReadByte(&read);
 
 				if (count & 0x80)
 				{
-					count -= 127;
+					count -= 0x7F;
 
-					pixel_t pixel = ReadPixel(&read, pixelSize);
+					byte pixel[4]; // max pixel size is 4
+					ReadData(&read, &pixel, pixelSize);
 
-					for (; count > 0; count--)
+					switch (pixelSize)
 					{
-						dst = WritePixel(dst, pixel, pixelSize);
-						j++;
+					case 1:
+						memset(dst, pixel[0], count);
+						dst += count;
+						break;
+
+					case 3:
+						for (int k = 0; k < count; k++)
+						{
+							*(color24 *)dst = *(color24 *)pixel;
+							dst += sizeof(color24);
+						}
+						break;
+
+					case 4:
+						for (int k = 0; k < count; k++)
+						{
+							*(uint32 *)dst = *(uint32 *)pixel;
+							dst += sizeof(uint32);
+						}
+						break;
+
+					default:
+						assert(false);
+						break;
 					}
 				}
 				else
 				{
 					count++;
-
-					for (; count > 0; count--)
-					{
-						pixel_t pixel = ReadPixel(&read, pixelSize);
-						dst = WritePixel(dst, pixel, pixelSize);
-						j++;
-					}
-				}
+					ReadData(&read, dst, count * pixelSize);
+					dst += (count * pixelSize);
+				}		
 			}
 
 			dst -= width * (2 * pixelSize);
@@ -239,13 +191,21 @@ static byte *LoadFromBuffer(void *buffer, int size, int *pwidth, int *pheight, i
 	{
 		for (int i = height - 1; i >= 0; i--)
 		{
-			for (int j = 0; j < width; j++)
-			{
-				pixel_t pixel = ReadPixel(&read, pixelSize);
-				dst = WritePixel(dst, pixel, pixelSize);
-			}
+			ReadData(&read, dst, width * pixelSize);
+			dst -= width * pixelSize;
+		}
+	}
 
-			dst -= width * (2 * pixelSize);
+	// convert bgr to rgb
+	if (pixelSize == 3 || pixelSize == 4)
+	{
+		int count = width * height * pixelSize;
+
+		for (int i = 0; i < count; i += pixelSize)
+		{
+			byte temp = data[i];
+			data[i] = data[i + 2];
+			data[i + 2] = temp;
 		}
 	}
 

@@ -185,7 +185,7 @@ static void StudioInfo_f(void)
 void HookEngineStudio(engine_studio_api_t *studio)
 {
 	// see if we can do fast path
-	studio_fastpath = (GLAD_GL_VERSION_2_0);
+	studio_fastpath = (GLAD_GL_VERSION_2_0) ? true : false;
 
 	// see if we can do gpu skinning
 	studio_gpuskin = (GLAD_GL_VERSION_2_1 && GLAD_GL_ARB_uniform_buffer_object);

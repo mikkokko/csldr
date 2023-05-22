@@ -1,8 +1,5 @@
 #include "pch.h"
 
-// studio_cache.c
-extern unsigned int flush_count;
-
 #define MAX_IMAGES 2048
 
 typedef struct
@@ -105,7 +102,7 @@ static GLuint LoadFromFile(char *path, bool gamma, bool flush)
 	glBindTexture(GL_TEXTURE_2D, image->texture);
 
 	// mikkotodo handle gl_texturemode?
-	int format;
+	GLenum format;
 
 	switch (comp)
 	{

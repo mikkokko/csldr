@@ -107,9 +107,9 @@ typedef struct
   const char* (*PM_Info_ValueForKey)(const char*, const char*);
   void (*PM_Particle)(vec_t*, int, float, int, int);
   int (*PM_TestPlayerPosition)(vec_t*, pmtrace_t*);
-  void (*Con_NPrintf)(int, char*, ...);
-  void (*Con_DPrintf)(char*, ...);
-  void (*Con_Printf)(char*, ...);
+  void (*Con_NPrintf)(int, sdk_string_const char*, ...);
+  void (*Con_DPrintf)(sdk_string_const char*, ...);
+  void (*Con_Printf)(sdk_string_const char*, ...);
   double (*Sys_FloatTime)(void);
   void (*PM_StuckTouch)(int, pmtrace_t*);
   int (*PM_PointContents)(vec_t*, int*);
@@ -123,10 +123,10 @@ typedef struct
   void (*PM_GetModelBounds)(model_t*, vec_t*, vec_t*);
   void* (*PM_HullForBsp)(physent_t*, vec_t*);
   float (*PM_TraceModel)(physent_t*, vec_t*, vec_t*, trace_t*);
-  int (*COM_FileSize)(char*);
-  byte* (*COM_LoadFile)(char*, int, int*);
+  int (*COM_FileSize)(sdk_string_const char*);
+  byte* (*COM_LoadFile)(sdk_string_const char*, int, int*);
   void (*COM_FreeFile)(void*);
-  char* (*memfgets)(byte*, int, int*, char*, int);
+  sdk_string_const char* (*memfgets)(byte*, int, int*, sdk_string_const char*, int);
   qboolean runfuncs;
   void (*PM_PlaySound)(int, const char*, float, float, int, int);
   const char* (*PM_TraceTexture)(int, vec_t*, vec_t*);

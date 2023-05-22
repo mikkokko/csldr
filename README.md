@@ -22,7 +22,10 @@
 - Software and D3D renderers are not supported.
 - Some features will not work when cl_lw is set to 0 (inspecting, crosshair...).
 - Other client-side mods like MetaHook might interfere with this.
-- Some pirated clients (warzone) come with a program called gtlib which starts bitching when csldr is installed. To avoid this, csldr will remove GTLib.asi automatically when the game is launched. I'm not sure if this has any consequences but it seemed to work fine when I tested it.
+
+## Compatibility with non-Steam builds
+
+Some non-Steam builds of the game (most notably CS WaRzOnE) come with a program called GTProtector. This causes problems with csldr like the "Find Cl/En/St modules error" pop-up or the game crashing on startup. As a workaround, csldr will remove GTLib.asi/GTProtector.asi when the game is launched. GTProtector is used to protect the game from malicious servers so it might not be a good idea to play online with these builds when clsdr is installed. Using the latest Steam version of the game is recommended.
 
 ## Installation
 
@@ -60,25 +63,25 @@ Model config files allow you to tweak model specific options. Here is an example
 // texture overrides
 textures
 {
-	ak47.bmp // embedded texture name
-	{
-		diffuse textures/models/v_ak47/ak47.tga
-	}
-	
-	view_glove.bmp
-	{
-		diffuse	textures/models/v_hands/view_glove.tga
-	}
-	
-	view_finger.bmp
-	{
-		diffuse	textures/models/v_hands/view_finger.tga
-	}
-	
-	view_skin.bmp
-	{
-		diffuse	textures/models/v_hands/view_skin.tga
-	}
+    ak47.bmp // embedded texture name
+    {
+        diffuse textures/models/v_ak47/ak47.tga
+    }
+
+    view_glove.bmp
+    {
+        diffuse textures/models/v_hands/view_glove.tga
+    }
+
+    view_finger.bmp
+    {
+        diffuse textures/models/v_hands/view_finger.tga
+    }
+
+    view_skin.bmp
+    {
+       diffuse textures/models/v_hands/view_skin.tga
+    }
 }
 ```
 
@@ -107,8 +110,9 @@ Model config files can be reloaded with the `studio_config_flush` command. This 
 | cl_rollspeed | Viewmodel roll speed. |
 | fov_horplus | Enables Hor+ scaling for FOV. Fixes the FOV when playing with aspect ratios other than 4:3. |
 | fov_lerp | FOV interpolation time in seconds. |
-| lookat | Inspects weapon if the animation is present. |
+| lookat | Inspects the weapon if the animation is present. |
 | mirror_shell | Switches the direction of shell ejects. |
+| studio_confg_flush | Reloads model config files and any files referenced by them (like textures). |
 | studio_fastpath | Enables the shader-based model renderer. |
 | studio_info | Prints information about the shader-based model renderer. |
 | viewmodel_fov | Viewmodel FOV. |

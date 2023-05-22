@@ -1,12 +1,12 @@
 #include "pch.h"
 
-cvar_t *mirror_shell;
+static cvar_t *mirror_shell;
 cvar_t *cl_righthand;
 
-bool recalcShell;
-float shellRotation;
-vec3_t shellOrigin;
-vec3_t shellVelocity;
+static bool recalcShell;
+static float shellRotation;
+static vec3_t shellOrigin;
+static vec3_t shellVelocity;
 
 void ShellInit(void)
 {
@@ -108,7 +108,7 @@ TEMPENTITY *Hk_TempModel(float *pos,
 
 /* i almost did not include shell mirroring because of this */
 #define FLIP_SHELL_ON_EVENT(name) \
-	void(*Og_ ## name)(event_args_t * args); \
+	static void(*Og_ ## name)(event_args_t * args); \
 	static void Hk_ ## name(event_args_t * args) \
 	{ \
 		float value; \
@@ -170,38 +170,38 @@ static pfnEvent_t CheckForShellEvent(const char *name, pfnEvent_t pfnEvent)
 	/* skip "events/" for comparison */
 	partialName = name + 7;
 
-	CHECK_EVENT("ak47.sc", FireAK47);
-	/* CHECK_EVENT("aug.sc", FireAug); already mirrored? */
-	CHECK_EVENT("deagle.sc", FireDeagle);
-	CHECK_EVENT("elite_left.sc", FireEliteLeft);
-	CHECK_EVENT("elite_right.sc", FireEliteRight);
-	/* CHECK_EVENT("famas.sc", FireFamas); already mirrored? */
-	CHECK_EVENT("fiveseven.sc", FireFiveSeven);
-	CHECK_EVENT("g3sg1.sc", FireG3SG1);
-	CHECK_EVENT("galil.sc", FireGalil);
-	CHECK_EVENT("glock1.sc", FireGlock1);
-	CHECK_EVENT("glock2.sc", FireGlock2);
-	CHECK_EVENT("glock18.sc", FireGlock18);
-	/* CHECK_EVENT("m249.sc", FireM249); already mirrored? */
-	CHECK_EVENT("m4a1.sc", FireM4A1);
-	CHECK_EVENT("mp5.sc", FireMP5);
-	CHECK_EVENT("mp5n.sc", FireMP5N);
-	CHECK_EVENT("mac10.sc", FireMac10);
-	CHECK_EVENT("p228.sc", FireP228);
-	/* CHECK_EVENT("p90.sc", FireP90); already mirrored? */
-	CHECK_EVENT("sg550.sc", FireSG550);
-	CHECK_EVENT("sg552.sc", FireSG552);
-	CHECK_EVENT("shotgun1.sc", FireShotGunSingle);
-	CHECK_EVENT("shotgun2.sc", FireShotGunDouble);
-	CHECK_EVENT("tmp.sc", FireTMP);
-	CHECK_EVENT("ump45.sc", FireUMP45);
-	CHECK_EVENT("usp.sc", FireUSP);
-	CHECK_EVENT("xm1014.sc", FireXM1014);
+	CHECK_EVENT("ak47.sc", FireAK47)
+	/* CHECK_EVENT("aug.sc", FireAug) already mirrored? */
+	CHECK_EVENT("deagle.sc", FireDeagle)
+	CHECK_EVENT("elite_left.sc", FireEliteLeft)
+	CHECK_EVENT("elite_right.sc", FireEliteRight)
+	/* CHECK_EVENT("famas.sc", FireFamas) already mirrored? */
+	CHECK_EVENT("fiveseven.sc", FireFiveSeven)
+	CHECK_EVENT("g3sg1.sc", FireG3SG1)
+	CHECK_EVENT("galil.sc", FireGalil)
+	CHECK_EVENT("glock1.sc", FireGlock1)
+	CHECK_EVENT("glock2.sc", FireGlock2)
+	CHECK_EVENT("glock18.sc", FireGlock18)
+	/* CHECK_EVENT("m249.sc", FireM249) already mirrored? */
+	CHECK_EVENT("m4a1.sc", FireM4A1)
+	CHECK_EVENT("mp5.sc", FireMP5)
+	CHECK_EVENT("mp5n.sc", FireMP5N)
+	CHECK_EVENT("mac10.sc", FireMac10)
+	CHECK_EVENT("p228.sc", FireP228)
+	/* CHECK_EVENT("p90.sc", FireP90) already mirrored? */
+	CHECK_EVENT("sg550.sc", FireSG550)
+	CHECK_EVENT("sg552.sc", FireSG552)
+	CHECK_EVENT("shotgun1.sc", FireShotGunSingle)
+	CHECK_EVENT("shotgun2.sc", FireShotGunDouble)
+	CHECK_EVENT("tmp.sc", FireTMP)
+	CHECK_EVENT("ump45.sc", FireUMP45)
+	CHECK_EVENT("usp.sc", FireUSP)
+	CHECK_EVENT("xm1014.sc", FireXM1014)
 
 	return NULL;
 }
 
-void Hk_HookEvent(char *name, void (*pfnEvent)(event_args_t *))
+void Hk_HookEvent(const char *name, void (*pfnEvent)(event_args_t *))
 {
 	pfnEvent_t hooked = CheckForShellEvent(name, pfnEvent);
 	if (hooked)

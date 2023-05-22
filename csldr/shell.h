@@ -8,4 +8,4 @@ int Hk_MsgFunc_Brass(const char *pszName, int iSize, void *pbuf);
 extern TEMPENTITY *(*Og_TempModel)(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype);
 TEMPENTITY *Hk_TempModel(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype);
 
-void Hk_HookEvent(char *name, void (*pfnEvent)(event_args_t *));
+void Hk_HookEvent(const char *name, void (*pfnEvent)(event_args_t *));

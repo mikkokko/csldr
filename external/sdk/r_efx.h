@@ -71,7 +71,7 @@ typedef struct
   TEMPENTITY* (*R_DefaultSprite)(float*, int, float);
   TEMPENTITY* (*R_TempSprite)(float*, float*, float, int, int, int, float, float, int);
   int (*Draw_DecalIndex)(int);
-  int (*Draw_DecalIndexFromName)(char*);
+  int (*Draw_DecalIndexFromName)(sdk_string_const char*);
   void (*R_DecalShoot)(int, int, int, float*, int);
   void (*R_AttachTentToPlayer)(int, int, float, float);
   void (*R_KillAttachedTents)(int);

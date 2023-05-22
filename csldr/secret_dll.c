@@ -185,7 +185,7 @@ static void Dummy(void)
 {
 }
 
-dummyfunc_t clDstAddrs[42] =
+static dummyfunc_t clDstAddrs[42] =
 {
 	Dummy, Dummy, Dummy, Dummy, Dummy, Dummy, Dummy, Dummy,
 	Dummy, Dummy, Dummy, Dummy, Dummy, Dummy, Dummy, Dummy,
@@ -195,7 +195,7 @@ dummyfunc_t clDstAddrs[42] =
 	Dummy, Dummy
 };
 
-dummyfunc_t modFuncs[29] =
+static dummyfunc_t modFuncs[29] =
 {
 	Dummy, Dummy, Dummy, Dummy, Dummy, Dummy, Dummy, Dummy,
 	Dummy, Dummy, Dummy, Dummy, Dummy, Dummy, Dummy, Dummy,

@@ -70,6 +70,8 @@ typedef struct studio_cache_s
 	studio_vertbone_t *vertbones;
 } studio_cache_t;
 
+extern unsigned int flush_count;
+
 studio_cache_t *GetStudioCache(model_t *model, studiohdr_t *header);
 
 // mikkotodo might be necessary again if we need extremely expensive tangent calc

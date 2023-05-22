@@ -5,25 +5,25 @@ the way those work is more complicated than just checking the flag
 before drawing the crosshair */
 #define HIDEHUD_CROSSHAIR (1 << 6)
 
-bool can_xhair;
+static bool can_xhair;
 
-cvar_t *xhair_enable;
+static cvar_t *xhair_enable;
 
-cvar_t *xhair_gap;
-cvar_t *xhair_size;
-cvar_t *xhair_thick;
-cvar_t *xhair_pad;
-cvar_t *xhair_dot;
-cvar_t *xhair_t;
+static cvar_t *xhair_gap;
+static cvar_t *xhair_size;
+static cvar_t *xhair_thick;
+static cvar_t *xhair_pad;
+static cvar_t *xhair_dot;
+static cvar_t *xhair_t;
 
-cvar_t *xhair_color_r;
-cvar_t *xhair_color_g;
-cvar_t *xhair_color_b;
-cvar_t *xhair_alpha;
+static cvar_t *xhair_color_r;
+static cvar_t *xhair_color_g;
+static cvar_t *xhair_color_b;
+static cvar_t *xhair_alpha;
 
-cvar_t *cl_crosshair_color;
-cvar_t *cl_crosshair_translucent;
-cvar_t *hud_draw;
+static cvar_t *cl_crosshair_color;
+static cvar_t *cl_crosshair_translucent;
+static cvar_t *hud_draw;
 
 int currentWeaponId;
 static int hideHudFlags;
@@ -83,15 +83,20 @@ void HudInit(void)
 static int ScaleForRes(float value, int height)
 {
 	/* "default" resolution is 640x480 */
-	return (int)roundf(value * ((float)height / 480.0f));
+	return Rint(value * ((float)height / 480.0f));
 }
 
-static void DrawCrosshairSection(int x0, int y0, int x1, int y1)
+static void DrawCrosshairSection(int _x0, int _y0, int _x1, int _y1)
 {
-	int top_left[2] = { x0, y0 };
-	int top_right[2] = { x1, y0 };
-	int bottom_right[2] = { x1, y1 };
-	int bottom_left[2] = { x0, y1 };
+	float x0 = (float)_x0;
+	float y0 = (float)_y0;
+	float x1 = (float)_x1;
+	float y1 = (float)_y1;
+
+	float top_left[2] = { x0, y0 };
+	float top_right[2] = { x1, y0 };
+	float bottom_right[2] = { x1, y1 };
+	float bottom_left[2] = { x0, y1 };
 
 	glColor4f(xhair_color_r->value,
 		xhair_color_g->value,
@@ -99,37 +104,43 @@ static void DrawCrosshairSection(int x0, int y0, int x1, int y1)
 		xhair_alpha->value);
 
 	glBegin(GL_TRIANGLE_STRIP);
-	glVertex2iv(top_left);
-	glVertex2iv(bottom_left);
-	glVertex2iv(top_right);
-	glVertex2iv(bottom_right);
+	glVertex2fv(top_left);
+	glVertex2fv(bottom_left);
+	glVertex2fv(top_right);
+	glVertex2fv(bottom_right);
 	glEnd();
 }
 
-static void DrawCrosshairPadding(int pad, int x0, int y0, int x1, int y1)
+static void DrawCrosshairPadding(int _pad, int _x0, int _y0, int _x1, int _y1)
 {
-	int out_top_left[2] = { x0 - pad, y0 - pad };
-	int out_top_right[2] = { x1 + pad, y0 - pad };
-	int out_bottom_right[2] = { x1 + pad, y1 + pad };
-	int out_bottom_left[2] = { x0 - pad, y1 + pad };
-	int in_top_left[2] = { x0, y0 };
-	int in_top_right[2] = { x1, y0 };
-	int in_bottom_right[2] = { x1, y1 };
-	int in_bottom_left[2] = { x0, y1 };
+	float pad = (float)_pad;
+	float x0 = (float)_x0;
+	float y0 = (float)_y0;
+	float x1 = (float)_x1;
+	float y1 = (float)_y1;
+
+	float out_top_left[2] = { x0 - pad, y0 - pad };
+	float out_top_right[2] = { x1 + pad, y0 - pad };
+	float out_bottom_right[2] = { x1 + pad, y1 + pad };
+	float out_bottom_left[2] = { x0 - pad, y1 + pad };
+	float in_top_left[2] = { x0, y0 };
+	float in_top_right[2] = { x1, y0 };
+	float in_bottom_right[2] = { x1, y1 };
+	float in_bottom_left[2] = { x0, y1 };
 
 	glColor4f(0, 0, 0, xhair_alpha->value);
 
 	glBegin(GL_TRIANGLE_STRIP);
-	glVertex2iv(in_bottom_left);
-	glVertex2iv(out_bottom_right);
-	glVertex2iv(in_bottom_right);
-	glVertex2iv(out_top_right);
-	glVertex2iv(in_top_right);
-	glVertex2iv(out_top_left);
-	glVertex2iv(in_top_left);
-	glVertex2iv(out_bottom_left);
-	glVertex2iv(in_bottom_left);
-	glVertex2iv(out_bottom_right);
+	glVertex2fv(in_bottom_left);
+	glVertex2fv(out_bottom_right);
+	glVertex2fv(in_bottom_right);
+	glVertex2fv(out_top_right);
+	glVertex2fv(in_top_right);
+	glVertex2fv(out_top_left);
+	glVertex2fv(in_top_left);
+	glVertex2fv(out_bottom_left);
+	glVertex2fv(in_bottom_left);
+	glVertex2fv(out_bottom_right);
 	glEnd();
 }
 

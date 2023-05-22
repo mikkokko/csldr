@@ -1,6 +1,10 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.16)
 
 project(csldr C)
+
+if (NOT DEBUG_BUILD)
+	set(CMAKE_UNITY_BUILD_BATCH_SIZE 128)
+endif()
 
 if (MSVC)
 	# /MT or /MTd on debug
@@ -56,12 +60,21 @@ add_library(csldr SHARED
 	${CSLDR_SRC}
 	${CSLDR_HDR})
 
+if (NOT DEBUG_BUILD)
+	set_target_properties(csldr PROPERTIES UNITY_BUILD ON)
+endif()
+
 target_include_directories(csldr PRIVATE ${SRCDIR}/external/sdk)
 
 target_sources(csldr PRIVATE ${SRCDIR}/external/glad/src/glad.c)
 target_include_directories(csldr PRIVATE ${SRCDIR}/external/glad/include ${SRCDIR}/shaders)
 
-if (MSVC)
+if (NOT DEBUG_BUILD)
+	# load shaders from a hardcoded directory on debug builds
+	target_compile_definitions(csldr PRIVATE SHADER_DIR="${SRCDIR}/shaders")
+endif()
+
+if (MSVC AND DEBUG_BUILD)
 	set_source_files_properties(${CSLDR_SRC} PROPERTIES COMPILE_FLAGS "/Yupch.h")
 	set_source_files_properties(${SRCDIR}/csldr/pch.c PROPERTIES COMPILE_FLAGS "/Ycpch.h")
 endif()

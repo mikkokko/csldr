@@ -24,7 +24,7 @@ void Plat_CurrentModuleName(char *name, size_t size)
 {
 	Dl_info info;
 
-	dladdr(__builtin_return_address(0), &info);
+	dladdr(Plat_CurrentModuleName, &info);
 	/* mikkotodo strncpy bad */
 	strncpy(name, info.dli_fname, size);
 	name[size - 1] = '\0';

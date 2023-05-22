@@ -23,9 +23,9 @@
 - Some features will not work when cl_lw is set to 0 (inspecting, crosshair...).
 - Other client-side mods like MetaHook might interfere with this.
 
-## Compatibility with non-Steam builds
+## Non-Steam builds
 
-Some non-Steam builds of the game (most notably CS WaRzOnE) come with a program called GTProtector. This causes problems with csldr like the "Find Cl/En/St modules error" pop-up or the game crashing on startup. As a workaround, csldr will remove GTLib.asi/GTProtector.asi when the game is launched. GTProtector is used to protect the game from malicious servers so it might not be a good idea to play online with these builds when clsdr is installed. Using the latest Steam version of the game is recommended.
+Some non-Steam builds of the game (notably CS WaRzOnE) come with a program called GTProtector. This causes problems with csldr like the `Find Cl/En/St modules error` pop-up or the game crashing on startup. As a workaround, csldr will remove `GTLib.asi` or `GTProtector.asi` when the game is launched. GTProtector is apparently used to protect the client from malicious servers so it might not be a good idea to play online with these builds when clsdr is installed. Using the latest Steam version of the game is recommended.
 
 ## Installation
 

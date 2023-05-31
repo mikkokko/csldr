@@ -1,10 +1,5 @@
 #include "pch.h"
 
-#if defined(_WIN32)
-#include <windows.h>
-#include <wingdi.h>
-#endif
-
 engine_studio_api_t IEngineStudio;
 static r_studio_interface_t studio;
 
@@ -221,13 +216,8 @@ int Hk_GetStudioModelInterface(int version,
 	(*ppinterface)->StudioDrawPlayer = Hk_StudioDrawPlayer;
 
 	/* no one uses software or d3d renderers */
-	if (!pstudio->IsHardware())
-		Plat_Error("Software mode is not supported\n");
-
-#if defined(_WIN32)
-	if (!wglGetCurrentContext())
-		Plat_Error("D3D mode is not supported\n");
-#endif
+	if (pstudio->IsHardware() != 1)
+		Plat_Error("Software and D3D modes are not supported\n");
 
 	return result;
 }

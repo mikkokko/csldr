@@ -69,7 +69,7 @@ target_include_directories(csldr PRIVATE ${SRCDIR}/external/sdk)
 target_sources(csldr PRIVATE ${SRCDIR}/external/glad/src/glad.c)
 target_include_directories(csldr PRIVATE ${SRCDIR}/external/glad/include ${SRCDIR}/shaders)
 
-if (NOT DEBUG_BUILD)
+if (DEBUG_BUILD)
 	# load shaders from a hardcoded directory on debug builds
 	target_compile_definitions(csldr PRIVATE SHADER_DIR="${SRCDIR}/shaders")
 endif()
@@ -77,11 +77,6 @@ endif()
 if (MSVC AND DEBUG_BUILD)
 	set_source_files_properties(${CSLDR_SRC} PROPERTIES COMPILE_FLAGS "/Yupch.h")
 	set_source_files_properties(${SRCDIR}/csldr/pch.c PROPERTIES COMPILE_FLAGS "/Ycpch.h")
-endif()
-
-if (WIN32)
-	# still needed for wglGetCurrentContext...
-	target_link_libraries(csldr PRIVATE opengl32)
 endif()
 
 set_target_properties(csldr PROPERTIES OUTPUT_NAME "client")

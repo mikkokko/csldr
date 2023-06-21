@@ -21,7 +21,7 @@
 - Play on VAC secured servers at your own risk.
 - Software and D3D renderers are not supported.
 - Some features will not work when cl_lw is set to 0 (inspecting, crosshair...).
-- Other client-side mods like MetaHook might interfere with this.
+- Other client-side mods that rely on client.dll (like some MetaHook plugins) will not not work when this is installed.
 
 ## Non-Steam builds
 

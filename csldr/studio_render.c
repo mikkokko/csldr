@@ -593,7 +593,7 @@ void R_StudioDrawPoints(studio_context_t *ctx)
 
 	if (!studio_gpuskin)
 	{
-		studio_cpu_vert_t *anim_verts = (studio_cpu_vert_t *)Mem_AllocTemp(sizeof(studio_cpu_vert_t) * mem_submodel->num_verts);
+		studio_cpu_vert_t *anim_verts = (studio_cpu_vert_t *)Mem_TempAlloc(sizeof(studio_cpu_vert_t) * mem_submodel->num_verts);
 		int vert_ofs = 0;
 
 		for (int i = 0; i < submodel->nummesh; i++)
@@ -655,6 +655,8 @@ void R_StudioDrawPoints(studio_context_t *ctx)
 			mem_submodel->ofs_verts * sizeof(studio_cpu_vert_t),
 			mem_submodel->num_verts * sizeof(studio_cpu_vert_t),
 			anim_verts);
+
+		Mem_TempFree(anim_verts);
 	}
 
 	for (int i = 0; i < submodel->nummesh; i++)

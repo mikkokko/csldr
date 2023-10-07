@@ -35,7 +35,7 @@ static char *LoadFromDisk(const char *name, int *psize)
 	int size = ftell(f);
 	fseek(f, 0, SEEK_SET);
 
-	char *data = (char *)malloc(size);
+	char *data = (char *)Mem_TempAlloc(size);
 	fread(data, 1, size, f);
 	fclose(f);
 
@@ -62,14 +62,20 @@ GLuint CreateShaderProgram(const char *name,
 #ifdef SHADER_DIR
 	int vertex_length;
 	char *vertex_source = LoadFromDisk(vertex_name, &vertex_length);
-#endif
 	GLuint vertex_shader = CompileShader(name, vertex_source, vertex_length, GL_VERTEX_SHADER);
+	Mem_TempFree(vertex_source);
+#else
+	GLuint vertex_shader = CompileShader(name, vertex_source, vertex_length, GL_VERTEX_SHADER);
+#endif
 
 #ifdef SHADER_DIR
 	int fragment_length;
 	char *fragment_source = LoadFromDisk(fragment_name, &fragment_length);
-#endif
 	GLuint fragment_shader = CompileShader(name, fragment_source, fragment_length, GL_FRAGMENT_SHADER);
+	Mem_TempFree(fragment_source);
+#else
+	GLuint fragment_shader = CompileShader(name, fragment_source, fragment_length, GL_FRAGMENT_SHADER);
+#endif
 
 	GLuint program = glCreateProgram();
 	glAttachShader(program, vertex_shader);

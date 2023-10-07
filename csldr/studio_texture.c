@@ -130,7 +130,7 @@ static GLuint LoadFromFile(char *path, bool gamma, bool flush)
 
 	glPopAttrib();
 
-	free(data);
+	Mem_TempFree(data);
 	
 	return image->texture;
 }

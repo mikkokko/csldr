@@ -128,7 +128,7 @@ static byte *LoadFromBuffer(void *buffer, int size, int *pwidth, int *pheight, i
 	int pixelSize = pixelDepth >> 3;
 	assert(pixelSize == 1 || pixelSize == 3 || pixelSize == 4);
 
-	byte *data = (byte *)malloc(width * height * pixelSize);
+	byte *data = (byte *)Mem_TempAlloc(width * height * pixelSize);
 	byte *dst = data + (height - 1) * width * pixelSize;
 
 	if (imageType == 10 || imageType == 11)

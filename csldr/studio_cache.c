@@ -27,29 +27,24 @@ static uint32 HashData(const void *data, int size)
 	return hash;
 }
 
-// mikkotodo make somewhat dynamic?
-// mikkotodo make sure that these won't overflow
-#define BUILD_NUM_VERTICES (102400)
-#define BUILD_NUM_INDICES (BUILD_NUM_VERTICES * 3)
-
 typedef struct
 {
 	unsigned num_verts;
 	unsigned num_indices;
-	GLuint indices[BUILD_NUM_INDICES];
+	GLuint *indices;
 } base_build_buffer_t;
 
 typedef struct
 {
 	base_build_buffer_t base;
-	studio_cpu_vert_t verts[BUILD_NUM_VERTICES];
-	studio_vertbone_t vertbones[BUILD_NUM_VERTICES];
+	studio_cpu_vert_t *verts;
+	studio_vertbone_t *vertbones;
 } cpu_build_buffer_t;
 
 typedef struct
 {
 	base_build_buffer_t base;
-	studio_gpu_vert_t verts[BUILD_NUM_VERTICES];
+	studio_gpu_vert_t *verts;
 } gpu_build_buffer_t;
 
 static void ParseTricmds(base_build_buffer_t *build, short *tricmds, vec3_t *vertices, vec3_t *normals, byte *vertinfo, byte *norminfo, float s, float t)
@@ -152,20 +147,82 @@ static void ParseTricmds(base_build_buffer_t *build, short *tricmds, vec3_t *ver
 	}
 }
 
+static int CountVertsTricmds(short *tricmds)
+{
+	int result = 0;
+
+	while (1)
+	{
+		int value = *tricmds++;
+		if (!value)
+			break;
+
+		if (value < 0)
+			value = -value;
+
+		result += value;
+
+		tricmds += (4 * value);
+	}
+
+	return result;
+}
+
+static int CountVerts(studiohdr_t *header)
+{
+	int result = 0;
+
+	mstudiobodyparts_t *bodyparts = (mstudiobodyparts_t *)((byte *)header + header->bodypartindex);
+
+	for (int i = 0; i < header->numbodyparts; i++)
+	{
+		mstudiobodyparts_t *bodypart = &bodyparts[i];
+		mstudiomodel_t *models = (mstudiomodel_t *)((byte *)header + bodypart->modelindex);
+
+		for (int j = 0; j < bodypart->nummodels; j++)
+		{
+			mstudiomodel_t *submodel = &models[j];
+			mstudiomesh_t *meshes = (mstudiomesh_t *)((byte *)header + submodel->meshindex);
+	
+			for (int k = 0; k < submodel->nummesh; k++)
+			{
+				mstudiomesh_t *mesh = &meshes[k];
+				short *tricmds = (short *)((byte *)header + mesh->triindex);
+				result += CountVertsTricmds(tricmds);
+			}
+		}
+	}
+
+	return result;
+}
+
 static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *header)
 {
-	static base_build_buffer_t *build = NULL;
-
-	if (!build)
+	union
 	{
-		if (studio_gpuskin)
-			build = (base_build_buffer_t *)Mem_Alloc(sizeof(gpu_build_buffer_t));
-		else
-			build = (base_build_buffer_t *)Mem_Alloc(sizeof(cpu_build_buffer_t));
-	}
+		cpu_build_buffer_t cpu;
+		gpu_build_buffer_t gpu;
+	} build_buffer;
+
+	base_build_buffer_t *build = (base_build_buffer_t *)&build_buffer;
+
+	int total_verts = CountVerts(header);
 
 	build->num_verts = 0;
 	build->num_indices = 0;
+	build->indices = (GLuint *)Mem_TempAlloc(sizeof(*build->indices) * total_verts * 3);
+
+	if (studio_gpuskin)
+	{
+		gpu_build_buffer_t *gpu_build = (gpu_build_buffer_t *)build;
+		gpu_build->verts = (studio_gpu_vert_t *)Mem_TempAlloc(sizeof(*gpu_build->verts) * total_verts);
+	}
+	else
+	{
+		cpu_build_buffer_t *cpu_build = (cpu_build_buffer_t *)build;
+		cpu_build->verts = (studio_cpu_vert_t *)Mem_TempAlloc(sizeof(*cpu_build->verts) * total_verts);
+		cpu_build->vertbones = (studio_vertbone_t *)Mem_TempAlloc(sizeof(*cpu_build->vertbones) * total_verts);
+	}
 
 	mstudiobodyparts_t *bodyparts = (mstudiobodyparts_t *)((byte *)header + header->bodypartindex);
 
@@ -260,6 +317,20 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 		cache->vertbones = (studio_vertbone_t *)Mem_Alloc(sizeof(studio_vertbone_t) * build->num_verts);
 		memcpy(cache->vertbones, cpu_build->vertbones, sizeof(studio_vertbone_t) * build->num_verts);
 	}
+
+	if (studio_gpuskin)
+	{
+		gpu_build_buffer_t *gpu_build = (gpu_build_buffer_t *)build;
+		Mem_TempFree(gpu_build->verts);
+	}
+	else
+	{
+		cpu_build_buffer_t *cpu_build = (cpu_build_buffer_t *)build;
+		Mem_TempFree(cpu_build->verts);
+		Mem_TempFree(cpu_build->vertbones);
+	}
+
+	Mem_TempFree(build->indices);
 }
 
 static void ParseTextures(studio_cache_t *cache, keyValue_t *key, bool flush)

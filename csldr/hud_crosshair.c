@@ -146,8 +146,6 @@ static void DrawCrosshairPadding(int _pad, int _x0, int _y0, int _x1, int _y1)
 
 static void DrawCrosshair(void)
 {
-	SCREENINFO scr;
-	int width, height;
 	int center_x, center_y;
 	int gap, length, thickness;
 	int y0, y1, x0, x1;
@@ -161,18 +159,13 @@ static void DrawCrosshair(void)
 		(currentWeaponId == WEAPON_SG550))
 		return;
 
-	scr.iSize = sizeof(SCREENINFO);
-	gEngfuncs.pfnGetScreenInfo(&scr);
-	width = scr.iWidth;
-	height = scr.iHeight;
-
 	/* calculate coordinates */
-	center_x = width / 2;
-	center_y = height / 2;
+	center_x = screenWidth / 2;
+	center_y = screenHeight / 2;
 
-	gap = ScaleForRes(xhair_gap->value, height);
-	length = ScaleForRes(xhair_size->value, height);
-	thickness = ScaleForRes(xhair_thick->value, height);
+	gap = ScaleForRes(xhair_gap->value, screenHeight);
+	length = ScaleForRes(xhair_size->value, screenHeight);
+	thickness = ScaleForRes(xhair_thick->value, screenHeight);
 	thickness = MAX(1, thickness);
 
 	inner.left = (center_x - gap - thickness / 2);

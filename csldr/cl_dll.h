@@ -7,6 +7,8 @@ extern bool isCzero;
 
 extern float clientTime;
 
+extern int screenWidth, screenHeight;
+
 void Hk_HudInit(void);
 void Hk_HudShutdown(void);
 void Hk_HudFrame(double time);

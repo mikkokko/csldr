@@ -11,6 +11,19 @@ float clientTime;
 
 static cvar_t *cl_lw;
 
+int screenWidth, screenHeight;
+
+static void UpdateScreenSize(void)
+{
+	SCREENINFO scr;
+
+	scr.iSize = sizeof(SCREENINFO);
+	gEngfuncs.pfnGetScreenInfo(&scr);
+
+	screenWidth = scr.iWidth;
+	screenHeight = scr.iHeight;
+}
+
 /*
 -------------------------------------------------
  HookUserMsg hook
@@ -150,6 +163,8 @@ void Hk_HudFrame(double time)
 		gEngfuncs.Con_Printf("csldr found %s and removed it. The game might not work properly. Consider updating to the latest Steam version of the game.\n", libName);
 	}
 #endif
+
+	UpdateScreenSize();
 
 	GammaUpdate();
 

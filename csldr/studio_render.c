@@ -183,9 +183,9 @@ void R_StudioEntityLight(studio_context_t *ctx)
 			int attachment = (elight->key >> 12) & 0xF;
 
 			if (attachment)
-				VectorCopy(elight->origin, entity->attachment[attachment]);
+				VectorCopy(entity->attachment[attachment], elight->origin);
 			else
-				VectorCopy(elight->origin, entity->origin);
+				VectorCopy(entity->origin, elight->origin);
 		}
 
 		vec3_t dir;
@@ -230,7 +230,7 @@ void R_StudioEntityLight(studio_context_t *ctx)
 
 		lstrength[index] = strength;
 
-		VectorCopy(elight_pos[index], elight->origin);
+		VectorCopy(elight->origin, elight_pos[index]);
 		elight_pos[index][3] = r2;
 
 		elight_color[index][0] = (float)gammavars.lineartable[elight->color.r] * (1.0f / 255.0f);
@@ -263,8 +263,8 @@ void R_StudioSetupLighting(studio_context_t *ctx, alight_t *lighting)
 {
 	ctx->ambientlight = (float)lighting->ambientlight * (1.0f / 255.0f);
 	ctx->shadelight = (float)lighting->shadelight * (1.0f / 255.0f);
-	VectorCopy(ctx->lightcolor, lighting->color);
-	VectorCopy(ctx->lightvec, lighting->plightvec);
+	VectorCopy(lighting->color, ctx->lightcolor);
+	VectorCopy(lighting->plightvec, ctx->lightvec);
 }
 
 // different to engine's but doesn't matter here
@@ -429,7 +429,7 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 	}
 	else
 	{
-		VectorCopy(chrome_origin, v_vieworg);
+		VectorCopy(v_vieworg, chrome_origin);
 		glUniform1i(shader_studio.u_glowshell, false);
 	}
 

@@ -162,7 +162,7 @@ void CameraApplyMovement(ref_params_t *pparams)
 	/* check if weapon has changed */
 	model = vm->model;
 	hdr = model ? (studiohdr_t *)model->cache.data : NULL;
-	
+
 	if (hdr != last_hdr)
 	{
 		last_hdr = hdr;
@@ -170,10 +170,10 @@ void CameraApplyMovement(ref_params_t *pparams)
 		if (camera_movement_interp->value)
 		{
 			lerpTime = clientTime;
-			VectorCopy(prevMove, curMove);
+			VectorCopy(curMove, prevMove);
 		}
 	}
-	
+
 	if (lerpTime)
 	{
 		float frac = (clientTime - lerpTime) / camera_movement_interp->value;
@@ -181,7 +181,7 @@ void CameraApplyMovement(ref_params_t *pparams)
 		if (frac < 0 || frac >= 1)
 		{
 			/* just copy */
-			VectorCopy(curMove, new_movement);
+			VectorCopy(new_movement, curMove);
 			lerpTime = 0;
 		}
 		else
@@ -192,7 +192,7 @@ void CameraApplyMovement(ref_params_t *pparams)
 	else
 	{
 		/* just copy */
-		VectorCopy(curMove, new_movement);
+		VectorCopy(new_movement, curMove);
 	}
 
 	scale = camera_movement_scale->value;

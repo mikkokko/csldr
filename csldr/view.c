@@ -148,11 +148,11 @@ static void V_AddBob(ref_params_t *pparams, vec3_t origin, vec3_t front, vec3_t 
 {
 	V_CalcBob(pparams);
 
-	VectorMA_2(origin, front, g_bobVars.vertBob * 0.4f);
+	VectorMA_2(front, g_bobVars.vertBob * 0.4f, origin);
 
 	origin[2] += g_bobVars.vertBob * 0.1f;
 
-	VectorMA_2(origin, side, g_bobVars.horBob * 0.2f);
+	VectorMA_2(side, g_bobVars.horBob * 0.2f, origin);
 }
 
 static void V_AddLag_HL2(ref_params_t *pparams, vec3_t origin, vec3_t front)
@@ -164,9 +164,8 @@ static void V_AddLag_HL2(ref_params_t *pparams, vec3_t origin, vec3_t front)
 	delta_front[1] = front[1] - last_front[1];
 	delta_front[2] = front[2] - last_front[2];
 
-	VectorMA(last_front, delta_front, viewmodel_lag_speed->value * pparams->frametime);
-
-	VectorMA_2(origin, delta_front, -1 * viewmodel_lag_scale->value);
+	VectorMA(delta_front, viewmodel_lag_speed->value * pparams->frametime, last_front);
+	VectorMA_2(delta_front, -1 * viewmodel_lag_scale->value, origin);
 }
 
 // quite an inefficent way to do css style lag but oh well
@@ -202,7 +201,7 @@ static void AddLagAngles(float time, vec3_t angles)
 
 	last_step = step;
 
-	VectorCopy(lag_angles[step % ANGLE_BACKUP].value, angles);
+	VectorCopy(angles, lag_angles[step % 128].value);
 	lag_angles[step % ANGLE_BACKUP].valid = true;
 }
 
@@ -221,7 +220,7 @@ static bool GetLagAngles(float time, vec3_t dest)
 		if (!next_angles->valid)
 		{
 			// can't lerp to these
-			VectorCopy(dest, angles->value);
+			VectorCopy(angles->value, dest);
 		}
 		else
 		{
@@ -234,7 +233,7 @@ static bool GetLagAngles(float time, vec3_t dest)
 	{
 		// if round_time > time, the difference is
 		// probably so small that it can't be noticed
-		VectorCopy(dest, angles->value);
+		VectorCopy(angles->value, dest);
 	}
 
 	return true;
@@ -255,9 +254,9 @@ static void V_AddLag_CSS(ref_params_t *pparams, vec3_t origin, vec3_t angles, ve
 	vec3_t delta_front;
 	AngleVectors(delta_angles, delta_front, NULL, NULL);
 
-	VectorMA_2(origin, front, (1 - delta_front[0]) * viewmodel_lag_scale->value);
-	VectorMA_2(origin, side, (delta_front[1]) * viewmodel_lag_scale->value);
-	VectorMA_2(origin, up, (-delta_front[2]) * viewmodel_lag_scale->value);
+	VectorMA_2(front, (1 - delta_front[0]) * viewmodel_lag_scale->value, origin);
+	VectorMA_2(side, (delta_front[1]) * viewmodel_lag_scale->value, origin);
+	VectorMA_2(up, (-delta_front[2]) * viewmodel_lag_scale->value, origin);
 }
 
 static void V_OffsetViewmodel(cl_entity_t *vm, vec3_t front, vec3_t side, vec3_t up)
@@ -268,16 +267,16 @@ static void V_OffsetViewmodel(cl_entity_t *vm, vec3_t front, vec3_t side, vec3_t
 		x = -viewmodel_offset_x->value;
 	else
 		x = viewmodel_offset_x->value;
-	
+
 	if (!cl_righthand->value)
 		x = -x;
 
 	y = viewmodel_offset_y->value;
 	z = -viewmodel_offset_z->value;
 
-	VectorMA_2(vm->origin, side, x);
-	VectorMA_2(vm->origin, front, y);
-	VectorMA_2(vm->origin, up, z);
+	VectorMA_2(side, x, vm->origin);
+	VectorMA_2(front, y, vm->origin);
+	VectorMA_2(up, z, vm->origin);
 }
 
 static void CalcCustomRefdef(ref_params_t *pparams)
@@ -306,7 +305,7 @@ static void CalcCustomRefdef(ref_params_t *pparams)
 		vm->origin[2] += 1;
 
 		// offset the viewmodel
-		VectorMA_2(vm->origin, up, 1);
+		VectorMA(up, 1, vm->origin);
 	}
 
 	if ((int)cl_bobstyle->value == 2)
@@ -343,17 +342,17 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 	if ((int)cl_bobstyle->value == 2)
 	{
 		float bobcycle, bobup, bob;
-	
+
 		bobcycle = cl_bobcycle->value;
 		bobup = cl_bobup->value;
 		bob = cl_bob->value;
-	
+
 		cl_bobcycle->value = 0;
 		cl_bobup->value = 0;
 		cl_bob->value = 0;
-	
+
 		cl_funcs.pCalcRefdef(pparams);
-	
+
 		cl_bobcycle->value = bobcycle;
 		cl_bobup->value = bobup;
 		cl_bob->value = bob;
@@ -371,8 +370,8 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 	/* mikkotodo move? */
 	FovThink();
 
-	VectorCopy(v_vieworg, pparams->vieworg);
-	VectorCopy(v_viewforward, pparams->forward);
-	VectorCopy(v_viewright, pparams->right);
-	VectorCopy(v_viewup, pparams->up);
+	VectorCopy(pparams->vieworg, v_vieworg);
+	VectorCopy(pparams->forward, v_viewforward);
+	VectorCopy(pparams->right, v_viewright);
+	VectorCopy(pparams->up, v_viewup);
 }

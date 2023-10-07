@@ -12,13 +12,9 @@ static float fovLerp;
 float GetCurrentFov(void)
 {
 	float w, h;
-	SCREENINFO scr;
 
-	scr.iSize = sizeof(SCREENINFO);
-	gEngfuncs.pfnGetScreenInfo(&scr);
-
-	w = (float)scr.iWidth;
-	h = (float)scr.iHeight;
+	w = (float)screenWidth;
+	h = (float)screenHeight;
 
 	if (fov_horplus->value && ((w / h) != 0.75f))
 		return Degrees(atanf(tanf(Radians(currentFov) / 2) * (w / h * 0.75f))) * 2;

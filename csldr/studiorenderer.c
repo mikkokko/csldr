@@ -78,13 +78,10 @@ static void DrawHands(cl_entity_t *weapon, int flags)
 
 static void SetProjectionMatrix(void)
 {
-	SCREENINFO scr;
 	float aspect, fov, f, fn;
 	float matrix[4][4];
 
-	scr.iSize = sizeof(SCREENINFO);
-	gEngfuncs.pfnGetScreenInfo(&scr);
-	aspect = (float)scr.iWidth / (float)scr.iHeight;
+	aspect = (float)screenWidth / (float)screenHeight;
 
 	fov = viewmodel_fov->value * fovScale;
 	fov = CLAMP(fov, 1, 179);

@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.16)
 project(csldr C)
 
 if (NOT DEBUG_BUILD)
+	set(UNITY_BUILD ON)
+endif()
+
+if (UNITY_BUILD)
 	set(CMAKE_UNITY_BUILD_BATCH_SIZE 128)
 endif()
 
@@ -10,7 +14,7 @@ if (MSVC)
 	# /MT or /MTd on debug
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-	add_compile_options(/W4)
+	add_compile_options(/W4 /wd4201)
 	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 
 	# most of these are enabled implicitly but we set them anyway
@@ -60,7 +64,7 @@ add_library(csldr SHARED
 	${CSLDR_SRC}
 	${CSLDR_HDR})
 
-if (NOT DEBUG_BUILD)
+if (UNITY_BUILD)
 	set_target_properties(csldr PROPERTIES UNITY_BUILD ON)
 endif()
 

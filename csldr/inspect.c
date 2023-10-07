@@ -16,21 +16,18 @@ static void SetInspectTime(studiohdr_t *hdr, int seq)
 	inspectEndTime = clientTime + duration;
 }
 
-/* temp, makes this easier to look at */
-#define INSPECT_NO 0
-
 static int inspectAnims[] =
 {
-	INSPECT_NO, /* none */
+	0, /* none */
 	7, /* p228 */
 	13, /* glock */
 	5, /* scout */
-	INSPECT_NO, /* hegrenade */
+	4, /* hegrenade */
 	7, /* xm1014 */
-	INSPECT_NO, /* c4 */
+	4, /* c4 */
 	6, /* mac10 */
 	6, /* aug */
-	INSPECT_NO, /* smokegrenade */
+	4, /* smokegrenade */
 	16, /* elite */
 	6, /* fiveseven */
 	6, /* ump45 */
@@ -46,19 +43,19 @@ static int inspectAnims[] =
 	14, /* m4a1 */
 	6, /* tmp */
 	5, /* g3sg1 */
-	INSPECT_NO, /* flashbang */
+	4, /* flashbang */
 	6, /* deagle */
 	6, /* sg552 */
 	6, /* ak47 */
 	8, /* knife */
 	6, /* p90 */
-#if 0 /* shieldgun's weaponid is 99 so shouldn't even have it here */
-	INSPECT_NO, /* shieldgun */
-#endif
 };
 
 static int LookupInspect(int curSequence, int weaponID)
 {
+	if (weaponID <= WEAPON_NONE || weaponID >= Q_ARRAYSIZE(inspectAnims))
+		return -1;
+
 	if (weaponID == WEAPON_USP)
 	{
 		if ((curSequence >= USP_UNSIL_IDLE) &&
@@ -93,15 +90,6 @@ static void Inspect_f(void)
 
 	switch (currentWeaponId)
 	{
-		/* these weapons have no inspect anims */
-		case WEAPON_NONE:
-		case WEAPON_HEGRENADE:
-		case WEAPON_C4:
-		case WEAPON_SMOKEGRENADE:
-		case WEAPON_FLASHBANG:
-		case WEAPON_SHIELDGUN:
-			return;
-
 		/* don't inspect if doing silencer stuff on usp/m4a1 */
 		case WEAPON_USP:
 
@@ -131,9 +119,12 @@ static void Inspect_f(void)
 		return;
 
 	sequence = LookupInspect(vm->curstate.sequence, currentWeaponId);
-
-	if (sequence >= studiohdr->numseq)
-		return; /* no inspect animation in this model */
+	if (sequence < 0 || sequence >= studiohdr->numseq)
+	{
+		/* inspecting not supported or there's
+		no inspect animation in this model */
+		return;
+	}
 
 	SetInspectTime(studiohdr, sequence);
 

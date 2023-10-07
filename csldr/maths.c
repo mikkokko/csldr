@@ -38,7 +38,7 @@ void AngleVectors(const vec3_t angles, vec3_t forward, vec3_t side, vec3_t up)
 	}
 }
 
-void AngleLerp(const vec3_t a, const vec3_t b, float t, vec3_t out)
+void AngleLerp(const vec3_t a, const vec3_t b, float t, vec3_t dst)
 {
 	/* crappy but it's fast */
 	int i;
@@ -53,6 +53,6 @@ void AngleLerp(const vec3_t a, const vec3_t b, float t, vec3_t out)
 		else if (dt > 180)
 			dt -= 360;
 
-		out[i] = a[i] + t * dt;
+		dst[i] = a[i] + t * dt;
 	}
 }

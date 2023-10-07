@@ -19,6 +19,9 @@ typedef struct
 // incremented in StudioDrawModel and StudioDrawPlayer hooks
 extern int studio_drawcount;
 
+void (*Og_Fog)(float *flFogColor, float flStart, float flEnd, int bOn);
+void Hk_Fog(float *flFogColor, float flStart, float flEnd, int bOn);
+
 void R_StudioInit(void);
 
 void R_StudioInitContext(studio_context_t *ctx, cl_entity_t *entity, model_t *model, studiohdr_t *header);

@@ -12,6 +12,7 @@ static GLint bones_offset;
 
 // mikkotodo move elsewhere
 static cvar_t *r_glowshellfreq;
+static cvar_t *gl_fog;
 
 // for cpu chrome
 int studio_drawcount;
@@ -26,6 +27,8 @@ static dlight_t *cl_elights;
 static int elight_num;
 static float elight_pos[MAX_ELIGHTS][4];
 static float elight_color[MAX_ELIGHTS][3];
+
+static bool studio_fog;
 
 static struct
 {
@@ -58,6 +61,8 @@ static struct
 	GLint u_elight_num;
 	GLint u_elight_pos;
 	GLint u_elight_color;
+
+	GLint u_enable_fog;
 } shader_studio;
 
 enum
@@ -114,12 +119,24 @@ static const uniform_t studio_uniforms[] =
 
 	{ &shader_studio.u_elight_num, "u_elight_num" },
 	{ &shader_studio.u_elight_pos, "u_elight_pos" },
-	{ &shader_studio.u_elight_color, "u_elight_color" }
+	{ &shader_studio.u_elight_color, "u_elight_color" },
+
+	
+	{ &shader_studio.u_enable_fog, "u_enable_fog" },
 };
+
+void (*Og_Fog)(float *flFogColor, float flStart, float flEnd, int bOn);
+
+void Hk_Fog(float *flFogColor, float flStart, float flEnd, int bOn)
+{
+	studio_fog = (bOn && gl_fog->value > 0);
+	Og_Fog(flFogColor, flStart, flEnd, bOn);
+}
 
 void R_StudioInit(void)
 {
 	r_glowshellfreq = gEngfuncs.pfnGetCvarPointer("r_glowshellfreq");
+	gl_fog = gEngfuncs.pfnGetCvarPointer("gl_fog");
 
 	if (studio_gpuskin)
 	{
@@ -443,6 +460,8 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 		glUniform4fv(shader_studio.u_elight_pos, elight_num, &elight_pos[0][0]);
 		glUniform3fv(shader_studio.u_elight_color, elight_num, &elight_color[0][0]);
 	}
+
+	glUniform1f(shader_studio.u_enable_fog, studio_fog ? 1.0f : 0.0f);
 
 	// setup other stuff
 

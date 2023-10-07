@@ -78,6 +78,9 @@ int Hk_Initialize(cl_enginefunc_t *pEnginefuncs, int iVersion)
 	pEnginefuncs->pfnHookUserMsg = Hk_HookUserMsg;
 	pEnginefuncs->pfnHookEvent = Hk_HookEvent;
 
+	Og_Fog = pEnginefuncs->pTriAPI->Fog;
+	pEnginefuncs->pTriAPI->Fog = Hk_Fog;
+
 	Og_TempModel = pEnginefuncs->pEfxAPI->R_TempModel;
 	pEnginefuncs->pEfxAPI->R_TempModel = Hk_TempModel;
 

@@ -28,8 +28,6 @@ static int elight_num;
 static float elight_pos[MAX_ELIGHTS][4];
 static float elight_color[MAX_ELIGHTS][3];
 
-static bool studio_fog;
-
 static struct
 {
 	GLuint program;
@@ -63,6 +61,7 @@ static struct
 	GLint u_elight_color;
 
 	GLint u_enable_fog;
+	GLint u_linear_fog;
 } shader_studio;
 
 enum
@@ -121,17 +120,9 @@ static const uniform_t studio_uniforms[] =
 	{ &shader_studio.u_elight_pos, "u_elight_pos" },
 	{ &shader_studio.u_elight_color, "u_elight_color" },
 
-	
 	{ &shader_studio.u_enable_fog, "u_enable_fog" },
+	{ &shader_studio.u_linear_fog, "u_linear_fog" }
 };
-
-void (*Og_Fog)(float *flFogColor, float flStart, float flEnd, int bOn);
-
-void Hk_Fog(float *flFogColor, float flStart, float flEnd, int bOn)
-{
-	studio_fog = (bOn && gl_fog->value > 0);
-	Og_Fog(flFogColor, flStart, flEnd, bOn);
-}
 
 void R_StudioInit(void)
 {
@@ -461,7 +452,16 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 		glUniform3fv(shader_studio.u_elight_color, elight_num, &elight_color[0][0]);
 	}
 
-	glUniform1f(shader_studio.u_enable_fog, studio_fog ? 1.0f : 0.0f);
+	bool fog_enabled = glIsEnabled(GL_FOG);
+	glUniform1i(shader_studio.u_enable_fog, fog_enabled);
+
+	if (fog_enabled)
+	{
+		// mikkotodo revisit
+		GLint fog_mode;
+		glGetIntegerv(GL_FOG_MODE, &fog_mode);
+		glUniform1i(shader_studio.u_linear_fog, (fog_mode == GL_LINEAR));
+	}
 
 	// setup other stuff
 

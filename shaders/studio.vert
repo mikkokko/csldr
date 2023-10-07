@@ -11,7 +11,7 @@ attribute vec2 a_bones;
 
 varying vec2 f_texcoord;
 varying vec4 f_color;
-varying float f_fog_frag_coord;
+varying float f_fog;
 
 #ifdef GPU_SKINNING
 uniform bones
@@ -47,7 +47,8 @@ uniform int u_elight_num;
 uniform vec4 u_elight_pos[3]; // 4th component stores radius*radius
 uniform vec3 u_elight_color[3];
 
-uniform float u_enable_fog;
+uniform bool u_enable_fog;
+uniform bool u_linear_fog;
 
 // engine's v_lambert1, doesn't change
 #define LAMBERT 1.4953241
@@ -195,8 +196,23 @@ void main()
 
 	vec4 result = gl_ModelViewProjectionMatrix * vec4(pos_anim, 1.0);
 
-	// built in fog variables are looking like a clusterfuck so do this
-	f_fog_frag_coord = result.w * u_enable_fog;
+	// do fog in the vertex shader until someone complains
+	if (u_enable_fog)
+	{
+		// wtf is gl_FogCoord
+		float fog_coord = result.w;
+
+		if (u_linear_fog)
+			f_fog = (gl_Fog.end - fog_coord) * gl_Fog.scale;
+		else
+			f_fog = exp(-gl_Fog.density * gl_Fog.density * fog_coord * fog_coord);
+
+		f_fog = clamp(f_fog, 0.0, 1.0);
+	}
+	else
+	{
+		f_fog = 1.0;
+	}
 
 	gl_Position = result;
 }

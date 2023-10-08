@@ -707,7 +707,7 @@ void R_StudioDrawPoints(studio_context_t *ctx)
 			if (mem_texture->diffuse)
 				glBindTexture(GL_TEXTURE_2D, mem_texture->diffuse);
 			else
-				glBindTexture(GL_TEXTURE_2D, texture->index);
+				IEngineStudio.StudioSetupSkin(textureheader, skins[mesh->skinref]);
 		}
 
 		glDrawElements(GL_TRIANGLES, mem_mesh->num_indices, GL_UNSIGNED_INT, (void *)mem_mesh->ofs_indices);

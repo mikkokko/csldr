@@ -2,6 +2,7 @@
 
 static cvar_t *mirror_shell;
 cvar_t *cl_righthand;
+static cvar_t *spec_pip;
 
 static bool recalcShell;
 static float shellRotation;
@@ -11,6 +12,7 @@ static vec3_t shellVelocity;
 void ShellInit(void)
 {
 	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
+	spec_pip = gEngfuncs.pfnGetCvarPointer("spec_pip");
 	CVAR_ARCHIVE_FAST(mirror_shell, 0);
 }
 
@@ -106,11 +108,20 @@ TEMPENTITY *Hk_TempModel(float *pos,
 	return Og_TempModel(pos, dir, angles, life, modelIndex, soundtype);
 }
 
+static bool IsLocal(int idx)
+{
+	if (user1 == 4 || (user1 && spec_pip->value == 2))
+		return (user2 == idx);
+
+	return (gEngfuncs.pEventAPI->EV_IsLocal(idx - 1) != 0);
+}
+
 /* i almost did not include shell mirroring because of this */
 #define FLIP_SHELL_ON_EVENT(name) \
 	static void(*Og_ ## name)(event_args_t * args); \
 	static void Hk_ ## name(event_args_t * args) \
 	{ \
+		xhairShotsFired += IsLocal(args->entindex); \
 		float value; \
 		if (!mirror_shell->value) \
 		{ \
@@ -123,33 +134,47 @@ TEMPENTITY *Hk_TempModel(float *pos,
 		cl_righthand->value = value; \
 	}
 
+#define NO_FLIP_SHELL_ON_EVENT(name) \
+	static void(*Og_ ## name)(event_args_t * args); \
+	static void Hk_ ## name(event_args_t * args) \
+	{ \
+		xhairShotsFired += IsLocal(args->entindex); \
+		Og_ ## name(args); \
+	}
+
 FLIP_SHELL_ON_EVENT(FireAK47)
-/* FLIP_SHELL_ON_EVENT(FireAug) */
+NO_FLIP_SHELL_ON_EVENT(FireAug)
 FLIP_SHELL_ON_EVENT(FireDeagle)
 FLIP_SHELL_ON_EVENT(FireEliteLeft)
 FLIP_SHELL_ON_EVENT(FireEliteRight)
-/* FLIP_SHELL_ON_EVENT(FireFamas) */
+NO_FLIP_SHELL_ON_EVENT(FireFamas)
 FLIP_SHELL_ON_EVENT(FireFiveSeven)
 FLIP_SHELL_ON_EVENT(FireG3SG1)
 FLIP_SHELL_ON_EVENT(FireGalil)
-FLIP_SHELL_ON_EVENT(FireGlock1)
-FLIP_SHELL_ON_EVENT(FireGlock2)
+//FLIP_SHELL_ON_EVENT(FireGlock1)
+//FLIP_SHELL_ON_EVENT(FireGlock2)
 FLIP_SHELL_ON_EVENT(FireGlock18)
-/* FLIP_SHELL_ON_EVENT(FireM249) */
+NO_FLIP_SHELL_ON_EVENT(FireM249)
 FLIP_SHELL_ON_EVENT(FireM4A1)
-FLIP_SHELL_ON_EVENT(FireMP5)
+//FLIP_SHELL_ON_EVENT(FireMP5)
 FLIP_SHELL_ON_EVENT(FireMP5N)
 FLIP_SHELL_ON_EVENT(FireMac10)
 FLIP_SHELL_ON_EVENT(FireP228)
-/* FLIP_SHELL_ON_EVENT(FireP90) */
+NO_FLIP_SHELL_ON_EVENT(FireP90)
 FLIP_SHELL_ON_EVENT(FireSG550)
 FLIP_SHELL_ON_EVENT(FireSG552)
-FLIP_SHELL_ON_EVENT(FireShotGunSingle)
-FLIP_SHELL_ON_EVENT(FireShotGunDouble)
+//FLIP_SHELL_ON_EVENT(FireShotGunSingle)
+//FLIP_SHELL_ON_EVENT(FireShotGunDouble)
 FLIP_SHELL_ON_EVENT(FireTMP)
 FLIP_SHELL_ON_EVENT(FireUMP45)
 FLIP_SHELL_ON_EVENT(FireUSP)
 FLIP_SHELL_ON_EVENT(FireXM1014)
+
+NO_FLIP_SHELL_ON_EVENT(FireAWP)
+//NO_FLIP_SHELL_ON_EVENT(FireGauss)
+NO_FLIP_SHELL_ON_EVENT(FireM3)
+//NO_FLIP_SHELL_ON_EVENT(FirePython)
+NO_FLIP_SHELL_ON_EVENT(FireScout)
 
 #define CHECK_EVENT(name, func) \
 	if (!strcmp(partialName, name)) \
@@ -171,28 +196,33 @@ static pfnEvent_t CheckForShellEvent(const char *name, pfnEvent_t pfnEvent)
 	partialName = name + 7;
 
 	CHECK_EVENT("ak47.sc", FireAK47)
-	/* CHECK_EVENT("aug.sc", FireAug) already mirrored? */
+	CHECK_EVENT("aug.sc", FireAug)
+	CHECK_EVENT("awp.sc", FireAWP)
 	CHECK_EVENT("deagle.sc", FireDeagle)
 	CHECK_EVENT("elite_left.sc", FireEliteLeft)
 	CHECK_EVENT("elite_right.sc", FireEliteRight)
-	/* CHECK_EVENT("famas.sc", FireFamas) already mirrored? */
+	CHECK_EVENT("famas.sc", FireFamas)
 	CHECK_EVENT("fiveseven.sc", FireFiveSeven)
 	CHECK_EVENT("g3sg1.sc", FireG3SG1)
 	CHECK_EVENT("galil.sc", FireGalil)
-	CHECK_EVENT("glock1.sc", FireGlock1)
-	CHECK_EVENT("glock2.sc", FireGlock2)
+	//CHECK_EVENT("gauss.sc", FireGauss)
+	//CHECK_EVENT("glock1.sc", FireGlock1)
 	CHECK_EVENT("glock18.sc", FireGlock18)
-	/* CHECK_EVENT("m249.sc", FireM249) already mirrored? */
+	//CHECK_EVENT("glock2.sc", FireGlock2)
+	CHECK_EVENT("m249.sc", FireM249)
+	CHECK_EVENT("m3.sc", FireM3)
 	CHECK_EVENT("m4a1.sc", FireM4A1)
-	CHECK_EVENT("mp5.sc", FireMP5)
-	CHECK_EVENT("mp5n.sc", FireMP5N)
 	CHECK_EVENT("mac10.sc", FireMac10)
+	//CHECK_EVENT("mp5.sc", FireMP5)
+	CHECK_EVENT("mp5n.sc", FireMP5N)
 	CHECK_EVENT("p228.sc", FireP228)
-	/* CHECK_EVENT("p90.sc", FireP90) already mirrored? */
+	CHECK_EVENT("p90.sc", FireP90)
+	//CHECK_EVENT("python.sc", FirePython)
+	CHECK_EVENT("scout.sc", FireScout)
 	CHECK_EVENT("sg550.sc", FireSG550)
 	CHECK_EVENT("sg552.sc", FireSG552)
-	CHECK_EVENT("shotgun1.sc", FireShotGunSingle)
-	CHECK_EVENT("shotgun2.sc", FireShotGunDouble)
+	//CHECK_EVENT("shotgun1.sc", FireShotGunSingle)
+	//CHECK_EVENT("shotgun2.sc", FireShotGunDouble)
 	CHECK_EVENT("tmp.sc", FireTMP)
 	CHECK_EVENT("ump45.sc", FireUMP45)
 	CHECK_EVENT("usp.sc", FireUSP)

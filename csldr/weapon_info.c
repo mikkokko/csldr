@@ -10,5 +10,11 @@ void Hk_PostRunCmd(local_state_t *from,
 		unsigned int random_seed)
 {
 	currentWeapon = from->weapondata[from->client.m_iId];
+
+	// crosshair stuff
+	xhairPlayerFlags = from->client.flags;
+	xhairPlayerSpeed = VectorLength(from->client.velocity);
+	xhairWeaponFlags = currentWeapon.m_iWeaponState;
+
 	cl_funcs.pPostRunCmd(from, to, cmd, runfuncs, time, random_seed);
 }

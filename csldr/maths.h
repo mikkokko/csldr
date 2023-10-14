@@ -26,6 +26,11 @@ inline static float DotProduct(const vec3_t a, const vec3_t b)
 	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
+inline static float VectorLength(const vec3_t v)
+{
+	return sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+}
+
 inline static float VectorLength2D(const vec3_t v)
 {
 	return sqrtf(v[0] * v[0] + v[1] * v[1]);

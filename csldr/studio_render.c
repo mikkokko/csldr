@@ -393,8 +393,7 @@ static int CalcFxBlend(const cl_entity_t *ent)
 void R_StudioSetupRenderer(studio_context_t *ctx)
 {
 	// done to avoid texture bugs
-	glPushAttrib(GL_TEXTURE_BIT);
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE0); // still needed?
 
 	// setup our 70 different uniforms
 	glUseProgram(shader_studio.program);
@@ -504,8 +503,6 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 
 void R_StudioRestoreRenderer(studio_context_t *ctx)
 {
-	glPopAttrib();
-
 	glUseProgram(0);
 
 	// restore opengl state
@@ -702,12 +699,23 @@ void R_StudioDrawPoints(studio_context_t *ctx)
 			glDepthMask(GL_FALSE);
 		}
 
-		if (!(forceflags & STUDIO_NF_CHROME))
+		if (mem_texture->diffuse)
 		{
-			if (mem_texture->diffuse)
-				glBindTexture(GL_TEXTURE_2D, mem_texture->diffuse);
-			else
-				IEngineStudio.StudioSetupSkin(textureheader, skins[mesh->skinref]);
+			// mikkotodo revisit, hack to make texture bindings go through GL_Bind
+			char old_name = texture->name[0]; // make sure remapping won't happen
+			int old_index = texture->index;
+
+			texture->name[0] = '\0';
+			texture->index = mem_texture->diffuse;
+
+			IEngineStudio.StudioSetupSkin(textureheader, skins[mesh->skinref]);
+
+			texture->name[0] = old_name;
+			texture->index = old_index;
+		}
+		else
+		{
+			IEngineStudio.StudioSetupSkin(textureheader, skins[mesh->skinref]);
 		}
 
 		glDrawElements(GL_TRIANGLES, mem_mesh->num_indices, GL_UNSIGNED_INT, (void *)mem_mesh->ofs_indices);

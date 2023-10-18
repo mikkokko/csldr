@@ -1,7 +1,32 @@
 #include "pch.h"
 
-static GLuint CompileShader(const char *name, const char *source, int length, GLenum type)
+const char *ShaderType(GLenum type)
 {
+	switch (type)
+	{
+	case GL_VERTEX_SHADER:
+		return "vertex";
+
+	case GL_FRAGMENT_SHADER:
+		return "fragment";
+	}
+
+	return "unknown";
+}
+
+static GLuint CompileShader(const char *name, const char *defines, int defines_length, const char *base_source, int base_length, GLenum type)
+{
+	char source_buffer[8192];
+
+	if (defines_length + base_length > sizeof(source_buffer))
+		Plat_Error("Compiling %s %s shader failed: source is too long\n", name, ShaderType(type));
+
+	memcpy(source_buffer, defines, defines_length);
+	memcpy(source_buffer + defines_length, base_source, base_length);
+
+	const char *source = source_buffer;
+	int length = defines_length + base_length;
+
 	GLuint shader = glCreateShader(type);
 	glShaderSource(shader, 1, &source, &length);
 	glCompileShader(shader);
@@ -13,7 +38,7 @@ static GLuint CompileShader(const char *name, const char *source, int length, GL
 	{
 		char message[1024];
 		glGetShaderInfoLog(shader, sizeof(message), NULL, message);
-		Plat_Error("Compiling %s shader failed:\n%s", name, message);
+		Plat_Error("Compiling %s %s shader failed:\n%s", name, ShaderType(type), message);
 	}
 
 	return shader;
@@ -54,27 +79,30 @@ GLuint CreateShaderProgram(const char *name,
 	const char *fragment_source,
 	int fragment_length,
 #endif
+	const char *defines,
+	int defines_length,
 	const attribute_t *attributes,
 	int num_attributes,
+	byte *uniform_struct,
 	const uniform_t *uniforms,
 	int num_uniforms)
 {
 #ifdef SHADER_DIR
 	int vertex_length;
 	char *vertex_source = LoadFromDisk(vertex_name, &vertex_length);
-	GLuint vertex_shader = CompileShader(name, vertex_source, vertex_length, GL_VERTEX_SHADER);
+	GLuint vertex_shader = CompileShader(name, defines, defines_length, vertex_source, vertex_length, GL_VERTEX_SHADER);
 	Mem_TempFree(vertex_source);
 #else
-	GLuint vertex_shader = CompileShader(name, vertex_source, vertex_length, GL_VERTEX_SHADER);
+	GLuint vertex_shader = CompileShader(name, defines, defines_length, vertex_source, vertex_length, GL_VERTEX_SHADER);
 #endif
 
 #ifdef SHADER_DIR
 	int fragment_length;
 	char *fragment_source = LoadFromDisk(fragment_name, &fragment_length);
-	GLuint fragment_shader = CompileShader(name, fragment_source, fragment_length, GL_FRAGMENT_SHADER);
+	GLuint fragment_shader = CompileShader(name, defines, defines_length, fragment_source, fragment_length, GL_FRAGMENT_SHADER);
 	Mem_TempFree(fragment_source);
 #else
-	GLuint fragment_shader = CompileShader(name, fragment_source, fragment_length, GL_FRAGMENT_SHADER);
+	GLuint fragment_shader = CompileShader(name, defines, defines_length, fragment_source, fragment_length, GL_FRAGMENT_SHADER);
 #endif
 
 	GLuint program = glCreateProgram();
@@ -102,7 +130,7 @@ GLuint CreateShaderProgram(const char *name,
 	glDeleteShader(fragment_shader);
 
 	for (int i = 0; i < num_uniforms; i++)
-		*(uniforms[i].location) = glGetUniformLocation(program, uniforms[i].name);
+		*((GLint *)(uniform_struct + uniforms[i].offset)) = glGetUniformLocation(program, uniforms[i].name);
 
 	return program;
 }

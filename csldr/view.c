@@ -374,4 +374,7 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 	VectorCopy(pparams->forward, v_viewforward);
 	VectorCopy(pparams->right, v_viewright);
 	VectorCopy(pparams->up, v_viewup);
+
+	// dumb as fuck
+	R_StudioNewFrame();
 }

@@ -1,14 +1,12 @@
 #include "pch.h"
 
 #ifndef SHADER_DIR /* xxd'd shaders */
-#include "studio_cpu_vert.h"
 #include "studio_frag.h"
-#include "studio_gpu_vert.h"
+#include "studio_vert.h"
 #endif
 
 // only for gpu skinning
 static GLuint studio_ubo;
-static GLint bones_offset;
 
 // mikkotodo move elsewhere
 static cvar_t *r_glowshellfreq;
@@ -16,6 +14,8 @@ static cvar_t *gl_fog;
 
 // for cpu chrome
 int studio_drawcount;
+
+int studio_frame;
 
 static vec3_t chrome_origin;
 
@@ -28,41 +28,76 @@ static int elight_num;
 static float elight_pos[MAX_ELIGHTS][4];
 static float elight_color[MAX_ELIGHTS][3];
 
-static struct
+static GLint studio_fog;
+
+typedef struct studio_shader_s
 {
 	GLuint program;
 
 	GLint u_chromeorg;
 	GLint u_chromeright;
+
 	GLint u_ambientlight;
 	GLint u_lightvec;
 	GLint u_shadelight;
 	GLint u_colormix;
-
-	GLint u_texture;
-
-	GLint u_tex_flatshade;
-	GLint u_tex_chrome;
-	GLint u_tex_fullbright;
-	GLint u_tex_masked;
 
 	GLint u_lightgamma;
 	GLint u_brightness;
 	GLint u_invgamma;
 	GLint u_g3;
 
-	GLint u_additive;
+	GLint u_texture;
 
-	GLint u_glowshell;
-	GLint u_glowshell_color;
+	GLint us_tex_flatshade;
+	GLint us_tex_chrome;
+	GLint us_tex_fullbright;
+	GLint us_tex_masked;
 
-	GLint u_elight_num;
 	GLint u_elight_pos;
 	GLint u_elight_color;
+} studio_shader_t;
 
-	GLint u_enable_fog;
-	GLint u_linear_fog;
-} shader_studio;
+enum
+{
+	HAVE_ADDITIVE = (1 << 0),
+	HAVE_FOG = (1 << 1),
+	HAVE_FOG_LINEAR = (1 << 2),
+	HAVE_GLOWSHELL = (1 << 3),
+	HAVE_ELIGHTS = (1 << 4),
+
+	// we still set uniforms to actually enable these...
+	CAN_FLATSHADE = (1 << 5),
+	CAN_CHROME = (1 << 5),
+	CAN_FULLBRIGHT = (1 << 5),
+	CAN_MASKED = (1 << 6),
+
+	NUM_OPTIONS = (1 << 7)
+};
+
+typedef struct
+{
+	int flag;
+	const char *define;
+} option_info_t;
+
+#define OPTION_INFO(name) { name, "#define " #name "\n" }
+
+static option_info_t option_info[] =
+{
+	OPTION_INFO(HAVE_ADDITIVE),
+	OPTION_INFO(HAVE_FOG),
+	OPTION_INFO(HAVE_FOG_LINEAR),
+	OPTION_INFO(HAVE_GLOWSHELL),
+	OPTION_INFO(HAVE_ELIGHTS),
+
+	OPTION_INFO(CAN_FLATSHADE),
+	OPTION_INFO(CAN_CHROME),
+	OPTION_INFO(CAN_FULLBRIGHT),
+	OPTION_INFO(CAN_MASKED)
+};
+
+static studio_shader_t studio_shaders[NUM_OPTIONS];
 
 enum
 {
@@ -91,37 +126,28 @@ static const attribute_t studio_attributes_gpu[] =
 
 static const uniform_t studio_uniforms[] =
 {
-	{ &shader_studio.u_chromeorg, "u_chromeorg" },
-	{ &shader_studio.u_chromeright, "u_chromeright" },
+	{ offsetof(studio_shader_t, u_chromeorg), "u_chromeorg" },
+	{ offsetof(studio_shader_t, u_chromeright), "u_chromeright" },
 
-	{ &shader_studio.u_ambientlight, "u_ambientlight" },
-	{ &shader_studio.u_shadelight, "u_shadelight" },
-	{ &shader_studio.u_lightvec, "u_lightvec" },
-	{ &shader_studio.u_colormix, "u_colormix" },
+	{ offsetof(studio_shader_t, u_ambientlight), "u_ambientlight" },
+	{ offsetof(studio_shader_t, u_shadelight), "u_shadelight" },
+	{ offsetof(studio_shader_t, u_lightvec), "u_lightvec" },
+	{ offsetof(studio_shader_t, u_colormix), "u_colormix" },
 
-	{ &shader_studio.u_texture, "u_texture" },
+	{ offsetof(studio_shader_t, u_lightgamma), "u_lightgamma" },
+	{ offsetof(studio_shader_t, u_brightness), "u_brightness" },
+	{ offsetof(studio_shader_t, u_invgamma), "u_invgamma" },
+	{ offsetof(studio_shader_t, u_g3), "u_g3" },
 
-	{ &shader_studio.u_tex_flatshade, "u_tex_flatshade" },
-	{ &shader_studio.u_tex_chrome, "u_tex_chrome" },
-	{ &shader_studio.u_tex_fullbright, "u_tex_fullbright" },
-	{ &shader_studio.u_tex_masked, "u_tex_masked" },
+	{ offsetof(studio_shader_t, u_texture), "u_texture" },
 
-	{ &shader_studio.u_lightgamma, "u_lightgamma" },
-	{ &shader_studio.u_brightness, "u_brightness" },
-	{ &shader_studio.u_invgamma, "u_invgamma" },
-	{ &shader_studio.u_g3, "u_g3" },
+	{ offsetof(studio_shader_t, us_tex_flatshade), "u_tex_flatshade" },
+	{ offsetof(studio_shader_t, us_tex_chrome), "u_tex_chrome" },
+	{ offsetof(studio_shader_t, us_tex_fullbright), "u_tex_fullbright" },
+	{ offsetof(studio_shader_t, us_tex_masked), "u_tex_masked" },
 
-	{ &shader_studio.u_additive, "u_additive" },
-
-	{ &shader_studio.u_glowshell, "u_glowshell" },
-	{ &shader_studio.u_glowshell_color, "u_glowshell_color" },
-
-	{ &shader_studio.u_elight_num, "u_elight_num" },
-	{ &shader_studio.u_elight_pos, "u_elight_pos" },
-	{ &shader_studio.u_elight_color, "u_elight_color" },
-
-	{ &shader_studio.u_enable_fog, "u_enable_fog" },
-	{ &shader_studio.u_linear_fog, "u_linear_fog" }
+	{ offsetof(studio_shader_t, u_elight_pos), "u_elight_pos" },
+	{ offsetof(studio_shader_t, u_elight_color), "u_elight_color" },
 };
 
 void R_StudioInit(void)
@@ -131,23 +157,6 @@ void R_StudioInit(void)
 
 	if (studio_gpuskin)
 	{
-		LOAD_SHADER(studio, studio_gpu, studio, studio_attributes_gpu, studio_uniforms);
-	}
-	else
-	{
-		LOAD_SHADER(studio, studio_cpu, studio, studio_attributes_cpu, studio_uniforms);
-	}
-
-	if (studio_gpuskin)
-	{
-		GLuint block_index = glGetUniformBlockIndex(shader_studio.program, "bones");
-
-		GLuint bones_index;
-		const char *bones_name = "u_bones";
-		glGetUniformIndices(shader_studio.program, 1, &bones_name, &bones_index);
-		glGetActiveUniformsiv(shader_studio.program, 1, &bones_index, GL_UNIFORM_OFFSET, &bones_offset);
-		glUniformBlockBinding(shader_studio.program, block_index, 0);
-
 		// bold size assumption
 		glGenBuffers(1, &studio_ubo);
 		glBindBuffer(GL_UNIFORM_BUFFER, studio_ubo);
@@ -161,9 +170,84 @@ void R_StudioInit(void)
 	cl_elights = gEngfuncs.pEfxAPI->CL_AllocElight(0);
 }
 
+void R_StudioNewFrame(void)
+{
+	studio_frame++;
+}
+
+typedef struct
+{
+	char *data;
+	size_t cap;
+	size_t len;
+} String;
+
+static bool StringAppend(String *dst, const char *src)
+{
+	if (dst->len == dst->cap)
+	{
+		// can't copy
+		assert(false);
+		return false;
+	}
+
+	size_t srclen = strlen(src);
+
+	if (srclen >= dst->cap - dst->len)
+	{
+		// truncation happened, shouldn't happen, if it does no big deal
+		assert(false);
+
+		memcpy(dst->data + dst->len, src, dst->cap - dst->len - 1);
+		dst->data[dst->cap - 1] = '\0';
+		dst->len = dst->cap - 1;
+		return false;
+	}
+
+	memcpy(dst->data + dst->len, src, srclen + 1);
+	dst->len += srclen;
+	return true;
+}
+
+static studio_shader_t *R_StudioSelectShader(int options)
+{
+	studio_shader_t *dest = &studio_shaders[options];
+	if (dest->program)
+		return dest;
+	
+	char buffer[4096];
+	String defines = { buffer, sizeof(buffer) };
+
+	if (studio_gpuskin)
+		StringAppend(&defines, "#version 140\n#define GPU_SKINNING\n");
+	else
+		StringAppend(&defines, "#version 110\n");
+	
+	for (int j = 0; j < Q_ARRAYSIZE(option_info); j++)
+	{
+		if (options & option_info[j].flag)
+			StringAppend(&defines, option_info[j].define);
+	}
+
+	if (studio_gpuskin)
+	{
+		LOAD_SHADER(dest, studio, defines.data, defines.len, studio_attributes_gpu, studio_uniforms);
+		GLuint block_index = glGetUniformBlockIndex(dest->program, "bones");
+		glUniformBlockBinding(dest->program, block_index, 0);
+	}
+	else
+	{
+		LOAD_SHADER(dest, studio, defines.data, defines.len, studio_attributes_cpu, studio_uniforms);
+	}
+
+	return dest;
+}
+
 void R_StudioEntityLight(studio_context_t *ctx)
 {
 	elight_num = 0;
+	memset(elight_color, 0, sizeof(elight_color));
+	memset(elight_pos, 0, sizeof(elight_pos));
 
 	float lstrength[MAX_ELIGHTS];
 	memset(lstrength, 0, sizeof(lstrength));
@@ -390,76 +474,119 @@ static int CalcFxBlend(const cl_entity_t *ent)
 	return CLAMP(amount, 0, 255);
 }
 
+static int R_StudioGetOptions(studio_context_t *ctx)
+{
+	int options = 0;
+
+	if (ctx->entity->curstate.rendermode == kRenderTransAdd)
+		options |= HAVE_ADDITIVE;
+	else if (ctx->entity->curstate.renderfx == kRenderFxGlowShell)
+		options |= HAVE_GLOWSHELL;
+
+	// mikkotodo revisit
+	if (studio_fog == GL_LINEAR)
+		options |= (HAVE_FOG | HAVE_FOG_LINEAR);
+	else if (studio_fog == GL_EXP2)
+		options |= HAVE_FOG;
+
+	if (elight_num)
+		options |= HAVE_ELIGHTS;
+
+	if (ctx->cache->texflags & STUDIO_NF_FLATSHADE)
+		options |= CAN_FLATSHADE;
+
+	if (ctx->cache->texflags & STUDIO_NF_CHROME)
+		options |= CAN_CHROME;
+
+	if (ctx->cache->texflags & STUDIO_NF_FULLBRIGHT)
+		options |= CAN_FULLBRIGHT;
+
+	if (ctx->cache->texflags & STUDIO_NF_MASKED)
+		options |= CAN_MASKED;
+
+	return options;
+}
+
 void R_StudioSetupRenderer(studio_context_t *ctx)
 {
-	// done to avoid texture bugs
-	glActiveTexture(GL_TEXTURE0); // still needed?
+	static int current_frame;
+
+	if (current_frame != studio_frame)
+	{
+		// per frame stuff
+		current_frame = studio_frame;
+
+		studio_fog = 0;
+
+		if (glIsEnabled(GL_FOG))
+		{
+			glGetIntegerv(GL_FOG_MODE, &studio_fog);
+		}
+	}
+
+	int options = R_StudioGetOptions(ctx);
+	studio_shader_t *shader = R_StudioSelectShader(options);
+	ctx->shader = shader;
 
 	// setup our 70 different uniforms
-	glUseProgram(shader_studio.program);
+	glUseProgram(shader->program);
 
-	glUniform1i(shader_studio.u_texture, 0);
+	glUniform1i(shader->u_texture, 0);
 
-	glUniform1f(shader_studio.u_ambientlight, ctx->ambientlight);
-	glUniform1f(shader_studio.u_shadelight, ctx->shadelight);
-	glUniform3fv(shader_studio.u_lightvec, 1, ctx->lightvec);
+	// mikkotodo is this correct
+	if ((options & (HAVE_ADDITIVE | HAVE_GLOWSHELL)) == 0)
+	{
+		glUniform1f(shader->u_ambientlight, ctx->ambientlight);
+		glUniform1f(shader->u_shadelight, ctx->shadelight);
+		glUniform3fv(shader->u_lightvec, 1, ctx->lightvec);
+
+		glUniform1f(shader->u_lightgamma, gammavars.lightgamma);
+		glUniform1f(shader->u_brightness, gammavars.brightness);
+		glUniform1f(shader->u_invgamma, gammavars.g);
+		glUniform1f(shader->u_g3, gammavars.g3);
+	}
 
 	float colormix[4];
-	colormix[0] = ctx->lightcolor[0];
-	colormix[1] = ctx->lightcolor[1];
-	colormix[2] = ctx->lightcolor[2];
-	colormix[3] = CalcFxBlend(ctx->entity) * (1.0f / 255);
 
-	glUniform4fv(shader_studio.u_colormix, 1, colormix);
+	if (options & HAVE_GLOWSHELL)
+	{
+		colormix[0] = (float)ctx->entity->curstate.rendercolor.r * (1.0f / 255);
+		colormix[1] = (float)ctx->entity->curstate.rendercolor.g * (1.0f / 255);
+		colormix[2] = (float)ctx->entity->curstate.rendercolor.b * (1.0f / 255);
+		colormix[3] = (float)ctx->entity->curstate.renderamt * 0.05f;
+	}
+	else
+	{
+		colormix[0] = ctx->lightcolor[0];
+		colormix[1] = ctx->lightcolor[1];
+		colormix[2] = ctx->lightcolor[2];
+		colormix[3] = CalcFxBlend(ctx->entity) * (1.0f / 255);
+	}
 
-	glUniform1f(shader_studio.u_lightgamma, gammavars.lightgamma);
-	glUniform1f(shader_studio.u_brightness, gammavars.brightness);
-	glUniform1f(shader_studio.u_invgamma, gammavars.g);
-	glUniform1f(shader_studio.u_g3, gammavars.g3);
-
-	glUniform1i(shader_studio.u_additive, (ctx->entity->curstate.rendermode == kRenderTransAdd));
+	glUniform4fv(shader->u_colormix, 1, colormix);
 
 	// bruh
-	if (ctx->entity->curstate.renderfx == kRenderFxGlowShell)
+	if (options & HAVE_GLOWSHELL)
 	{
 		chrome_origin[0] = cosf(r_glowshellfreq->value * clientTime) * 4000.0f;
 		chrome_origin[1] = sinf(r_glowshellfreq->value * clientTime) * 4000.0f;
 		chrome_origin[2] = cosf(r_glowshellfreq->value * clientTime * 0.33f) * 4000.0f;
-		glUniform1i(shader_studio.u_glowshell, true);
-
-		float data[4];
-		data[0] = (float)ctx->entity->curstate.rendercolor.r * (1.0f / 255);
-		data[1] = (float)ctx->entity->curstate.rendercolor.g * (1.0f / 255);
-		data[2] = (float)ctx->entity->curstate.rendercolor.b * (1.0f / 255);
-		data[3] = (float)ctx->entity->curstate.renderamt * 0.05f;
-		glUniform4fv(shader_studio.u_glowshell_color, 1, data);
 	}
 	else
 	{
 		VectorCopy(v_vieworg, chrome_origin);
-		glUniform1i(shader_studio.u_glowshell, false);
 	}
 
-	glUniform3fv(shader_studio.u_chromeorg, 1, chrome_origin);
-	glUniform3fv(shader_studio.u_chromeright, 1, v_viewright);
-
-	glUniform1i(shader_studio.u_elight_num, elight_num);
-
-	if (elight_num)
+	if (options & CAN_CHROME)
 	{
-		glUniform4fv(shader_studio.u_elight_pos, elight_num, &elight_pos[0][0]);
-		glUniform3fv(shader_studio.u_elight_color, elight_num, &elight_color[0][0]);
+		glUniform3fv(shader->u_chromeorg, 1, chrome_origin);
+		glUniform3fv(shader->u_chromeright, 1, v_viewright);
 	}
 
-	bool fog_enabled = glIsEnabled(GL_FOG);
-	glUniform1i(shader_studio.u_enable_fog, fog_enabled);
-
-	if (fog_enabled)
+	if (options & HAVE_ELIGHTS)
 	{
-		// mikkotodo revisit
-		GLint fog_mode;
-		glGetIntegerv(GL_FOG_MODE, &fog_mode);
-		glUniform1i(shader_studio.u_linear_fog, (fog_mode == GL_LINEAR));
+		glUniform4fv(shader->u_elight_pos, elight_num, &elight_pos[0][0]);
+		glUniform3fv(shader->u_elight_color, elight_num, &elight_color[0][0]);
 	}
 
 	// setup other stuff
@@ -474,7 +601,7 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 	if (studio_gpuskin)
 	{
 		glBindBuffer(GL_UNIFORM_BUFFER, studio_ubo);
-		glBufferSubData(GL_UNIFORM_BUFFER, bones_offset, ctx->header->numbones * sizeof(mat3x4_t), &(*ctx->bonetransform)[0][0][0]);
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, ctx->header->numbones * sizeof(mat3x4_t), &(*ctx->bonetransform)[0][0][0]);
 	}
 
 	if (studio_gpuskin)
@@ -685,10 +812,11 @@ void R_StudioDrawPoints(studio_context_t *ctx)
 		int forceflags = IEngineStudio.GetForceFaceFlags();
 		int flags = texture->flags | forceflags;
 
-		glUniform1i(shader_studio.u_tex_flatshade, (flags & STUDIO_NF_FLATSHADE) ? true : false);
-		glUniform1i(shader_studio.u_tex_chrome, (flags & STUDIO_NF_CHROME) ? true : false);
-		glUniform1i(shader_studio.u_tex_fullbright, (flags & STUDIO_NF_FULLBRIGHT) ? true : false);
-		glUniform1i(shader_studio.u_tex_masked, (flags & STUDIO_NF_MASKED) ? true : false);
+		// mikktodo don't set if not needed!!!
+		glUniform1i(ctx->shader->us_tex_flatshade, (flags & STUDIO_NF_FLATSHADE) ? true : false);
+		glUniform1i(ctx->shader->us_tex_chrome, (flags & STUDIO_NF_CHROME) ? true : false);
+		glUniform1i(ctx->shader->us_tex_fullbright, (flags & STUDIO_NF_FULLBRIGHT) ? true : false);
+		glUniform1i(ctx->shader->us_tex_masked, (flags & STUDIO_NF_MASKED) ? true : false);
 
 		bool additive = ((flags & STUDIO_NF_ADDITIVE) && ctx->entity->curstate.rendermode == kRenderNormal);
 

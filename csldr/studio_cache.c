@@ -260,15 +260,19 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 			for (int k = 0; k < submodel->nummesh; k++)
 			{
 				mstudiomesh_t *mesh = &meshes[k];
+				mstudiotexture_t *texture = &textures[skins[mesh->skinref]];
 				short *tricmds = (short *)((byte *)header + mesh->triindex);
 
-				float s = 1.0f / (float)textures[skins[mesh->skinref]].width;
-				float t = 1.0f / (float)textures[skins[mesh->skinref]].height;
+				float s = 1.0f / (float)texture->width;
+				float t = 1.0f / (float)texture->height;
 
 				unsigned index_offset = build->num_indices;
 				
 				// only for cpu skinning
 				unsigned vert_offset_mesh = build->num_verts;
+
+				// save texture flags for shader selection
+				cache->texflags |= texture->flags;
 
 				ParseTricmds(build, tricmds, vertices, normals, vertinfo, norminfo, s, t);
 

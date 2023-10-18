@@ -14,12 +14,16 @@ typedef struct
 	float shadelight;
 	vec3_t lightcolor;
 	vec3_t lightvec;
+
+	struct studio_shader_s *shader;
 } studio_context_t;
 
 // incremented in StudioDrawModel and StudioDrawPlayer hooks
 extern int studio_drawcount;
 
 void R_StudioInit(void);
+
+void R_StudioNewFrame(void);
 
 void R_StudioInitContext(studio_context_t *ctx, cl_entity_t *entity, model_t *model, studiohdr_t *header);
 void R_StudioEntityLight(studio_context_t *ctx);

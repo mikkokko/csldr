@@ -6,7 +6,7 @@ typedef struct
 
 typedef struct
 {
-	GLint *location;
+	size_t offset;
 	const char *name;
 } uniform_t;
 
@@ -20,29 +20,38 @@ GLuint CreateShaderProgram(const char *name,
 	const char *fragment_source,
 	int fragment_length,
 #endif
+	const char *defines,
+	int defines_length,
 	const attribute_t *attributes,
 	int num_attributes,
+	byte *uniform_struct,
 	const uniform_t *uniforms,
 	int num_uniforms);
 
 #ifdef SHADER_DIR
-#define LOAD_SHADER(name, vs, fs, atr, un)			\
-shader_##name.program = CreateShaderProgram(#name,	\
-	#vs ".vert",							        \
-	#fs ".frag",							        \
-	atr,								            \
-	Q_ARRAYSIZE(atr),					            \
-	un,								                \
+#define LOAD_SHADER(obj, name, defs, defs_len, atr, un)	\
+obj->program = CreateShaderProgram(#name,				\
+	#name ".vert",										\
+	#name ".frag",										\
+	defs,												\
+	defs_len,											\
+	atr,												\
+	Q_ARRAYSIZE(atr),									\
+	(byte *)obj,										\
+	un,													\
 	Q_ARRAYSIZE(un))
 #else
-#define LOAD_SHADER(name, vs, fs, atr, un)			\
-shader_##name.program = CreateShaderProgram(#name,	\
-	(char *)vs##_vert,					            \
-	(int)vs##_vert_len,					            \
-	(char *)fs##_frag,					            \
-	(int)fs##_frag_len,					            \
-	atr,								            \
-	Q_ARRAYSIZE(atr),					            \
-	un,								                \
+#define LOAD_SHADER(obj, name, defs, defs_len, atr, un) \
+obj->program = CreateShaderProgram(#name,				\
+	(char *)name##_vert,								\
+	(int)name##_vert_len,								\
+	(char *)name##_frag,								\
+	(int)name##_frag_len,								\
+	defs,												\
+	defs_len,											\
+	atr,												\
+	Q_ARRAYSIZE(atr),									\
+	(byte *)obj,										\
+	un,													\
 	Q_ARRAYSIZE(un))
 #endif

@@ -68,6 +68,8 @@ typedef struct studio_cache_s
 	// only for cpu skinning
 	studio_cpu_vert_t *verts;
 	studio_vertbone_t *vertbones;
+
+	int texflags;
 } studio_cache_t;
 
 extern unsigned int flush_count;

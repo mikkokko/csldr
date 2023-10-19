@@ -49,10 +49,10 @@ typedef struct studio_shader_s
 
 	GLint u_texture;
 
-	GLint us_tex_flatshade;
-	GLint us_tex_chrome;
-	GLint us_tex_fullbright;
-	GLint us_tex_masked;
+	GLint u_tex_flatshade;
+	GLint u_tex_chrome;
+	GLint u_tex_fullbright;
+	GLint u_tex_masked;
 
 	GLint u_elight_pos;
 	GLint u_elight_color;
@@ -143,10 +143,10 @@ static const uniform_t studio_uniforms[] =
 
 	UNIFORM_DEF(u_texture),
 
-	UNIFORM_DEF(us_tex_flatshade),
-	UNIFORM_DEF(us_tex_chrome),
-	UNIFORM_DEF(us_tex_fullbright),
-	UNIFORM_DEF(us_tex_masked),
+	UNIFORM_DEF(u_tex_flatshade),
+	UNIFORM_DEF(u_tex_chrome),
+	UNIFORM_DEF(u_tex_fullbright),
+	UNIFORM_DEF(u_tex_masked),
 
 	UNIFORM_DEF(u_elight_pos),
 	UNIFORM_DEF(u_elight_color)
@@ -222,7 +222,7 @@ static studio_shader_t *R_StudioSelectShader(int options)
 
 
 	if (studio_gpuskin)
-		StringAppend(&defines, "#version 120\n#define GPU_SKINNING\n");
+		StringAppend(&defines, "#version 150 compatibility\n#define GPU_SKINNING\n");
 	else
 		StringAppend(&defines, "#version 110\n");
 	
@@ -739,6 +739,8 @@ void R_StudioDrawPoints(studio_context_t *ctx)
 		skins = &skins[skin * textureheader->numskinref];
 	}
 
+	int forceflags = IEngineStudio.GetForceFaceFlags();
+
 	if (!studio_gpuskin)
 	{
 		studio_cpu_vert_t *anim_verts = (studio_cpu_vert_t *)Mem_TempAlloc(sizeof(studio_cpu_vert_t) * mem_submodel->num_verts);
@@ -750,7 +752,6 @@ void R_StudioDrawPoints(studio_context_t *ctx)
 			mem_mesh_t *mem_mesh = &mem_submodel->meshes[i];
 			mstudiotexture_t *texture = &textures[skins[mesh->skinref]];
 
-			int forceflags = IEngineStudio.GetForceFaceFlags();
 			int flags = texture->flags | forceflags;
 
 			if (flags & STUDIO_NF_CHROME)
@@ -814,14 +815,19 @@ void R_StudioDrawPoints(studio_context_t *ctx)
 		mem_texture_t *mem_texture = &ctx->cache->textures[skins[mesh->skinref]];
 		mem_mesh_t *mem_mesh = &mem_submodel->meshes[i];
 
-		int forceflags = IEngineStudio.GetForceFaceFlags();
 		int flags = texture->flags | forceflags;
 
-		// mikktodo don't set if not needed!!!
-		glUniform1i(ctx->shader->us_tex_flatshade, (flags & STUDIO_NF_FLATSHADE) ? true : false);
-		glUniform1i(ctx->shader->us_tex_chrome, (flags & STUDIO_NF_CHROME) ? true : false);
-		glUniform1i(ctx->shader->us_tex_fullbright, (flags & STUDIO_NF_FULLBRIGHT) ? true : false);
-		glUniform1i(ctx->shader->us_tex_masked, (flags & STUDIO_NF_MASKED) ? true : false);
+		if (ctx->shader->u_tex_flatshade != -1)
+			glUniform1i(ctx->shader->u_tex_flatshade, (flags & STUDIO_NF_FLATSHADE) ? true : false);
+
+		if (ctx->shader->u_tex_chrome != -1)
+			glUniform1i(ctx->shader->u_tex_chrome, (flags & STUDIO_NF_CHROME) ? true : false);
+
+		if (ctx->shader->u_tex_fullbright != -1)
+			glUniform1i(ctx->shader->u_tex_fullbright, (flags & STUDIO_NF_FULLBRIGHT) ? true : false);
+
+		if (ctx->shader->u_tex_masked != -1)
+			glUniform1i(ctx->shader->u_tex_masked, (flags & STUDIO_NF_MASKED) ? true : false);
 
 		bool additive = ((flags & STUDIO_NF_ADDITIVE) && ctx->entity->curstate.rendermode == kRenderNormal);
 

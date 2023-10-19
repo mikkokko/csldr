@@ -212,9 +212,5 @@ int Hk_GetStudioModelInterface(int version,
 	(*ppinterface)->StudioDrawModel = My_StudioDrawModel;
 	(*ppinterface)->StudioDrawPlayer = Hk_StudioDrawPlayer;
 
-	/* no one uses software or d3d renderers */
-	if (pstudio->IsHardware() != 1)
-		Plat_Error("Software and D3D modes are not supported\n");
-
 	return result;
 }

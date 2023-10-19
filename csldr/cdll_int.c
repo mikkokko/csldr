@@ -97,9 +97,6 @@ void Hk_HudInit(void)
 
 	cl_funcs.pHudInitFunc();
 	
-	if (!gladLoadGL())
-		Plat_Error("Could not initialize OpenGL\n");
-
 	Mem_Init();
 	ViewInit();
 	HudInit();

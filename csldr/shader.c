@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#define MAX_SHADER_SOURCE 8192
+
 const char *ShaderType(GLenum type)
 {
 	switch (type)
@@ -16,9 +18,9 @@ const char *ShaderType(GLenum type)
 
 static GLuint CompileShader(const char *name, const char *defines, int defines_length, const char *base_source, int base_length, GLenum type)
 {
-	char source_buffer[8192];
+	char source_buffer[MAX_SHADER_SOURCE];
 
-	if (defines_length + base_length > sizeof(source_buffer))
+	if (defines_length + base_length > MAX_SHADER_SOURCE)
 		Plat_Error("Compiling %s %s shader failed: source is too long\n", name, ShaderType(type));
 
 	memcpy(source_buffer, defines, defines_length);

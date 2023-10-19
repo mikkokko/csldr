@@ -53,7 +53,7 @@ static int inspectAnims[] =
 
 static int LookupInspect(int curSequence, int weaponID)
 {
-	if (weaponID <= WEAPON_NONE || weaponID >= Q_ARRAYSIZE(inspectAnims))
+	if (weaponID <= WEAPON_NONE || weaponID >= (int)Q_ARRAYSIZE(inspectAnims))
 		return -1;
 
 	if (weaponID == WEAPON_USP)

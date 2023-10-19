@@ -68,11 +68,11 @@ enum
 
 	// we still set uniforms to actually enable these...
 	CAN_FLATSHADE = (1 << 5),
-	CAN_CHROME = (1 << 5),
-	CAN_FULLBRIGHT = (1 << 5),
-	CAN_MASKED = (1 << 6),
+	CAN_CHROME = (1 << 6),
+	CAN_FULLBRIGHT = (1 << 7),
+	CAN_MASKED = (1 << 8),
 
-	NUM_OPTIONS = (1 << 7)
+	NUM_OPTIONS = (1 << 9)
 };
 
 typedef struct
@@ -124,30 +124,32 @@ static const attribute_t studio_attributes_gpu[] =
 	{ shader_studio_a_bones, "a_bones" }
 };
 
+#define UNIFORM_DEF(name) { Q_OFFSETOF(studio_shader_t, name), #name }
+
 static const uniform_t studio_uniforms[] =
 {
-	{ offsetof(studio_shader_t, u_chromeorg), "u_chromeorg" },
-	{ offsetof(studio_shader_t, u_chromeright), "u_chromeright" },
+	UNIFORM_DEF(u_chromeorg),
+	UNIFORM_DEF(u_chromeright),
 
-	{ offsetof(studio_shader_t, u_ambientlight), "u_ambientlight" },
-	{ offsetof(studio_shader_t, u_shadelight), "u_shadelight" },
-	{ offsetof(studio_shader_t, u_lightvec), "u_lightvec" },
-	{ offsetof(studio_shader_t, u_colormix), "u_colormix" },
+	UNIFORM_DEF(u_ambientlight),
+	UNIFORM_DEF(u_shadelight),
+	UNIFORM_DEF(u_lightvec),
+	UNIFORM_DEF(u_colormix),
 
-	{ offsetof(studio_shader_t, u_lightgamma), "u_lightgamma" },
-	{ offsetof(studio_shader_t, u_brightness), "u_brightness" },
-	{ offsetof(studio_shader_t, u_invgamma), "u_invgamma" },
-	{ offsetof(studio_shader_t, u_g3), "u_g3" },
+	UNIFORM_DEF(u_lightgamma),
+	UNIFORM_DEF(u_brightness),
+	UNIFORM_DEF(u_invgamma),
+	UNIFORM_DEF(u_g3),
 
-	{ offsetof(studio_shader_t, u_texture), "u_texture" },
+	UNIFORM_DEF(u_texture),
 
-	{ offsetof(studio_shader_t, us_tex_flatshade), "u_tex_flatshade" },
-	{ offsetof(studio_shader_t, us_tex_chrome), "u_tex_chrome" },
-	{ offsetof(studio_shader_t, us_tex_fullbright), "u_tex_fullbright" },
-	{ offsetof(studio_shader_t, us_tex_masked), "u_tex_masked" },
+	UNIFORM_DEF(us_tex_flatshade),
+	UNIFORM_DEF(us_tex_chrome),
+	UNIFORM_DEF(us_tex_fullbright),
+	UNIFORM_DEF(us_tex_masked),
 
-	{ offsetof(studio_shader_t, u_elight_pos), "u_elight_pos" },
-	{ offsetof(studio_shader_t, u_elight_color), "u_elight_color" },
+	UNIFORM_DEF(u_elight_pos),
+	UNIFORM_DEF(u_elight_color)
 };
 
 void R_StudioInit(void)
@@ -216,18 +218,21 @@ static studio_shader_t *R_StudioSelectShader(int options)
 		return dest;
 	
 	char buffer[4096];
-	String defines = { buffer, sizeof(buffer) };
+	String defines = { buffer, sizeof(buffer), 0 };
+
 
 	if (studio_gpuskin)
 		StringAppend(&defines, "#version 140\n#define GPU_SKINNING\n");
 	else
 		StringAppend(&defines, "#version 110\n");
 	
-	for (int j = 0; j < Q_ARRAYSIZE(option_info); j++)
+	for (size_t j = 0; j < Q_ARRAYSIZE(option_info); j++)
 	{
 		if (options & option_info[j].flag)
 			StringAppend(&defines, option_info[j].define);
 	}
+
+	gEngfuncs.Con_DPrintf("Compiling studio shader with defines:\n%s", defines);
 
 	if (studio_gpuskin)
 	{

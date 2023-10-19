@@ -1,5 +1,5 @@
 #if defined(GPU_SKINNING)
-#extension GL_ARB_uniform_buffer_object : enable
+#extension GL_ARB_uniform_buffer_object : require
 #endif
 
 attribute vec3 a_pos;
@@ -17,6 +17,7 @@ varying float f_fog;
 #endif
 
 #ifdef GPU_SKINNING
+// i don't think layout(std140) works on ati cards with #version lower than 140...
 layout (std140) uniform bones
 {
 	mat3x4 u_bones[128];

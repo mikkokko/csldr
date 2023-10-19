@@ -222,7 +222,7 @@ static studio_shader_t *R_StudioSelectShader(int options)
 
 
 	if (studio_gpuskin)
-		StringAppend(&defines, "#version 140\n#define GPU_SKINNING\n");
+		StringAppend(&defines, "#version 120\n#define GPU_SKINNING\n");
 	else
 		StringAppend(&defines, "#version 110\n");
 	

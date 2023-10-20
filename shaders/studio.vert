@@ -24,6 +24,8 @@ layout (std140) uniform bones
 };
 #endif
 
+uniform vec4 u_colormix; // 4th component is the scale with glowshell
+
 #if defined(GPU_SKINNING) && defined(CAN_CHROME)
 uniform vec3 u_chromeorg;
 uniform vec3 u_chromeright;
@@ -33,12 +35,14 @@ uniform vec3 u_chromeright;
 uniform float u_ambientlight;
 uniform float u_shadelight;
 uniform vec3 u_lightvec;
-uniform vec4 u_colormix; // 4th component is the scale with glowshell
 
 uniform float u_lightgamma;
 uniform float u_brightness;
-uniform float u_invgamma;
 uniform float u_g3;
+#endif
+
+#if defined(HAVE_ELIGHTS) || (!defined(HAVE_ADDITIVE) && !defined(HAVE_GLOWHSELL))
+uniform float u_invgamma;
 #endif
 
 #if defined(CAN_FLATSHADE)
@@ -71,7 +75,6 @@ float gamma_correct(float value)
 	return clamp(pow(f, u_invgamma), 0.0, 1.0);
 }
 #endif
-
 
 #if defined(HAVE_ELIGHTS)
 vec3 elight_gamma(vec3 color, vec3 elight)

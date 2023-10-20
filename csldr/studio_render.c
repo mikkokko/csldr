@@ -34,13 +34,14 @@ typedef struct studio_shader_s
 {
 	GLuint program;
 
+	GLint u_colormix;
+
 	GLint u_chromeorg;
 	GLint u_chromeright;
 
 	GLint u_ambientlight;
 	GLint u_lightvec;
 	GLint u_shadelight;
-	GLint u_colormix;
 
 	GLint u_lightgamma;
 	GLint u_brightness;
@@ -128,18 +129,20 @@ static const attribute_t studio_attributes_gpu[] =
 
 static const uniform_t studio_uniforms[] =
 {
+	UNIFORM_DEF(u_colormix),
+
 	UNIFORM_DEF(u_chromeorg),
 	UNIFORM_DEF(u_chromeright),
 
 	UNIFORM_DEF(u_ambientlight),
 	UNIFORM_DEF(u_shadelight),
 	UNIFORM_DEF(u_lightvec),
-	UNIFORM_DEF(u_colormix),
 
 	UNIFORM_DEF(u_lightgamma),
 	UNIFORM_DEF(u_brightness),
-	UNIFORM_DEF(u_invgamma),
 	UNIFORM_DEF(u_g3),
+
+	UNIFORM_DEF(u_invgamma),
 
 	UNIFORM_DEF(u_texture),
 
@@ -152,10 +155,18 @@ static const uniform_t studio_uniforms[] =
 	UNIFORM_DEF(u_elight_color)
 };
 
+static studio_shader_t *R_StudioSelectShader(int options);
+
 void R_StudioInit(void)
 {
 	r_glowshellfreq = gEngfuncs.pfnGetCvarPointer("r_glowshellfreq");
 	gl_fog = gEngfuncs.pfnGetCvarPointer("gl_fog");
+
+#ifndef NDEUBG
+	// compile all shaders at launch and assert uniforms
+	for (int i = 0; i < NUM_OPTIONS; i++)
+		(void)R_StudioSelectShader(i);
+#endif
 
 	if (studio_gpuskin)
 	{
@@ -219,7 +230,6 @@ static studio_shader_t *R_StudioSelectShader(int options)
 	
 	char buffer[4096];
 	String defines = { buffer, sizeof(buffer), 0 };
-
 
 	if (studio_gpuskin)
 		StringAppend(&defines, "#version 150 compatibility\n#define GPU_SKINNING\n");
@@ -538,19 +548,6 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 
 	glUniform1i(shader->u_texture, 0);
 
-	// mikkotodo is this correct
-	if ((options & (HAVE_ADDITIVE | HAVE_GLOWSHELL)) == 0)
-	{
-		glUniform1f(shader->u_ambientlight, ctx->ambientlight);
-		glUniform1f(shader->u_shadelight, ctx->shadelight);
-		glUniform3fv(shader->u_lightvec, 1, ctx->lightvec);
-
-		glUniform1f(shader->u_lightgamma, gammavars.lightgamma);
-		glUniform1f(shader->u_brightness, gammavars.brightness);
-		glUniform1f(shader->u_invgamma, gammavars.g);
-		glUniform1f(shader->u_g3, gammavars.g3);
-	}
-
 	float colormix[4];
 
 	if (options & HAVE_GLOWSHELL)
@@ -569,6 +566,21 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 	}
 
 	glUniform4fv(shader->u_colormix, 1, colormix);
+
+	// mikkotodo is this correct
+	if ((options & (HAVE_ADDITIVE | HAVE_GLOWSHELL)) == 0)
+	{
+		glUniform1f(shader->u_ambientlight, ctx->ambientlight);
+		glUniform1f(shader->u_shadelight, ctx->shadelight);
+		glUniform3fv(shader->u_lightvec, 1, ctx->lightvec);
+
+		glUniform1f(shader->u_lightgamma, gammavars.lightgamma);
+		glUniform1f(shader->u_brightness, gammavars.brightness);
+		glUniform1f(shader->u_g3, gammavars.g3);
+	}
+
+	if ((options & HAVE_ELIGHTS) || (options & (HAVE_ADDITIVE | HAVE_GLOWSHELL)) == 0)
+		glUniform1f(shader->u_invgamma, gammavars.g);
 
 	// bruh
 	if (options & HAVE_GLOWSHELL)

@@ -61,7 +61,11 @@ void ViewInit(void)
 	CVAR_ARCHIVE_FAST(viewmodel_lag_scale, 1.0);
 	CVAR_ARCHIVE_FAST(viewmodel_lag_speed, 8.0);
 
-	CVAR_ARCHIVE_FAST(fov_horplus, 1);
+	// hl 25th anniversary update added gl_widescreen_yfov which is essentially
+	// the, same thing, keep fov_horplus around for older clients though
+	if (!gEngfuncs.pfnGetCvarPointer("gl_widescreen_yfov"))
+		CVAR_ARCHIVE_FAST(fov_horplus, 1);
+
 	CVAR_ARCHIVE_FAST(fov_lerp, 0.1);
 
 	CVAR_ARCHIVE_FAST(cl_mirror_knife, 1);

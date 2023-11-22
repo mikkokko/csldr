@@ -128,6 +128,7 @@ GLuint CreateShaderProgram(const char *name,
 	glDetachShader(program, vertex_shader);
 	glDetachShader(program, fragment_shader);
 
+	// disable for shader cache
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
 

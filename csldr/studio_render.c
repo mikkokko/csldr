@@ -1,268 +1,42 @@
 #include "pch.h"
 
-#ifndef SHADER_DIR /* xxd'd shaders */
-#include "studio_frag.h"
-#include "studio_vert.h"
-#endif
-
-// only for gpu skinning
-static GLuint studio_ubo;
-
-// mikkotodo move elsewhere
-static cvar_t *r_glowshellfreq;
-static cvar_t *gl_fog;
-
-// for cpu chrome
-int studio_drawcount;
-
-int studio_frame;
-
-static vec3_t chrome_origin;
-
-static dlight_t *cl_elights;
-
-#define MAX_ELIGHTS 3
-
-// store these globally for unknown reasons
-static int elight_num;
-static float elight_pos[MAX_ELIGHTS][4];
-static float elight_color[MAX_ELIGHTS][3];
-
-static GLint studio_fog;
-
-typedef struct studio_shader_s
-{
-	GLuint program;
-
-	GLint u_colormix;
-
-	GLint u_chromeorg;
-	GLint u_chromeright;
-
-	GLint u_ambientlight;
-	GLint u_lightvec;
-	GLint u_shadelight;
-
-	GLint u_lightgamma;
-	GLint u_brightness;
-	GLint u_invgamma;
-	GLint u_g3;
-
-	GLint u_texture;
-
-	GLint u_tex_flatshade;
-	GLint u_tex_chrome;
-	GLint u_tex_fullbright;
-	GLint u_tex_masked;
-
-	GLint u_elight_pos;
-	GLint u_elight_color;
-} studio_shader_t;
-
-enum
-{
-	HAVE_ADDITIVE = (1 << 0),
-	HAVE_FOG = (1 << 1),
-	HAVE_FOG_LINEAR = (1 << 2),
-	HAVE_GLOWSHELL = (1 << 3),
-	HAVE_ELIGHTS = (1 << 4),
-
-	// we still set uniforms to actually enable these...
-	CAN_FLATSHADE = (1 << 5),
-	CAN_CHROME = (1 << 6),
-	CAN_FULLBRIGHT = (1 << 7),
-	CAN_MASKED = (1 << 8),
-
-	NUM_OPTIONS = (1 << 9)
-};
-
-typedef struct
-{
-	int flag;
-	const char *define;
-} option_info_t;
-
-#define OPTION_INFO(name) { name, "#define " #name "\n" }
-
-static option_info_t option_info[] =
-{
-	OPTION_INFO(HAVE_ADDITIVE),
-	OPTION_INFO(HAVE_FOG),
-	OPTION_INFO(HAVE_FOG_LINEAR),
-	OPTION_INFO(HAVE_GLOWSHELL),
-	OPTION_INFO(HAVE_ELIGHTS),
-
-	OPTION_INFO(CAN_FLATSHADE),
-	OPTION_INFO(CAN_CHROME),
-	OPTION_INFO(CAN_FULLBRIGHT),
-	OPTION_INFO(CAN_MASKED)
-};
-
-static studio_shader_t studio_shaders[NUM_OPTIONS];
-
-enum
-{
-	shader_studio_a_pos = 0,
-	shader_studio_a_normal = 1,
-	shader_studio_a_texcoord = 2,
-
-	// only for gpu skinning
-	shader_studio_a_bones = 3
-};
-
-static const attribute_t studio_attributes_cpu[] =
-{
-	{ shader_studio_a_pos, "a_pos" },
-	{ shader_studio_a_normal, "a_normal" },
-	{ shader_studio_a_texcoord, "a_texcoord" }
-};
-
-static const attribute_t studio_attributes_gpu[] =
-{
-	{ shader_studio_a_pos, "a_pos" },
-	{ shader_studio_a_normal, "a_normal" },
-	{ shader_studio_a_texcoord, "a_texcoord" },
-	{ shader_studio_a_bones, "a_bones" }
-};
-
-#define UNIFORM_DEF(name) { Q_OFFSETOF(studio_shader_t, name), #name }
-
-static const uniform_t studio_uniforms[] =
-{
-	UNIFORM_DEF(u_colormix),
-
-	UNIFORM_DEF(u_chromeorg),
-	UNIFORM_DEF(u_chromeright),
-
-	UNIFORM_DEF(u_ambientlight),
-	UNIFORM_DEF(u_shadelight),
-	UNIFORM_DEF(u_lightvec),
-
-	UNIFORM_DEF(u_lightgamma),
-	UNIFORM_DEF(u_brightness),
-	UNIFORM_DEF(u_g3),
-
-	UNIFORM_DEF(u_invgamma),
-
-	UNIFORM_DEF(u_texture),
-
-	UNIFORM_DEF(u_tex_flatshade),
-	UNIFORM_DEF(u_tex_chrome),
-	UNIFORM_DEF(u_tex_fullbright),
-	UNIFORM_DEF(u_tex_masked),
-
-	UNIFORM_DEF(u_elight_pos),
-	UNIFORM_DEF(u_elight_color)
-};
-
-static studio_shader_t *R_StudioSelectShader(int options);
+studio_globals_t studio_globals;
 
 void R_StudioInit(void)
 {
-	r_glowshellfreq = gEngfuncs.pfnGetCvarPointer("r_glowshellfreq");
-	gl_fog = gEngfuncs.pfnGetCvarPointer("gl_fog");
+	studio_globals.r_glowshellfreq = gEngfuncs.pfnGetCvarPointer("r_glowshellfreq");
+	studio_globals.gl_fog = gEngfuncs.pfnGetCvarPointer("gl_fog");
 
-#ifndef NDEUBG
-	// compile all shaders at launch and assert uniforms
-	for (int i = 0; i < NUM_OPTIONS; i++)
-		(void)R_StudioSelectShader(i);
-#endif
+	R_StudioCompileShaders();
 
 	if (studio_gpuskin)
 	{
 		// bold size assumption
-		glGenBuffers(1, &studio_ubo);
-		glBindBuffer(GL_UNIFORM_BUFFER, studio_ubo);
+		glGenBuffers(1, &studio_globals.ubo);
+		glBindBuffer(GL_UNIFORM_BUFFER, studio_globals.ubo);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(mat3x4_t) * 128, NULL, GL_STREAM_DRAW);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-		glBindBufferBase(GL_UNIFORM_BUFFER, 0, studio_ubo);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 0, studio_globals.ubo);
 	}
 
 	// get pointer to first elight
-	cl_elights = gEngfuncs.pEfxAPI->CL_AllocElight(0);
+	studio_globals.elights = gEngfuncs.pEfxAPI->CL_AllocElight(0);
 }
 
 void R_StudioNewFrame(void)
 {
-	studio_frame++;
-}
+	if (!studio_globals.framecount)
+		R_StudioCompileShaders();
 
-typedef struct
-{
-	char *data;
-	size_t cap;
-	size_t len;
-} String;
-
-static bool StringAppend(String *dst, const char *src)
-{
-	if (dst->len == dst->cap)
-	{
-		// can't copy
-		assert(false);
-		return false;
-	}
-
-	size_t srclen = strlen(src);
-
-	if (srclen >= dst->cap - dst->len)
-	{
-		// truncation happened, shouldn't happen, if it does no big deal
-		assert(false);
-
-		memcpy(dst->data + dst->len, src, dst->cap - dst->len - 1);
-		dst->data[dst->cap - 1] = '\0';
-		dst->len = dst->cap - 1;
-		return false;
-	}
-
-	memcpy(dst->data + dst->len, src, srclen + 1);
-	dst->len += srclen;
-	return true;
-}
-
-static studio_shader_t *R_StudioSelectShader(int options)
-{
-	studio_shader_t *dest = &studio_shaders[options];
-	if (dest->program)
-		return dest;
-	
-	char buffer[4096];
-	String defines = { buffer, sizeof(buffer), 0 };
-
-	if (studio_gpuskin)
-		StringAppend(&defines, "#version 150 compatibility\n#define GPU_SKINNING\n");
-	else
-		StringAppend(&defines, "#version 110\n");
-	
-	for (size_t j = 0; j < Q_ARRAYSIZE(option_info); j++)
-	{
-		if (options & option_info[j].flag)
-			StringAppend(&defines, option_info[j].define);
-	}
-
-	gEngfuncs.Con_DPrintf("Compiling studio shader with defines:\n%s", defines);
-
-	if (studio_gpuskin)
-	{
-		LOAD_SHADER(dest, studio, defines.data, defines.len, studio_attributes_gpu, studio_uniforms);
-		GLuint block_index = glGetUniformBlockIndex(dest->program, "bones");
-		glUniformBlockBinding(dest->program, block_index, 0);
-	}
-	else
-	{
-		LOAD_SHADER(dest, studio, defines.data, defines.len, studio_attributes_cpu, studio_uniforms);
-	}
-
-	return dest;
+	studio_globals.framecount++;
 }
 
 void R_StudioEntityLight(studio_context_t *ctx)
 {
-	elight_num = 0;
-	memset(elight_color, 0, sizeof(elight_color));
-	memset(elight_pos, 0, sizeof(elight_pos));
+	ctx->elight_num = 0;
+	memset(ctx->elight_color, 0, sizeof(ctx->elight_color));
+	memset(ctx->elight_pos, 0, sizeof(ctx->elight_pos));
 
 	float lstrength[MAX_ELIGHTS];
 	memset(lstrength, 0, sizeof(lstrength));
@@ -277,7 +51,7 @@ void R_StudioEntityLight(studio_context_t *ctx)
 	// asssume that max elights is 64
 	for (int i = 0; i < 64; i++)
 	{
-		dlight_t *elight = &cl_elights[i];
+		dlight_t *elight = &studio_globals.elights[i];
 
 		if (elight->die <= clientTime)
 			continue;
@@ -316,13 +90,13 @@ void R_StudioEntityLight(studio_context_t *ctx)
 				continue;
 		}
 
-		int index = elight_num;
+		int index = ctx->elight_num;
 
-		if (elight_num >= MAX_ELIGHTS)
+		if (ctx->elight_num >= MAX_ELIGHTS)
 		{
 			index = -1;
 
-			for (int j = 0; j < elight_num; j++)
+			for (int j = 0; j < ctx->elight_num; j++)
 			{
 				if (lstrength[j] < max_radius && lstrength[j] < strength)
 				{
@@ -337,16 +111,16 @@ void R_StudioEntityLight(studio_context_t *ctx)
 
 		lstrength[index] = strength;
 
-		VectorCopy(elight->origin, elight_pos[index]);
-		elight_pos[index][3] = r2;
+		VectorCopy(elight->origin, ctx->elight_pos[index]);
+		ctx->elight_pos[index][3] = r2;
 
-		elight_color[index][0] = (float)gammavars.lineartable[elight->color.r] * (1.0f / 255.0f);
-		elight_color[index][1] = (float)gammavars.lineartable[elight->color.g] * (1.0f / 255.0f);
-		elight_color[index][2] = (float)gammavars.lineartable[elight->color.b] * (1.0f / 255.0f);
+		ctx->elight_color[index][0] = (float)gammavars.lineartable[elight->color.r] * (1.0f / 255.0f);
+		ctx->elight_color[index][1] = (float)gammavars.lineartable[elight->color.g] * (1.0f / 255.0f);
+		ctx->elight_color[index][2] = (float)gammavars.lineartable[elight->color.b] * (1.0f / 255.0f);
 
-		if (index >= elight_num)
+		if (index >= ctx->elight_num)
 		{
-			elight_num = index + 1;
+			ctx->elight_num = index + 1;
 		}
 	}
 }
@@ -499,12 +273,12 @@ static int R_StudioGetOptions(studio_context_t *ctx)
 		options |= HAVE_GLOWSHELL;
 
 	// mikkotodo revisit
-	if (studio_fog == GL_LINEAR)
+	if (studio_globals.fog_mode == GL_LINEAR)
 		options |= (HAVE_FOG | HAVE_FOG_LINEAR);
-	else if (studio_fog == GL_EXP2)
+	else if (studio_globals.fog_mode == GL_EXP2)
 		options |= HAVE_FOG;
 
-	if (elight_num)
+	if (ctx->elight_num)
 		options |= HAVE_ELIGHTS;
 
 	if (ctx->cache->texflags & STUDIO_NF_FLATSHADE)
@@ -524,19 +298,16 @@ static int R_StudioGetOptions(studio_context_t *ctx)
 
 void R_StudioSetupRenderer(studio_context_t *ctx)
 {
-	static int current_frame;
+	static int framecount;
 
-	if (current_frame != studio_frame)
+	if (framecount != studio_globals.framecount)
 	{
-		// per frame stuff
-		current_frame = studio_frame;
-
-		studio_fog = 0;
+		framecount = studio_globals.framecount;
 
 		if (glIsEnabled(GL_FOG))
-		{
-			glGetIntegerv(GL_FOG_MODE, &studio_fog);
-		}
+			glGetIntegerv(GL_FOG_MODE, &studio_globals.fog_mode);
+		else
+			studio_globals.fog_mode = 0;
 	}
 
 	int options = R_StudioGetOptions(ctx);
@@ -585,39 +356,39 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 	// bruh
 	if (options & HAVE_GLOWSHELL)
 	{
-		chrome_origin[0] = cosf(r_glowshellfreq->value * clientTime) * 4000.0f;
-		chrome_origin[1] = sinf(r_glowshellfreq->value * clientTime) * 4000.0f;
-		chrome_origin[2] = cosf(r_glowshellfreq->value * clientTime * 0.33f) * 4000.0f;
+		ctx->chrome_origin[0] = cosf(studio_globals.r_glowshellfreq->value * clientTime) * 4000.0f;
+		ctx->chrome_origin[1] = sinf(studio_globals.r_glowshellfreq->value * clientTime) * 4000.0f;
+		ctx->chrome_origin[2] = cosf(studio_globals.r_glowshellfreq->value * clientTime * 0.33f) * 4000.0f;
 	}
 	else
 	{
-		VectorCopy(v_vieworg, chrome_origin);
+		VectorCopy(v_vieworg, ctx->chrome_origin);
 	}
 
 	if (options & CAN_CHROME)
 	{
-		glUniform3fv(shader->u_chromeorg, 1, chrome_origin);
+		glUniform3fv(shader->u_chromeorg, 1, ctx->chrome_origin);
 		glUniform3fv(shader->u_chromeright, 1, v_viewright);
 	}
 
 	if (options & HAVE_ELIGHTS)
 	{
-		glUniform4fv(shader->u_elight_pos, elight_num, &elight_pos[0][0]);
-		glUniform3fv(shader->u_elight_color, elight_num, &elight_color[0][0]);
+		glUniform4fv(shader->u_elight_pos, ctx->elight_num, &ctx->elight_pos[0][0]);
+		glUniform3fv(shader->u_elight_color, ctx->elight_num, &ctx->elight_color[0][0]);
 	}
 
 	// setup other stuff
 
 	// calling GetViewEntity is ok here
 	if (cl_righthand->value && ctx->entity == IEngineStudio.GetViewEntity())
-		glDisable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
 
 	glBindBuffer(GL_ARRAY_BUFFER, ctx->cache->studio_vbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->cache->studio_ebo);
 
 	if (studio_gpuskin)
 	{
-		glBindBuffer(GL_UNIFORM_BUFFER, studio_ubo);
+		glBindBuffer(GL_UNIFORM_BUFFER, studio_globals.ubo);
 		glBufferSubData(GL_UNIFORM_BUFFER, 0, ctx->header->numbones * sizeof(mat3x4_t), &(*ctx->bonetransform)[0][0][0]);
 	}
 
@@ -651,7 +422,7 @@ void R_StudioRestoreRenderer(studio_context_t *ctx)
 
 	// restore opengl state
 	if (cl_righthand->value && ctx->entity == IEngineStudio.GetViewEntity())
-		glEnable(GL_CULL_FACE);
+		glCullFace(GL_FRONT);
 
 	glDisableVertexAttribArray(shader_studio_a_pos);
 	glDisableVertexAttribArray(shader_studio_a_normal);
@@ -689,7 +460,7 @@ void R_StudioSetupModel(studio_context_t *ctx, int bodypart_index)
 	ctx->mem_submodel = &mem_bodypart->models[model_index];
 }
 
-static void CalcChromeCPU(float *out, int bone_id, mat3x4_t bone, vec3_t normal)
+static void CalcChromeCPU(studio_context_t *ctx, float *out, int bone_id, mat3x4_t bone, vec3_t normal)
 {
 	// cache the results like the engine does
 	static int chrome_age[128];
@@ -699,14 +470,14 @@ static void CalcChromeCPU(float *out, int bone_id, mat3x4_t bone, vec3_t normal)
 	float *up_anim = chrome_up[bone_id];
 	float *side_anim = chrome_side[bone_id];
 
-	if (chrome_age[bone_id] != studio_drawcount)
+	if (chrome_age[bone_id] != studio_globals.drawcount)
 	{
-		chrome_age[bone_id] = studio_drawcount;
+		chrome_age[bone_id] = studio_globals.drawcount;
 
 		vec3_t dir;
-		dir[0] = bone[0][3] - chrome_origin[0];
-		dir[1] = bone[1][3] - chrome_origin[1];
-		dir[2] = bone[2][3] - chrome_origin[2];
+		dir[0] = bone[0][3] - ctx->chrome_origin[0];
+		dir[1] = bone[1][3] - ctx->chrome_origin[1];
+		dir[2] = bone[2][3] - ctx->chrome_origin[2];
 
 		VectorNormalize(dir);
 
@@ -784,7 +555,7 @@ void R_StudioDrawPoints(studio_context_t *ctx)
 					dst->norm[1] = DotProduct(src->norm, (*bone)[1]);
 					dst->norm[2] = DotProduct(src->norm, (*bone)[2]);
 
-					CalcChromeCPU(dst->texcoord, srcbone->bones[1], (*ctx->bonetransform)[srcbone->bones[1]], src->norm);
+					CalcChromeCPU(ctx, dst->texcoord, srcbone->bones[1], (*ctx->bonetransform)[srcbone->bones[1]], src->norm);
 				}
 			}
 			else

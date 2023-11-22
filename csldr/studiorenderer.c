@@ -8,13 +8,13 @@ static r_studio_interface_t studio;
 
 static int Hk_StudioDrawModel(int flags)
 {
-	studio_drawcount++;
+	studio_globals.drawcount++;
 	return studio.StudioDrawModel(flags);
 }
 
 static int Hk_StudioDrawPlayer(int flags, entity_state_t *player)
 {
-	studio_drawcount++;
+	studio_globals.drawcount++;
 	return studio.StudioDrawPlayer(flags, player);
 }
 

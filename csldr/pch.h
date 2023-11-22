@@ -60,6 +60,7 @@ typedef enum {false, true} bool;
 #include "studio_cache.h"
 #include "studio_hook.h"
 #include "studio_render.h"
+#include "studio_shader.h"
 #include "studio_texture.h"
 #include "studiorenderer.h"
 #include "view.h"

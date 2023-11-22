@@ -112,7 +112,7 @@ static void Hk_StudioDrawHulls(void)
 {
 	if (FASTPATH_ENABLED)
 	{
-		// not implmeneted for fast path
+		// not implemented for fast path
 	}
 	else
 	{
@@ -124,7 +124,7 @@ static void Hk_StudioDrawAbsBBox(void)
 {
 	if (FASTPATH_ENABLED)
 	{
-		// not implmeneted for fast path
+		// not implemented for fast path
 	}
 	else
 	{
@@ -136,7 +136,7 @@ static void Hk_StudioDrawBones(void)
 {
 	if (FASTPATH_ENABLED)
 	{
-		// not implmeneted for fast path
+		// not implemented for fast path
 	}
 	else
 	{

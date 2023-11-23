@@ -162,6 +162,4 @@ void R_StudioCompileShaders(void)
 
 	// probably won't do shit but keep it in anyway
 	glFlush();
-
-	gEngfuncs.Con_Printf("Compiled %d shaders\n", i);
 }

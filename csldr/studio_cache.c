@@ -204,12 +204,12 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 		gpu_build_buffer_t gpu;
 	} build_buffer;
 
+	memset(&build_buffer, 0, sizeof(build_buffer));
+
 	base_build_buffer_t *build = (base_build_buffer_t *)&build_buffer;
 
 	int total_verts = CountVerts(header);
 
-	build->num_verts = 0;
-	build->num_indices = 0;
 	build->indices = (GLuint *)Mem_TempAlloc(sizeof(*build->indices) * total_verts * 3);
 
 	if (studio_gpuskin)

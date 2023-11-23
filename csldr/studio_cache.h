@@ -56,6 +56,9 @@ typedef struct studio_cache_s
 	// name of the configuration file
 	char config_path[256];
 
+	// configuration
+	bool mirror_shell;
+
 	// renderer specfic stuff
 	mem_texture_t *textures;
 	int numtextures;

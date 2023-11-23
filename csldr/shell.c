@@ -1,6 +1,5 @@
 #include "pch.h"
 
-static cvar_t *mirror_shell;
 cvar_t *cl_righthand;
 static cvar_t *spec_pip;
 
@@ -13,14 +12,29 @@ void ShellInit(void)
 {
 	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
 	spec_pip = gEngfuncs.pfnGetCvarPointer("spec_pip");
-	CVAR_ARCHIVE_FAST(mirror_shell, 0);
 }
 
 int (*Og_MsgFunc_Brass)(const char *pszName, int iSize, void *pbuf);
 
+static bool ShouldMirrorShell(void)
+{
+	cl_entity_t *vm = gEngfuncs.GetViewModel();
+	model_t *model = vm->model;
+	if (!model)
+		return false;
+
+	studiohdr_t *header = (studiohdr_t *)model->cache.data;
+	if (!header)
+		return false;
+
+	studio_cache_t *cache = GetStudioCache(model, header);
+
+	return cache->mirror_shell;
+}
+
 int Hk_MsgFunc_Brass(const char *pszName, int iSize, void *pbuf)
 {
-	if (mirror_shell->value)
+	if (ShouldMirrorShell())
 	{
 		msg_read_t read;
 
@@ -123,7 +137,7 @@ static bool IsLocal(int idx)
 	{ \
 		xhairShotsFired += IsLocal(args->entindex); \
 		float value; \
-		if (!mirror_shell->value) \
+		if (!ShouldMirrorShell()) \
 		{ \
 			Og_ ## name(args); \
 			return; \
@@ -143,24 +157,24 @@ static bool IsLocal(int idx)
 	}
 
 FLIP_SHELL_ON_EVENT(FireAK47)
-NO_FLIP_SHELL_ON_EVENT(FireAug)
+FLIP_SHELL_ON_EVENT(FireAug)
 FLIP_SHELL_ON_EVENT(FireDeagle)
 FLIP_SHELL_ON_EVENT(FireEliteLeft)
 FLIP_SHELL_ON_EVENT(FireEliteRight)
-NO_FLIP_SHELL_ON_EVENT(FireFamas)
+FLIP_SHELL_ON_EVENT(FireFamas)
 FLIP_SHELL_ON_EVENT(FireFiveSeven)
 FLIP_SHELL_ON_EVENT(FireG3SG1)
 FLIP_SHELL_ON_EVENT(FireGalil)
 //FLIP_SHELL_ON_EVENT(FireGlock1)
 //FLIP_SHELL_ON_EVENT(FireGlock2)
 FLIP_SHELL_ON_EVENT(FireGlock18)
-NO_FLIP_SHELL_ON_EVENT(FireM249)
+FLIP_SHELL_ON_EVENT(FireM249)
 FLIP_SHELL_ON_EVENT(FireM4A1)
 //FLIP_SHELL_ON_EVENT(FireMP5)
 FLIP_SHELL_ON_EVENT(FireMP5N)
 FLIP_SHELL_ON_EVENT(FireMac10)
 FLIP_SHELL_ON_EVENT(FireP228)
-NO_FLIP_SHELL_ON_EVENT(FireP90)
+FLIP_SHELL_ON_EVENT(FireP90)
 FLIP_SHELL_ON_EVENT(FireSG550)
 FLIP_SHELL_ON_EVENT(FireSG552)
 //FLIP_SHELL_ON_EVENT(FireShotGunSingle)

@@ -367,6 +367,18 @@ static void ParseTextures(studio_cache_t *cache, keyValue_t *key, bool flush)
 	}
 }
 
+static bool ParseBoolean(keyValue_t *key, const char *path)
+{
+	if (key->type != keyValueString)
+	{
+		gEngfuncs.Con_Printf("Expected string value for option %s in %s\n", key->name, path);
+		return false;
+	}
+
+	// dumb as fuck
+	return atoi(key->string) ? true : false;
+}
+
 static void ParseConfig(studio_cache_t *cache, bool flush)
 {
 	char *text = (char *)gEngfuncs.COM_LoadFile(cache->config_path, 5, NULL);
@@ -389,6 +401,10 @@ static void ParseConfig(studio_cache_t *cache, bool flush)
 		if (!strcmp(subkey->name, "textures"))
 		{
 			ParseTextures(cache, subkey, flush);
+		}
+		else if (!strcmp(subkey->name, "mirror_shell"))
+		{
+			cache->mirror_shell = ParseBoolean(subkey, cache->config_path);
 		}
 		else
 		{

@@ -371,7 +371,7 @@ static bool ParseBoolean(keyValue_t *key, const char *path)
 {
 	if (key->type != keyValueString)
 	{
-		gEngfuncs.Con_Printf("Expected string value for option %s in %s\n", key->name, path);
+		gEngfuncs.Con_Printf("Expected boolean value for option %s in %s\n", key->name, path);
 		return false;
 	}
 
@@ -379,8 +379,49 @@ static bool ParseBoolean(keyValue_t *key, const char *path)
 	return atoi(key->string) ? true : false;
 }
 
+static float ParseFloat(keyValue_t *key, const char *path)
+{
+	if (key->type != keyValueString)
+	{
+		gEngfuncs.Con_Printf("Expected float value for option %s in %s\n", key->name, path);
+		return 0;
+	}
+
+	return (float)atof(key->string);
+}
+
+static void ParseVector(keyValue_t *key, const char *path, vec_t *dest)
+{
+	vec3_t temp;
+
+	if (key->type != keyValueString)
+	{
+		gEngfuncs.Con_Printf("Expected vector value for option %s in %s\n", key->name, path);
+		return;
+	}
+
+	if (sscanf(key->string, "%f %f %f", &temp[0], &temp[1], &temp[2]) != 3)
+		gEngfuncs.Con_Printf("Bad vector value '%s' for option %s in %s\n", key->string, key->name, path);
+	else
+		VectorCopy(temp, dest);
+}
+
+static void ClearConfig(studio_cache_t *cache)
+{
+	memset(&cache->config, 0, sizeof(cache->config));
+
+	// also clear custom textures
+	for (int i = 0; i < cache->numtextures; i++)
+	{
+		cache->textures[i].diffuse = 0;
+	}
+}
+
 static void ParseConfig(studio_cache_t *cache, bool flush)
 {
+	// clear in case we're reloading
+	ClearConfig(cache);
+
 	char *text = (char *)gEngfuncs.COM_LoadFile(cache->config_path, 5, NULL);
 	if (!text)
 		return;
@@ -388,7 +429,7 @@ static void ParseConfig(studio_cache_t *cache, bool flush)
 	keyValue_t root;
 	if (!KeyValueParse(&root, text))
 	{
-		gEngfuncs.Con_Printf("Could not parse file %s\n", text);
+		gEngfuncs.Con_Printf("Could not parse file %s\n", cache->config_path);
 		KeyValueFree(&root);
 		gEngfuncs.COM_FreeFile(text);
 		return;
@@ -404,11 +445,24 @@ static void ParseConfig(studio_cache_t *cache, bool flush)
 		}
 		else if (!strcmp(subkey->name, "mirror_shell"))
 		{
-			cache->mirror_shell = ParseBoolean(subkey, cache->config_path);
+			cache->config.mirror_shell = ParseBoolean(subkey, cache->config_path);
 		}
 		else if (!strcmp(subkey->name, "mirror_model"))
 		{
-			cache->mirror_model = ParseBoolean(subkey, cache->config_path);
+			cache->config.mirror_model = ParseBoolean(subkey, cache->config_path);
+		}
+		else if (!strcmp(subkey->name, "origin"))
+		{
+			ParseVector(subkey, cache->config_path, cache->config.origin);
+		}
+		else if (!strcmp(subkey->name, "fov_override"))
+		{
+			cache->config.fov_override = ParseFloat(subkey, cache->config_path);
+			if (cache->config.fov_override < 1 || cache->config.fov_override > 179)
+			{
+				gEngfuncs.Con_Printf("Value out of range for option %s in %s (min 1, max 179)\n", subkey->name, cache->config_path);
+				cache->config.fov_override = 0;
+			}
 		}
 		else
 		{
@@ -516,6 +570,22 @@ studio_cache_t *GetStudioCache(model_t *model, studiohdr_t *header)
 	header->length = index;
 
 	return cache;
+}
+
+studio_cache_t *EntityStudioCache(cl_entity_t *entity)
+{
+	model_t *model = entity->model;
+	if (!model)
+		return NULL;
+
+	if (model->type != mod_studio)
+		return NULL;
+
+	studiohdr_t *studiohdr = (studiohdr_t *)model->cache.data;
+	if (!studiohdr)
+		return NULL;
+
+	return GetStudioCache(model, studiohdr);
 }
 
 // mikkotodo might be necessary again if we need extremely expensive tangent calc

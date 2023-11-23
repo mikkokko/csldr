@@ -49,6 +49,14 @@ typedef struct
 	GLuint diffuse;
 } mem_texture_t;
 
+typedef struct
+{
+	bool mirror_shell;
+	bool mirror_model;
+	vec3_t origin;
+	float fov_override;
+} studio_config_t;
+
 typedef struct studio_cache_s
 {
 	uint32 hash;
@@ -57,8 +65,7 @@ typedef struct studio_cache_s
 	char config_path[256];
 
 	// configuration
-	bool mirror_shell;
-	bool mirror_model;
+	studio_config_t config;
 
 	// renderer specfic stuff
 	mem_texture_t *textures;
@@ -79,6 +86,7 @@ typedef struct studio_cache_s
 extern unsigned int flush_count;
 
 studio_cache_t *GetStudioCache(model_t *model, studiohdr_t *header);
+studio_cache_t *EntityStudioCache(cl_entity_t *entity);
 
 // mikkotodo might be necessary again if we need extremely expensive tangent calc
 void UpdateStudioCaches(void);

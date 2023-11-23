@@ -18,17 +18,11 @@ int (*Og_MsgFunc_Brass)(const char *pszName, int iSize, void *pbuf);
 
 static bool ShouldMirrorShell(void)
 {
-	cl_entity_t *vm = gEngfuncs.GetViewModel();
-	model_t *model = vm->model;
-	if (!model)
+	studio_cache_t *cache = EntityStudioCache(gEngfuncs.GetViewModel());
+	if (!cache)
 		return false;
 
-	studiohdr_t *header = (studiohdr_t *)model->cache.data;
-	if (!header)
-		return false;
-
-	studio_cache_t *cache = GetStudioCache(model, header);
-	return cache->mirror_shell ^ cache->mirror_model;
+	return cache->config.mirror_shell ^ cache->config.mirror_model;
 }
 
 int Hk_MsgFunc_Brass(const char *pszName, int iSize, void *pbuf)

@@ -261,9 +261,18 @@ static void V_AddLag_CSS(ref_params_t *pparams, vec3_t origin, vec3_t angles, ve
 
 static void V_OffsetViewmodel(cl_entity_t *vm, vec3_t front, vec3_t side, vec3_t up)
 {
-	float x = viewmodel_offset_x->value;
-	float y = viewmodel_offset_y->value;
-	float z = -viewmodel_offset_z->value;
+	vec3_t extra_origin;
+	VectorClear(extra_origin);
+
+	studio_cache_t *cache = EntityStudioCache(vm);
+	if (cache)
+	{
+		VectorCopy(cache->config.origin, extra_origin);
+	}
+
+	float x = viewmodel_offset_x->value + extra_origin[0];
+	float y = viewmodel_offset_y->value + extra_origin[1];
+	float z = -(viewmodel_offset_z->value + extra_origin[2]);
 
 	if (!cl_righthand->value)
 		x = -x;

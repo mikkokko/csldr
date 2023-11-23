@@ -20,16 +20,11 @@ static int Hk_StudioDrawPlayer(int flags, entity_state_t *player)
 
 bool ShouldMirrorViewmodel(cl_entity_t *vm)
 {
-	model_t *model = vm->model;
-	if (!model)
+	studio_cache_t *cache = EntityStudioCache(vm);
+	if (!cache)
 		return false;
 
-	studiohdr_t *studiohdr = (studiohdr_t *)model->cache.data;
-	if (!studiohdr)
-		return false;
-
-	studio_cache_t *cache = GetStudioCache(model, studiohdr);
-	return cache->mirror_model;
+	return cache->config.mirror_model;
 }
 
 static bool PushMirrorViewmodel(cl_entity_t *vm, float *value)
@@ -90,6 +85,16 @@ static void DrawHands(cl_entity_t *weapon, int flags)
 	*weapon = backup;
 }
 
+static float GetViewmodelFov(void)
+{
+	studio_cache_t *cache = EntityStudioCache(gEngfuncs.GetViewModel());
+	if (!cache)
+		return viewmodel_fov->value;
+
+	float scale = (cache->config.fov_override > 0) ? (cache->config.fov_override / 90) : 1.0f;
+	return viewmodel_fov->value * scale;
+}
+
 static void SetProjectionMatrix(void)
 {
 	float aspect, fov, f, fn;
@@ -97,7 +102,7 @@ static void SetProjectionMatrix(void)
 
 	aspect = (float)screenWidth / (float)screenHeight;
 
-	fov = viewmodel_fov->value * fovScale;
+	fov = GetViewmodelFov() * fovScale;
 	fov = CLAMP(fov, 1, 179);
 	fov = 0.75f * tanf(Radians(fov) * 0.5f);
 

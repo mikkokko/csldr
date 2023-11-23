@@ -1,3 +1,4 @@
+
 ## Main features
 
 - Hor+ FOV scaling for widescreen
@@ -48,43 +49,35 @@ Eventually I will add more features to it for modding purposes.
 Known issues with the renderer:
 - Glowshell uses model normals instead of computing custom ones
 - Rendering of hulls, bboxes or bones is not supported (r_drawentities > 1)
+- Having a lot of entities visible at once tanks the frame rate on some systems
 
 The renderer can be enabled with `studio_fastpath 1` if the system supports it. To see information about the renderer's state, use `studio_info`. If you notice any issues with the renderer (models not looking as they should, worse performance, etc.) let me know by opening an issue.
 
 ## Model config files
 
-Model config files allow you to tweak model specific options. Here is an example config file for the ak47 viewmodel (`models/v_ak47.txt`):
+Model config files allow you to tweak model specific options. Here is an example config file for the ak47 viewmodel (`models/v_ak47.txt`), which contains all of the available options:
 ```c
 // subset of valve's keyvalue format
 // c++ style comments are supported (//)
-// strings can be quoted or unquoted (latter is preferred, strings should not contain spaces)
+// strings can be quoted or unquoted (latter is preferred if the string doesn't contain spaces)
 
-// texture overrides
+// viewmodel tweaks
+mirror_shell 1 // mirror shell ejects
+mirror_model 1 // mirror the viewmodel
+origin "1 0 -1" // additional origin adjustment
+fov_override 74 // scales accordingly to the value of viewmodel_fov (90 = no change)
+
+// texture overrides, these only work when studio_fastpath is 1
 textures
 {
     ak47.bmp // embedded texture name
     {
         diffuse textures/models/v_ak47/ak47.tga
     }
-
-    view_glove.bmp
-    {
-        diffuse textures/models/v_hands/view_glove.tga
-    }
-
-    view_finger.bmp
-    {
-        diffuse textures/models/v_hands/view_finger.tga
-    }
-
-    view_skin.bmp
-    {
-       diffuse textures/models/v_hands/view_skin.tga
-    }
 }
 ```
 
-Currently the config files allow for external texture replacements. The texture replacements only work when the shader-based model renderer is active. Only TGA files are supported.
+The texture replacements only work when the shader-based model renderer is active. Only TGA files are supported.
 
 Model config files can be reloaded with the `studio_config_flush` command. This will also reload texture files.
 
@@ -104,13 +97,11 @@ Model config files can be reloaded with the `studio_config_flush` command. This 
 | cl_bobamt_lat | Lateral scale for CS:GO style bob. |
 | cl_bobamt_vert | Vertical scale for CS:GO style bob. |
 | cl_bobstyle | 0 for default bob, 1 for old style bob and 2 for CS:GO style bob. |
-| cl_mirror_knife | Mirrors the knife viewmodel. |
 | cl_rollangle | Viewmodel roll angle. |
 | cl_rollspeed | Viewmodel roll speed. |
 | fov_horplus | Enables Hor+ scaling for FOV. Fixes the FOV when playing with aspect ratios other than 4:3. |
 | fov_lerp | FOV interpolation time in seconds. |
 | lookat | Inspects the weapon if the animation is present. |
-| mirror_shell | Switches the direction of shell ejects. |
 | studio_confg_flush | Reloads model config files and any files referenced by them (like textures). |
 | studio_fastpath | Enables the shader-based model renderer. |
 | studio_info | Prints information about the shader-based model renderer. |
@@ -128,6 +119,8 @@ Model config files can be reloaded with the `studio_config_flush` command. This 
 | xhair_color_g | Crosshair color's green value (0-1). |
 | xhair_color_r | Crosshair color's red value (0-1). |
 | xhair_dot | Enables crosshair dot. |
+| xhair_dynamic_scale | Scale of the dynamic crosshair movement. Set to 0 to disable the dynamic crosshair, 1 for default amount of movement. |
+| xhair_gap_useweaponvalue | Makes the crosshair gap scale depend on the active weapon. |
 | xhair_enable | Enables enhanced crosshair. |
 | xhair_gap | Space between crosshair's lines. |
 | xhair_pad | Border around crosshair. |

@@ -61,7 +61,7 @@ static char *RecursiveParse(keyValue_t *kv, char *s)
 	int capacity = DEFAULT_SUBKEY_COUNT;
 
 	kv->type = keyValueKey;
-	kv->subkeys = (keyValue_t *)Mem_TempAlloc(sizeof(*kv->subkeys) * capacity);
+	kv->subkeys = (keyValue_t *)malloc(sizeof(*kv->subkeys) * capacity);
 	kv->numSubkeys = 0;
 
 	s = SkipWhite(s);
@@ -132,5 +132,5 @@ void KeyValueFree(keyValue_t *kv)
 	for (int i = 0; i < kv->numSubkeys; i++)
 		KeyValueFree(&kv->subkeys[i]);
 
-	Mem_TempFree(kv->subkeys);
+	free(kv->subkeys);
 }

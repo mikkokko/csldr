@@ -62,7 +62,7 @@ void ViewInit(void)
 	CVAR_ARCHIVE_FAST(viewmodel_lag_speed, 8.0);
 
 	// hl 25th anniversary update added gl_widescreen_yfov which is essentially
-	// the, same thing, keep fov_horplus around for older clients though
+	// the same thing, keep fov_horplus around for older clients though
 	if (!gEngfuncs.pfnGetCvarPointer("gl_widescreen_yfov"))
 		CVAR_ARCHIVE_FAST(fov_horplus, 1);
 
@@ -321,6 +321,11 @@ static void CalcCustomRefdef(ref_params_t *pparams)
 		vm->curstate.angles[0] = vm->angles[0];
 		vm->curstate.angles[1] = vm->angles[1];
 		vm->curstate.angles[2] = vm->angles[2];
+	}
+	else if ((int)cl_bobstyle->value == 0)
+	{
+		VectorCopy(pparams->viewangles, vm->curstate.angles);
+		vm->curstate.angles[0] = -vm->curstate.angles[0];
 	}
 
 	switch ((int)viewmodel_lag_style->value)

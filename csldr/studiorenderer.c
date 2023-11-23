@@ -18,9 +18,23 @@ static int Hk_StudioDrawPlayer(int flags, entity_state_t *player)
 	return studio.StudioDrawPlayer(flags, player);
 }
 
-static bool UnflipKnife(float *value)
+bool ShouldMirrorViewmodel(cl_entity_t *vm)
 {
-	if (currentWeaponId != WEAPON_KNIFE || cl_mirror_knife->value)
+	model_t *model = vm->model;
+	if (!model)
+		return false;
+
+	studiohdr_t *studiohdr = (studiohdr_t *)model->cache.data;
+	if (!studiohdr)
+		return false;
+
+	studio_cache_t *cache = GetStudioCache(model, studiohdr);
+	return cache->mirror_model;
+}
+
+static bool PushMirrorViewmodel(cl_entity_t *vm, float *value)
+{
+	if (!ShouldMirrorViewmodel(vm))
 		return false;
 
 	*value = cl_righthand->value;
@@ -28,7 +42,7 @@ static bool UnflipKnife(float *value)
 	return true;
 }
 
-static void ReflipKnife(float value)
+static void PopMirrorViewmodel(float value)
 {
 	cl_righthand->value = value;
 }
@@ -113,7 +127,7 @@ static void RestoreProjectionMatrix(void)
 static int My_StudioDrawModel(int flags)
 {
 	int result;
-	bool unflip_knife;
+	bool mirrored;
 	float old_righthand;
 
 	cl_entity_t *entity = IEngineStudio.GetCurrentEntity();
@@ -126,15 +140,15 @@ static int My_StudioDrawModel(int flags)
 	/* think about inspecting now since we're about to draw the vm */
 	InspectThink();
 
-	unflip_knife = UnflipKnife(&old_righthand);
+	mirrored = PushMirrorViewmodel(entity, &old_righthand);
 
 	result = Hk_StudioDrawModel(flags);
 
 	/* draw hands now that the scene is properly set up */
 	DrawHands(entity, flags);
 
-	if (unflip_knife)
-		ReflipKnife(old_righthand);
+	if (mirrored)
+		PopMirrorViewmodel(old_righthand);
 
 	RestoreProjectionMatrix();
 

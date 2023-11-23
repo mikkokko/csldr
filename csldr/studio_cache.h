@@ -58,6 +58,7 @@ typedef struct studio_cache_s
 
 	// configuration
 	bool mirror_shell;
+	bool mirror_model;
 
 	// renderer specfic stuff
 	mem_texture_t *textures;

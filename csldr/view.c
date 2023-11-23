@@ -30,8 +30,6 @@ static cvar_t *viewmodel_lag_speed;
 cvar_t *fov_horplus;
 cvar_t *fov_lerp;
 
-cvar_t *cl_mirror_knife;
-
 void ViewInit(void)
 {
 	CVAR_ARCHIVE_FAST(viewmodel_fov, 90);
@@ -67,8 +65,6 @@ void ViewInit(void)
 		CVAR_ARCHIVE_FAST(fov_horplus, 1);
 
 	CVAR_ARCHIVE_FAST(fov_lerp, 0.1);
-
-	CVAR_ARCHIVE_FAST(cl_mirror_knife, 1);
 }
 
 struct
@@ -265,18 +261,15 @@ static void V_AddLag_CSS(ref_params_t *pparams, vec3_t origin, vec3_t angles, ve
 
 static void V_OffsetViewmodel(cl_entity_t *vm, vec3_t front, vec3_t side, vec3_t up)
 {
-	float x, y, z;
-
-	if (currentWeaponId == WEAPON_KNIFE && !cl_mirror_knife->value)
-		x = -viewmodel_offset_x->value;
-	else
-		x = viewmodel_offset_x->value;
+	float x = viewmodel_offset_x->value;
+	float y = viewmodel_offset_y->value;
+	float z = -viewmodel_offset_z->value;
 
 	if (!cl_righthand->value)
 		x = -x;
 
-	y = viewmodel_offset_y->value;
-	z = -viewmodel_offset_z->value;
+	if (ShouldMirrorViewmodel(vm))
+		x = -x;
 
 	VectorMA_2(side, x, vm->origin);
 	VectorMA_2(front, y, vm->origin);

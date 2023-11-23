@@ -406,6 +406,10 @@ static void ParseConfig(studio_cache_t *cache, bool flush)
 		{
 			cache->mirror_shell = ParseBoolean(subkey, cache->config_path);
 		}
+		else if (!strcmp(subkey->name, "mirror_model"))
+		{
+			cache->mirror_model = ParseBoolean(subkey, cache->config_path);
+		}
 		else
 		{
 			gEngfuncs.Con_Printf("Unrecognized option %s in %s\n", subkey->name, cache->config_path);

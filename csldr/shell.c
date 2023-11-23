@@ -28,8 +28,7 @@ static bool ShouldMirrorShell(void)
 		return false;
 
 	studio_cache_t *cache = GetStudioCache(model, header);
-
-	return cache->mirror_shell;
+	return cache->mirror_shell ^ cache->mirror_model;
 }
 
 int Hk_MsgFunc_Brass(const char *pszName, int iSize, void *pbuf)

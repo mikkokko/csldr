@@ -311,7 +311,7 @@ static void CalcCustomRefdef(ref_params_t *pparams)
 		vm->origin[2] += 1;
 
 		// offset the viewmodel
-		VectorMA(up, 1, vm->origin);
+		VectorMA_2(up, 1, vm->origin);
 	}
 
 	if ((int)cl_bobstyle->value == 2)
@@ -347,6 +347,11 @@ static void CalcCustomRefdef(ref_params_t *pparams)
 
 void Hk_CalcRefdef(ref_params_t *pparams)
 {
+	float old_rollangle, old_rollspeed;
+
+	/* temporarily override view roll settings with client dictated ones */
+	old_rollangle = pparams->movevars->rollangle;
+	old_rollspeed = pparams->movevars->rollspeed;
 	pparams->movevars->rollangle = cl_rollangle->value;
 	pparams->movevars->rollspeed = cl_rollspeed->value;
 
@@ -372,6 +377,10 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 	{
 		cl_funcs.pCalcRefdef(pparams);
 	}
+
+	/* view roll has been applied, restore the settings */
+	pparams->movevars->rollangle = old_rollangle;
+	pparams->movevars->rollspeed = old_rollspeed;
 
 	if (!pparams->intermission && !pparams->paused)
 	{

@@ -14,7 +14,7 @@ uniform bool u_tex_masked;
 void main()
 {
 	vec4 tex = texture2D(u_texture, f_texcoord);
-	
+
 	// mikkotodo should do this after applying color and fog
 	// but that broke everything so i didn't do it yet
 #if defined(CAN_MASKED)

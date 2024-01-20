@@ -31,7 +31,7 @@ uniform vec3 u_chromeorg;
 uniform vec3 u_chromeright;
 #endif
 
-#if !defined(HAVE_ADDITIVE) && !defined(HAVE_GLOWHSELL)
+#if !defined(HAVE_ADDITIVE) && !defined(HAVE_GLOWSHELL)
 uniform float u_ambientlight;
 uniform float u_shadelight;
 uniform vec3 u_lightvec;
@@ -41,7 +41,7 @@ uniform float u_brightness;
 uniform float u_g3;
 #endif
 
-#if defined(HAVE_ELIGHTS) || (!defined(HAVE_ADDITIVE) && !defined(HAVE_GLOWHSELL))
+#if defined(HAVE_ELIGHTS) || (!defined(HAVE_ADDITIVE) && !defined(HAVE_GLOWSHELL))
 uniform float u_invgamma;
 #endif
 
@@ -67,7 +67,7 @@ uniform vec3 u_elight_color[MAX_ELIGHTS];
 // engine's v_lambert1, doesn't change
 #define LAMBERT 1.4953241
 
-#if !defined(HAVE_ADDITIVE) && !defined(HAVE_GLOWHSELL)
+#if !defined(HAVE_ADDITIVE) && !defined(HAVE_GLOWSHELL)
 float gamma_correct(float value)
 {
 	float f = pow(value, u_lightgamma) * max(u_brightness, 1.0);
@@ -91,18 +91,10 @@ void main()
 {
 #if defined(GPU_SKINNING)
 	mat3x4 bone = u_bones[int(a_bones.x)];
-
-	vec3 pos_anim = vec3(
-		dot(a_pos, vec3(bone[0])) + bone[0][3],
-		dot(a_pos, vec3(bone[1])) + bone[1][3],
-		dot(a_pos, vec3(bone[2])) + bone[2][3]);
-
 	mat3x4 bone_normal = u_bones[int(a_bones.y)];
 
-	vec3 normal_anim = vec3(
-		dot(a_normal, vec3(bone[0])),
-		dot(a_normal, vec3(bone[1])),
-		dot(a_normal, vec3(bone[2])));
+	vec3 pos_anim = vec4(a_pos, 1.0) * bone;
+	vec3 normal_anim = a_normal * mat3(bone_normal);
 #else
 	// already animated on the cpu
 	vec3 pos_anim = a_pos;
@@ -124,15 +116,9 @@ void main()
 		vec3 up = normalize(cross(dir, u_chromeright));
 		vec3 side = normalize(cross(dir, up));
 
-		vec3 up_anim = vec3(
-			up[0] * bone_normal[0][0] + up[1] * bone_normal[1][0] + up[2] * bone_normal[2][0],
-			up[0] * bone_normal[0][1] + up[1] * bone_normal[1][1] + up[2] * bone_normal[2][1],
-			up[0] * bone_normal[0][2] + up[1] * bone_normal[1][2] + up[2] * bone_normal[2][2]);
-
-		vec3 side_anim = vec3(
-			side[0] * bone_normal[0][0] + side[1] * bone_normal[1][0] + side[2] * bone_normal[2][0],
-			side[0] * bone_normal[0][1] + side[1] * bone_normal[1][1] + side[2] * bone_normal[2][1],
-			side[0] * bone_normal[0][2] + side[1] * bone_normal[1][2] + side[2] * bone_normal[2][2]);
+		mat3 mat = transpose(mat3(bone_normal));
+		vec3 up_anim = up * mat;
+		vec3 side_anim = side * mat;
 
 		// mikkotodo why the fuck this this needed???
 		f_texcoord.x = 1.0 - (dot(a_normal, side_anim) + 1.0) * 0.5;
@@ -153,7 +139,7 @@ void main()
 #elif defined(HAVE_ADDITIVE)
 	f_color = vec4(vec3(u_colormix.a), 1.0);
 #else
-	
+
 	#if defined(CAN_FULLBRIGHT)
 	if (u_tex_fullbright)
 	{
@@ -194,21 +180,21 @@ void main()
 		// add elights, if any
 	#if defined(HAVE_ELIGHTS)
 		vec3 elights = vec3(0);
-		
+
 		for (int i = 0; i < MAX_ELIGHTS; i++)
 		{
 			vec3 dir = u_elight_pos[i].xyz - pos_anim;
 			float NdotL = max(dot(normal_anim, dir), 0.0); // don't normalize!!!
-		
+
 			// wtf is this attenuation
 			float mag_squared = dot(dir, dir);
 			float rad_squared = u_elight_pos[i].w;
-		
+
 			float atten = rad_squared / (mag_squared * sqrt(mag_squared));
-		
+
 			elights += u_elight_color[i] * NdotL * atten;
 		}
-		
+
 		f_color.rgb = elight_gamma(f_color.rgb, elights);
 	#endif
 	}
@@ -220,13 +206,13 @@ void main()
 #ifdef HAVE_FOG
 	// wtf is gl_FogCoord
 	float fog_coord = result.w;
-	
+
 	#ifdef HAVE_FOG_LINEAR
 		f_fog = (gl_Fog.end - fog_coord) * gl_Fog.scale;
 	#else
 		f_fog = exp(-gl_Fog.density * gl_Fog.density * fog_coord * fog_coord);
 	#endif
-	
+
 	f_fog = clamp(f_fog, 0.0, 1.0);
 #endif
 

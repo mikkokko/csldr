@@ -119,9 +119,19 @@ studio_shader_t *R_StudioSelectShader(int options)
 	String defines = { buffer, sizeof(buffer), 0 };
 
 	if (studio_gpuskin)
-		StringAppend(&defines, "#version 150 compatibility\n#define GPU_SKINNING\n");
+	{
+		// we can't use glsl 1.20 because most drivers will syntax error
+		// on the std140 ubo. use glsl 1.50 in compat profile if we can,
+		// otherwise use glsl 1.20 and hope that it'll work on this card...
+		if (GLVersion.major >= 3 && GLVersion.minor >= 2)
+			StringAppend(&defines, "#version 150 compatibility\n#define GPU_SKINNING\n");
+		else
+			StringAppend(&defines, "#version 120\n#define GPU_SKINNING\n");
+	}
 	else
+	{
 		StringAppend(&defines, "#version 110\n");
+	}
 
 	for (size_t j = 0; j < Q_ARRAYSIZE(option_info); j++)
 	{

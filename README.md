@@ -33,7 +33,8 @@ Some non-Steam builds of the game (notably CS WaRzOnE) come with a program calle
 1. Download the latest Windows or Linux binary from the [releases page](https://github.com/mikkokko/csldr/releases) or compile it from source
 2. Navigate to "cstrike/cl_dlls" (or "czero/cl_dlls" if you're playing Condition Zero)
 3. Rename the existing client.dll to client_orig.dll (client.so to client_orig.so on Linux)
-4. Play
+4. Place downloaded client.dll in the folder
+5. Play
 
 ## Shader-based model renderer
 

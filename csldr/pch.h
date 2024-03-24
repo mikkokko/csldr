@@ -69,6 +69,7 @@ typedef enum {false, true} bool;
 #include "memory.h"
 #include "gamma.h"
 #include "tga.h"
+#include "d3d.h"
 
 /* ui stuff */
 #include "hud_crosshair.h"

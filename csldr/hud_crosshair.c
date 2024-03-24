@@ -96,6 +96,12 @@ static int ScaleForRes(float value, int height)
 	return Rint(value * ((float)height / 480.0f));
 }
 
+/* d3d does not implement glVertex2fv!!! */
+static void Vertex2fv(float *v)
+{
+	glVertex2f(v[0], v[1]);
+}
+
 static void DrawCrosshairSection(int _x0, int _y0, int _x1, int _y1)
 {
 	float x0 = (float)_x0;
@@ -114,10 +120,10 @@ static void DrawCrosshairSection(int _x0, int _y0, int _x1, int _y1)
 		xhair_alpha->value);
 
 	glBegin(GL_TRIANGLE_STRIP);
-	glVertex2fv(top_left);
-	glVertex2fv(bottom_left);
-	glVertex2fv(top_right);
-	glVertex2fv(bottom_right);
+	Vertex2fv(top_left);
+	Vertex2fv(bottom_left);
+	Vertex2fv(top_right);
+	Vertex2fv(bottom_right);
 	glEnd();
 }
 
@@ -141,16 +147,16 @@ static void DrawCrosshairPadding(int _pad, int _x0, int _y0, int _x1, int _y1)
 	glColor4f(0, 0, 0, xhair_alpha->value);
 
 	glBegin(GL_TRIANGLE_STRIP);
-	glVertex2fv(in_bottom_left);
-	glVertex2fv(out_bottom_right);
-	glVertex2fv(in_bottom_right);
-	glVertex2fv(out_top_right);
-	glVertex2fv(in_top_right);
-	glVertex2fv(out_top_left);
-	glVertex2fv(in_top_left);
-	glVertex2fv(out_bottom_left);
-	glVertex2fv(in_bottom_left);
-	glVertex2fv(out_bottom_right);
+	Vertex2fv(in_bottom_left);
+	Vertex2fv(out_bottom_right);
+	Vertex2fv(in_bottom_right);
+	Vertex2fv(out_top_right);
+	Vertex2fv(in_top_right);
+	Vertex2fv(out_top_left);
+	Vertex2fv(in_top_left);
+	Vertex2fv(out_bottom_left);
+	Vertex2fv(in_bottom_left);
+	Vertex2fv(out_bottom_right);
 	glEnd();
 }
 

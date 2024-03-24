@@ -184,13 +184,23 @@ static void StudioInfo_f(void)
 
 void HookEngineStudio(engine_studio_api_t *studio)
 {
-	// no one uses software or d3d renderers
-	if (studio->IsHardware() != 1)
+	// no one uses software or d3d renderers but support d3d anyway because it's quite trivial
+	if (!studio->IsHardware())
 		Plat_Error("Software and D3D modes are not supported\n");
 
-	// init opengl now that we know we're not using sw or d3d
-	if (!gladLoadGL())
-		Plat_Error("Could not initialize OpenGL\n");
+	// init opengl now that we know we're not using sw
+	if (studio->IsHardware() == 2)
+	{
+		// special d3d path
+		if (!gladLoadGLLoader(D3D_GL_GetProcAddress))
+			Plat_Error("Could not initialize D3D to OpenGL wrapper\n");
+	}
+	else
+	{
+		if (!gladLoadGL())
+			Plat_Error("Could not initialize OpenGL\n");
+	}
+
 
 	// see if we can do fast path
 	studio_fastpath = (GLAD_GL_VERSION_2_0) ? true : false;

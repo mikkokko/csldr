@@ -26,7 +26,7 @@ void R_StudioInit(void)
 
 void R_StudioNewFrame(void)
 {
-	if (!studio_globals.framecount)
+	if (!studio_globals.framecount && studio_fastpath)
 		R_StudioCompileShaders();
 
 	studio_globals.framecount++;

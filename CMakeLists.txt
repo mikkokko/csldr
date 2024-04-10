@@ -1,47 +1,20 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.5)
 
-project(csldr C)
-
-if (NOT DEBUG_BUILD)
-	set(UNITY_BUILD ON)
-endif()
-
-if (UNITY_BUILD)
-	set(CMAKE_UNITY_BUILD_BATCH_SIZE 128)
-endif()
+project(csldr)
 
 if (MSVC)
 	# /MT or /MTd on debug
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-	add_compile_options(/W4 /wd4201)
-	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
-	# most of these are enabled implicitly but we set them anyway
 	if (NOT DEBUG_BUILD)
-		add_compile_options(
-			/O2
-			/Ob2
-			/Oi
-			/Ot
-			/Oy
-			/GL
-			/GS-
-			/Gy
-			/Gw
-			/arch:SSE2 # x86
-			/fp:fast
-			/fp:except-)
-
-		add_link_options(
-			/OPT:REF
-			/OPT:ICF
-			/LTCG)
+		add_compile_options(/arch:SSE2 /fp:fast)
 	endif()
 else()
 	add_compile_options(-m32 -Wall -Wextra)
 	add_link_options(-m32)
-	
+
 	if (NOT DEBUG_BUILD)
 		add_compile_options(-Ofast -msse -msse2 -mfpmath=sse)
 	endif()
@@ -60,13 +33,14 @@ set(SRCDIR ${CMAKE_CURRENT_LIST_DIR})
 file(GLOB CSLDR_SRC ${SRCDIR}/csldr/*.c)
 file(GLOB CSLDR_HDR ${SRCDIR}/csldr/*.h)
 
+if (MSVC AND MSVC_VERSION LESS 1800)
+	message("MSVC Version ${MSVC_VERSION}, no C99 support, compiling as C++")
+	set_source_files_properties(${CSLDR_SRC} PROPERTIES LANGUAGE CXX)
+endif()
+
 add_library(csldr SHARED
 	${CSLDR_SRC}
 	${CSLDR_HDR})
-
-if (UNITY_BUILD)
-	set_target_properties(csldr PROPERTIES UNITY_BUILD ON)
-endif()
 
 target_include_directories(csldr PRIVATE ${SRCDIR}/external/sdk)
 
@@ -78,7 +52,7 @@ if (DEBUG_BUILD)
 	target_compile_definitions(csldr PRIVATE SHADER_DIR="${SRCDIR}/shaders")
 endif()
 
-if (MSVC AND DEBUG_BUILD)
+if (MSVC)
 	set_source_files_properties(${CSLDR_SRC} PROPERTIES COMPILE_FLAGS "/Yupch.h")
 	set_source_files_properties(${SRCDIR}/csldr/pch.c PROPERTIES COMPILE_FLAGS "/Ycpch.h")
 endif()

@@ -14,32 +14,29 @@ static void *clientOrig;
 
 void ProxyInit(void)
 {
-	char name[256];
 	char *dot;
+	char name[512];
 
-	Plat_CurrentModuleName(name, sizeof(name));
-
-	dot = strrchr(name, '.');
-
-	if (dot == NULL)
+	if (!Plat_CurrentModuleName(name, sizeof(name))
+		|| !(dot = strrchr(name, '.')))
 	{
 		Plat_Error("Could not get current module name\n");
 		return;
 	}
 
-	/* mikkotodo unsafe */
-	memcpy(dot, "_orig" LIB_EXT, sizeof("_orig" LIB_EXT));
+	const char *ext = "_orig" LIB_EXT;
+	size_t ext_length = strlen(ext);
+
+	if ((dot - name) + ext_length >= sizeof(name))
+		Plat_Error("Game path is too long\n");
+
+	memcpy(dot, ext, ext_length + 1);
 
 	if (Secret_LoadClient(name))
 		return;
 
-	clientOrig = Plat_Dlopen(name);
-
-	if (clientOrig == NULL)
-	{
-		Plat_Error("Could not load client_orig" LIB_EXT "\n");
-		return;
-	}
+	/* if this fails, it prints out why and terminates the process */
+	clientOrig = Plat_CheckedDlopen(name);
 
 	CLIENT_DLSYM_VALIDATE(pCreateInterface, "CreateInterface")
 

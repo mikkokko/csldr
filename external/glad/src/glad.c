@@ -1448,7 +1448,7 @@ static void find_coreGL(void) {
     }
 
 /* PR #18 */
-#ifdef _MSC_VER
+#if 0
     sscanf_s(version, "%d.%d", &major, &minor);
 #else
     sscanf(version, "%d.%d", &major, &minor);

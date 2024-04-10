@@ -9,6 +9,8 @@ extern float clientTime;
 
 extern int screenWidth, screenHeight;
 
+extern bool canOpenGL;
+
 void Hk_HudInit(void);
 void Hk_HudShutdown(void);
 void Hk_HudFrame(double time);

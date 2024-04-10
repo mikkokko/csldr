@@ -100,6 +100,9 @@ static void SetProjectionMatrix(void)
 	float aspect, fov, f, fn;
 	float matrix[4][4];
 
+	if (!canOpenGL)
+		return; // won't work
+
 	aspect = (float)screenWidth / (float)screenHeight;
 
 	fov = GetViewmodelFov() * fovScale;
@@ -124,6 +127,9 @@ static void SetProjectionMatrix(void)
 
 static void RestoreProjectionMatrix(void)
 {
+	if (!canOpenGL)
+		return; // won't work
+
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);

@@ -13,6 +13,8 @@ static cvar_t *cl_lw;
 
 int screenWidth, screenHeight;
 
+bool canOpenGL;
+
 static void UpdateScreenSize(void)
 {
 	SCREENINFO scr;
@@ -132,7 +134,7 @@ void Hk_HudShutdown(void)
 -------------------------------------------------
 */
 
-void Hk_HudFrame(double time)
+static void BitchMessagesThink(void)
 {
 	static bool lw_bitched;
 
@@ -150,6 +152,14 @@ void Hk_HudFrame(double time)
 			lw_bitched = false;
 	}
 
+	static bool opengl_bitched;
+
+	if (!canOpenGL && !opengl_bitched)
+	{
+		opengl_bitched = true;
+		gEngfuncs.Con_Printf("Failed to load OpenGL functions. Some features of csldr will not work.\n");
+	}
+
 #if defined(_WIN32)
 	static bool warzone_bitched;
 
@@ -160,6 +170,11 @@ void Hk_HudFrame(double time)
 		gEngfuncs.Con_Printf("csldr found %s and removed it. The game might not work properly. Consider updating to the latest Steam version of the game.\n", libName);
 	}
 #endif
+}
+
+void Hk_HudFrame(double time)
+{
+	BitchMessagesThink();
 
 	UpdateScreenSize();
 

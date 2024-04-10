@@ -20,7 +20,7 @@
 
 - Read the installation instructions. It's very easy to break your game if you don't.
 - Play on VAC secured servers at your own risk.
-- Software and D3D renderers are not supported.
+- Not all features work with the software and D3D renderers.
 - Some features will not work when cl_lw is set to 0 (inspecting, crosshair...).
 - Other client-side mods that rely on client.dll (like some MetaHook plugins) will not not work when this is installed.
 
@@ -109,8 +109,8 @@ Model config files can be reloaded with the `studio_config_flush` command. This 
 | viewmodel_fov | Viewmodel FOV. |
 | viewmodel_hands | Specifies an external hand model, for example "v_hands.mdl". Can be disabled with an empty string (""). |
 | viewmodel_lag_style | Viewmodel sway style. 0 is off, 1 is HL2 style and 2 is CS:S/CS:GO style. |
-| viewmodel_lag_scale | Scale of the viewmodel sway (HL2 sway only). |
-| viewmodel_lag_speed | Speed of the viewmodel sway. |
+| viewmodel_lag_scale | Scale of the viewmodel sway. |
+| viewmodel_lag_speed | Speed of the viewmodel sway. (HL2 sway only) |
 | viewmodel_offset_x | Viewmodel's x offset. |
 | viewmodel_offset_y | Viewmodel's y offset. |
 | viewmodel_offset_z | Viewmodel's z offset. |

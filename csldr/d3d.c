@@ -4,6 +4,7 @@
 /* stub */
 void *D3D_GL_GetProcAddress(const char *name)
 {
+	(void)name;
 	return NULL;
 }
 #else

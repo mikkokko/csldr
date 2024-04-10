@@ -143,6 +143,8 @@ static byte *LoadFromBuffer(void *buffer, int size, int *pwidth, int *pheight, i
 
 				if (count & 0x80)
 				{
+					int k;
+
 					count -= 0x7F;
 
 					byte pixel[4]; // max pixel size is 4
@@ -156,7 +158,7 @@ static byte *LoadFromBuffer(void *buffer, int size, int *pwidth, int *pheight, i
 						break;
 
 					case 3:
-						for (int k = 0; k < count; k++)
+						for (k = 0; k < count; k++)
 						{
 							*(color24 *)dst = *(color24 *)pixel;
 							dst += sizeof(color24);
@@ -164,7 +166,7 @@ static byte *LoadFromBuffer(void *buffer, int size, int *pwidth, int *pheight, i
 						break;
 
 					case 4:
-						for (int k = 0; k < count; k++)
+						for (k = 0; k < count; k++)
 						{
 							*(uint32 *)dst = *(uint32 *)pixel;
 							dst += sizeof(uint32);

@@ -52,10 +52,10 @@ void ViewInit(void)
 	CVAR_ARCHIVE_FAST(cl_bobamt_lat, 0.32);
 	CVAR_ARCHIVE_FAST(cl_bob_lower_amt, 8);
 
-	CVAR_ARCHIVE_FAST(cl_rollangle, 2.0);
+	CVAR_ARCHIVE_FAST(cl_rollangle, 0);
 	CVAR_ARCHIVE_FAST(cl_rollspeed, 200);
 
-	CVAR_ARCHIVE_FAST(viewmodel_lag_style, 1);
+	CVAR_ARCHIVE_FAST(viewmodel_lag_style, 0);
 	CVAR_ARCHIVE_FAST(viewmodel_lag_scale, 1.0);
 	CVAR_ARCHIVE_FAST(viewmodel_lag_speed, 8.0);
 
@@ -64,7 +64,7 @@ void ViewInit(void)
 	if (!gEngfuncs.pfnGetCvarPointer("gl_widescreen_yfov"))
 		CVAR_ARCHIVE_FAST(fov_horplus, 1);
 
-	CVAR_ARCHIVE_FAST(fov_lerp, 0.1);
+	CVAR_ARCHIVE_FAST(fov_lerp, 0);
 }
 
 struct
@@ -81,7 +81,7 @@ static float Map(float value, float low1, float high1, float low2, float high2)
 	return low2 + (value - low1) * (high2 - low2) / (high1 - low1);
 }
 
-static void V_CalcBob(ref_params_t *pparams)
+static void V_CalcBob_CSGO(ref_params_t *pparams)
 {
 	float speed;
 	float maxSpeedDelta;
@@ -144,15 +144,34 @@ static void V_CalcBob(ref_params_t *pparams)
 	g_bobVars.horBob = CLAMP(g_bobVars.horBob, -7, 4);
 }
 
-static void V_AddBob(ref_params_t *pparams, vec3_t origin, vec3_t front, vec3_t side)
+static void V_AddBob_CSGO(ref_params_t *pparams, vec3_t origin, vec3_t front, vec3_t side)
 {
-	V_CalcBob(pparams);
+	V_CalcBob_CSGO(pparams);
 
 	VectorMA_2(front, g_bobVars.vertBob * 0.4f, origin);
 
 	origin[2] += g_bobVars.vertBob * 0.1f;
 
 	VectorMA_2(side, g_bobVars.horBob * 0.2f, origin);
+}
+
+static float V_CalcBob(ref_params_t *pparams)
+{
+	static double bobtime;
+
+	bobtime += pparams->frametime;
+
+	float cycle = (float)(bobtime - (int)(bobtime / cl_bobcycle->value) * cl_bobcycle->value);
+	cycle /= cl_bobcycle->value;
+
+	if (cycle < cl_bobup->value)
+		cycle = F_PI * cycle / cl_bobup->value;
+	else
+		cycle = F_PI + F_PI * (cycle - cl_bobup->value) / (1.0f - cl_bobup->value);
+
+	float bob = VectorLength2D(pparams->simvel) * cl_bob->value;
+	bob = bob * 0.3f + bob * 0.7f * sinf(cycle);
+	return CLAMP(bob, -7, 4);
 }
 
 static void V_AddLag_HL2(ref_params_t *pparams, vec3_t origin, vec3_t front)
@@ -201,7 +220,7 @@ static void AddLagAngles(float time, vec3_t angles)
 
 	last_step = step;
 
-	VectorCopy(angles, lag_angles[step % 128].value);
+	VectorCopy(angles, lag_angles[step % ANGLE_BACKUP].value);
 	lag_angles[step % ANGLE_BACKUP].valid = true;
 }
 
@@ -316,18 +335,19 @@ static void CalcCustomRefdef(ref_params_t *pparams)
 
 	if ((int)cl_bobstyle->value == 2)
 	{
-		V_AddBob(pparams, vm->origin, front, side);
+		V_AddBob_CSGO(pparams, vm->origin, front, side);
 	}
-	else if ((int)cl_bobstyle->value == 1)
+	else 
 	{
-		vm->curstate.angles[0] = vm->angles[0];
-		vm->curstate.angles[1] = vm->angles[1];
-		vm->curstate.angles[2] = vm->angles[2];
-	}
-	else if ((int)cl_bobstyle->value == 0)
-	{
-		VectorCopy(pparams->viewangles, vm->curstate.angles);
-		vm->curstate.angles[0] = -vm->curstate.angles[0];
+		float bob = V_CalcBob(pparams);
+		VectorMA_2(front, bob * 0.4f, vm->origin);
+
+		if ((int)cl_bobstyle->value == 1)
+		{
+			vm->curstate.angles[0] -= bob * 0.3f;
+			vm->curstate.angles[1] -= bob * 0.5f;
+			vm->curstate.angles[2] -= bob;
+		}
 	}
 
 	switch ((int)viewmodel_lag_style->value)
@@ -355,27 +375,14 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 	pparams->movevars->rollangle = cl_rollangle->value;
 	pparams->movevars->rollspeed = cl_rollspeed->value;
 
-	if ((int)cl_bobstyle->value == 2)
+	/* we calculate the bob ourselves so zero out the cvar */
 	{
-		float bobcycle, bobup, bob;
+		float bob;
 
-		bobcycle = cl_bobcycle->value;
-		bobup = cl_bobup->value;
 		bob = cl_bob->value;
-
-		cl_bobcycle->value = 0;
-		cl_bobup->value = 0;
 		cl_bob->value = 0;
-
 		cl_funcs.pCalcRefdef(pparams);
-
-		cl_bobcycle->value = bobcycle;
-		cl_bobup->value = bobup;
 		cl_bob->value = bob;
-	}
-	else
-	{
-		cl_funcs.pCalcRefdef(pparams);
 	}
 
 	/* view roll has been applied, restore the settings */

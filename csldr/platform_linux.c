@@ -5,9 +5,16 @@
 #define __USE_GNU 1 /* Dl_info */
 #include <dlfcn.h>
 
-void *Plat_Dlopen(const char *filename)
+void *Plat_CheckedDlopen(const char *filename)
 {
-	return dlopen(filename, RTLD_NOW);
+	void *handle = dlopen(filename, RTLD_NOW);
+	if (!handle)
+	{
+		Plat_Error("Could not load '%s': %s\n", filename, dlerror());
+		return NULL; /* never reached */
+	}
+
+	return handle;
 }
 
 void *Plat_Dlsym(void *handle, const char *name)
@@ -20,14 +27,18 @@ void Plat_Dlclose(void *handle)
 	dlclose(handle);
 }
 
-void Plat_CurrentModuleName(char *name, size_t size)
+bool Plat_CurrentModuleName(char *name, size_t size)
 {
 	Dl_info info;
+	if (!dladdr(Plat_CurrentModuleName, &info))
+		return false;
 
-	dladdr(Plat_CurrentModuleName, &info);
-	/* mikkotodo strncpy bad */
-	strncpy(name, info.dli_fname, size);
-	name[size - 1] = '\0';
+	size_t length = strlen(info.dli_fname);
+	if (length >= size)
+		return false;
+
+	memcpy(name, info.dli_fname, length + 1);
+	return true;
 }
 
 void Plat_Error(const char *fmt, ...)
@@ -51,7 +62,7 @@ void Plat_Error(const char *fmt, ...)
 	
 		if (SDL_ShowSimpleMessageBox)
 		{
-			SDL_ShowSimpleMessageBox(0, "Error", buffer, NULL);
+			SDL_ShowSimpleMessageBox(0, "Client-side loader", buffer, NULL);
 		}
 	}
 

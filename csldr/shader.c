@@ -89,6 +89,8 @@ GLuint CreateShaderProgram(const char *name,
 	const uniform_t *uniforms,
 	int num_uniforms)
 {
+	int i;
+
 #ifdef SHADER_DIR
 	int vertex_length;
 	char *vertex_source = LoadFromDisk(vertex_name, &vertex_length);
@@ -111,7 +113,7 @@ GLuint CreateShaderProgram(const char *name,
 	glAttachShader(program, vertex_shader);
 	glAttachShader(program, fragment_shader);
 
-	for (int i = 0; i < num_attributes; i++)
+	for (i = 0; i < num_attributes; i++)
 		glBindAttribLocation(program, attributes[i].location, attributes[i].name);
 
 	glLinkProgram(program);
@@ -132,7 +134,7 @@ GLuint CreateShaderProgram(const char *name,
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
 
-	for (int i = 0; i < num_uniforms; i++)
+	for (i = 0; i < num_uniforms; i++)
 		*((GLint *)(uniform_struct + uniforms[i].offset)) = glGetUniformLocation(program, uniforms[i].name);
 
 	return program;

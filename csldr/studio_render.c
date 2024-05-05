@@ -381,7 +381,7 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 
 	// calling GetViewEntity is ok here
 	if (cl_righthand->value && ctx->entity == IEngineStudio.GetViewEntity())
-		glCullFace(GL_BACK);
+		glDisable(GL_CULL_FACE);
 
 	glBindBuffer(GL_ARRAY_BUFFER, ctx->cache->studio_vbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->cache->studio_ebo);
@@ -422,7 +422,7 @@ void R_StudioRestoreRenderer(studio_context_t *ctx)
 
 	// restore opengl state
 	if (cl_righthand->value && ctx->entity == IEngineStudio.GetViewEntity())
-		glCullFace(GL_FRONT);
+		glEnable(GL_CULL_FACE);
 
 	glDisableVertexAttribArray(shader_studio_a_pos);
 	glDisableVertexAttribArray(shader_studio_a_normal);

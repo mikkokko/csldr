@@ -19,6 +19,7 @@ static cvar_t *cl_bob;
 static cvar_t *cl_bobamt_vert;
 static cvar_t *cl_bobamt_lat;
 static cvar_t *cl_bob_lower_amt;
+static cvar_t *cl_bob_camera;
 
 static cvar_t *cl_rollangle;
 static cvar_t *cl_rollspeed;
@@ -51,6 +52,7 @@ void ViewInit(void)
 	CVAR_ARCHIVE_FAST(cl_bobamt_vert, 0.13);
 	CVAR_ARCHIVE_FAST(cl_bobamt_lat, 0.32);
 	CVAR_ARCHIVE_FAST(cl_bob_lower_amt, 8);
+	CVAR_ARCHIVE_FAST(cl_bob_camera, 1);
 
 	CVAR_ARCHIVE_FAST(cl_rollangle, 0);
 	CVAR_ARCHIVE_FAST(cl_rollspeed, 200);
@@ -347,6 +349,12 @@ static void CalcCustomRefdef(ref_params_t *pparams)
 			vm->curstate.angles[0] -= bob * 0.3f;
 			vm->curstate.angles[1] -= bob * 0.5f;
 			vm->curstate.angles[2] -= bob;
+		}
+
+		if (cl_bob_camera->value)
+		{
+			pparams->vieworg[2] += bob;
+			vm->origin[2] += bob;
 		}
 	}
 

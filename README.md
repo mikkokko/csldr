@@ -94,6 +94,7 @@ Model config files can be reloaded with the `studio_config_flush` command. This 
 |-|-|
 | camera_movement_interp | Smooths out camera movement when switching weapons. Recommended value is 0.1. Set to 0 to disable smoothing. |
 | camera_movement_scale | Camera movement scale. |
+| cl_bob_camera | View origin bob, does nothing with cl_bobstyle 2 |
 | cl_bob_lower_amt | Specifies how much the viewmodel moves inwards for CS:GO style bob. |
 | cl_bobamt_lat | Lateral scale for CS:GO style bob. |
 | cl_bobamt_vert | Vertical scale for CS:GO style bob. |

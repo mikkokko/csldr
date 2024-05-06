@@ -83,6 +83,14 @@ inline static void VectorSubtract(const vec3_t a, const vec3_t b, vec3_t dst)
 	dst[2] = a[2] - b[2];
 }
 
+inline static void VectorScale(const vec3_t a, float s, vec3_t dst)
+{
+	dst[0] = a[0] * s;
+	dst[1] = a[1] * s;
+	dst[2] = a[2] * s;
+}
+
+
 inline static void VectorMA(const vec3_t v, float s, vec3_t dst)
 {
 	dst[0] += v[0] * s;

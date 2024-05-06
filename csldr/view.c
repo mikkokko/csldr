@@ -31,6 +31,8 @@ static cvar_t *viewmodel_lag_speed;
 cvar_t *fov_horplus;
 cvar_t *fov_lerp;
 
+static cvar_t *spec_pip;
+
 void ViewInit(void)
 {
 	CVAR_ARCHIVE_FAST(viewmodel_fov, 90);
@@ -67,6 +69,8 @@ void ViewInit(void)
 		CVAR_ARCHIVE_FAST(fov_horplus, 1);
 
 	CVAR_ARCHIVE_FAST(fov_lerp, 0);
+
+	spec_pip = gEngfuncs.pfnGetCvarPointer("spec_pip");
 }
 
 struct
@@ -373,6 +377,90 @@ static void CalcCustomRefdef(ref_params_t *pparams)
 	CameraApplyMovement(pparams);
 }
 
+static void V_GetInEyePos(int target, vec_t *origin, vec_t *angles)
+{
+	if (!target)
+	{
+		/* just hope this doesn't happen? */
+		return;
+	}
+
+	cl_entity_t *ent = gEngfuncs.GetEntityByIndex(target);
+	if (!ent)
+		return;
+
+	VectorCopy(ent->origin, origin);
+	VectorCopy(ent->angles, angles);
+
+	angles[0] *= -3;
+
+	if (!ent->curstate.solid)
+	{
+		angles[2] = 80;
+		origin[2] -= 8;
+	}
+	else if (ent->curstate.usehull == 1)
+		origin[2] += 12;
+	else
+		origin[2] += 28;
+}
+
+static void CalcSpectatorRefdef(ref_params_t *pparams, int nextView)
+{
+	/* sdk constants... */
+	const int OBS_IN_EYE = 4;
+	const int INSET_IN_EYE = 2;
+
+	static vec3_t velocity;
+
+	cl_entity_t *ent = gEngfuncs.GetEntityByIndex(user2);
+
+	vec3_t v_cl_angles, v_angles, v_origin;
+	VectorCopy(pparams->cl_viewangles, v_cl_angles);
+	VectorCopy(pparams->viewangles, v_angles);
+	VectorCopy(pparams->vieworg, v_origin);
+
+	if ((user1 == OBS_IN_EYE || spec_pip->value == INSET_IN_EYE) && ent)
+	{
+		float timeDiff = ent->curstate.msg_time - ent->prevstate.msg_time;
+		if (timeDiff > 0)
+		{
+			vec3_t distance;
+			VectorSubtract(ent->prevstate.origin, ent->curstate.origin, distance);
+			VectorScale(distance, 1.0f / timeDiff, distance);
+
+			velocity[0] = velocity[0] * 0.9f + distance[0] * 0.1f;
+			velocity[1] = velocity[1] * 0.9f + distance[1] * 0.1f;
+			velocity[2] = velocity[2] * 0.9f + distance[2] * 0.1f;
+			VectorCopy(velocity, pparams->simvel);
+		}
+
+		if (gEngfuncs.IsSpectateOnly() || spec_pip->value == INSET_IN_EYE)
+		{
+			V_GetInEyePos(user2, pparams->simorg, pparams->cl_viewangles);
+		}
+		else
+		{
+			VectorCopy(ent->angles, pparams->cl_viewangles);
+			pparams->cl_viewangles[0] *= -3;
+		}
+	}
+
+	if (nextView == 0)
+	{
+		if (user1 == OBS_IN_EYE)
+			CalcCustomRefdef(pparams);
+	}
+	else if (spec_pip->value == INSET_IN_EYE)
+	{
+		CalcCustomRefdef(pparams);
+	}
+
+	VectorCopy(v_cl_angles, pparams->cl_viewangles);
+	VectorCopy(v_angles, pparams->viewangles);
+	VectorCopy(v_origin, pparams->vieworg);
+}
+
 void Hk_CalcRefdef(ref_params_t *pparams)
 {
 	float old_rollangle, old_rollspeed;
@@ -382,6 +470,9 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 	old_rollspeed = pparams->movevars->rollspeed;
 	pparams->movevars->rollangle = cl_rollangle->value;
 	pparams->movevars->rollspeed = cl_rollspeed->value;
+
+	/* save this off so we can properly handle pip (gets modified by original CalcRefdef) */
+	int nextView = pparams->nextView;
 
 	/* we calculate the bob ourselves so zero out the cvar */
 	{
@@ -397,9 +488,12 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 	pparams->movevars->rollangle = old_rollangle;
 	pparams->movevars->rollspeed = old_rollspeed;
 
-	if (!pparams->intermission && !pparams->paused)
+	if (!pparams->intermission)
 	{
-		CalcCustomRefdef(pparams);
+		if (pparams->spectator || user1)
+			CalcSpectatorRefdef(pparams, nextView);
+		else if (!pparams->paused)
+			CalcCustomRefdef(pparams);
 	}
 
 	/* mikkotodo move? */

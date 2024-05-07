@@ -415,11 +415,6 @@ static void CalcSpectatorRefdef(ref_params_t *pparams, int nextView)
 
 	cl_entity_t *ent = gEngfuncs.GetEntityByIndex(user2);
 
-	vec3_t v_cl_angles, v_angles, v_origin;
-	VectorCopy(pparams->cl_viewangles, v_cl_angles);
-	VectorCopy(pparams->viewangles, v_angles);
-	VectorCopy(pparams->vieworg, v_origin);
-
 	if ((user1 == OBS_IN_EYE || spec_pip->value == INSET_IN_EYE) && ent)
 	{
 		float timeDiff = ent->curstate.msg_time - ent->prevstate.msg_time;
@@ -455,10 +450,6 @@ static void CalcSpectatorRefdef(ref_params_t *pparams, int nextView)
 	{
 		CalcCustomRefdef(pparams);
 	}
-
-	VectorCopy(v_cl_angles, pparams->cl_viewangles);
-	VectorCopy(v_angles, pparams->viewangles);
-	VectorCopy(v_origin, pparams->vieworg);
 }
 
 void Hk_CalcRefdef(ref_params_t *pparams)

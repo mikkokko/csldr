@@ -121,6 +121,7 @@ Model config files can be reloaded with the `studio_config_flush` command. This 
 | xhair_color_g | Crosshair color's green value (0-1). |
 | xhair_color_r | Crosshair color's red value (0-1). |
 | xhair_dot | Enables crosshair dot. |
+| xhair_dynamic_move | When set to 1, jumping, crouching and moving will affect the dynamic crosshair (like cl_dynamiccrosshair). |
 | xhair_dynamic_scale | Scale of the dynamic crosshair movement. Set to 0 to disable the dynamic crosshair, 1 for default amount of movement. |
 | xhair_gap_useweaponvalue | Makes the crosshair gap scale depend on the active weapon. |
 | xhair_enable | Enables enhanced crosshair. |

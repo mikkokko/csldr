@@ -17,6 +17,7 @@ static cvar_t *xhair_dot;
 static cvar_t *xhair_t;
 static cvar_t *xhair_dynamic_scale;
 static cvar_t *xhair_gap_useweaponvalue;
+static cvar_t *xhair_dynamic_move;
 
 static cvar_t *xhair_color_r;
 static cvar_t *xhair_color_g;
@@ -71,6 +72,7 @@ void HudInit(void)
 	CVAR_ARCHIVE_FAST(xhair_t, 0);
 	CVAR_ARCHIVE_FAST(xhair_dynamic_scale, 0);
 	CVAR_ARCHIVE_FAST(xhair_gap_useweaponvalue, 0);
+	CVAR_ARCHIVE_FAST(xhair_dynamic_move, 1);
 
 	CVAR_ARCHIVE_FAST(xhair_color_r, 0);
 	CVAR_ARCHIVE_FAST(xhair_color_g, 1);
@@ -306,7 +308,7 @@ float GetCrosshairGap(void)
 	float absMinGap = baseMinGap * 0.5f;
 
 	int flags = GetWeaponAccuracyFlags(currentWeaponId);
-	if (flags)
+	if (xhair_dynamic_move->value && flags)
 	{
 		if (!(xhairPlayerFlags & FL_ONGROUND) && (flags & ACCURACY_JUMP))
 		{

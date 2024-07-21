@@ -51,8 +51,7 @@ Known issues with the renderer:
 - Glowshell uses model normals instead of computing custom ones
 - Rendering of hulls, bboxes or bones is not supported (r_drawentities > 1)
 
-The renderer can be slower with low poly models on some systems due to the overhead it adds. When a model is not using studio_fastpath exclusive features and its poly count is below `studio_fastpath_min_polys`, the default renderer will be used instead of the custom shader-based renderer.
-If you encounter framerate drops when many low poly models are being drawn, you can try tweaking `studio_fastpath_min_polys` to see if it helps.
+On some systems, the renderer can be slower when rendering low poly models due to the overhead it adds. As a mitigation, the default renderer will be used for low poly models that don’t use studio_fastpath exclusive features. The poly count threshold can be controlled with the cvar `studio_fastpath_min_polys`.
 
 The renderer can be enabled with `studio_fastpath 1` if the system supports it. To see information about the renderer's state, use `studio_info`. If you notice any issues with the renderer (models not looking as they should, performance issues, etc.) let me know by opening an issue.
 

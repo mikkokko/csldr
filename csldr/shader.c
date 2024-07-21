@@ -18,17 +18,42 @@ const char *ShaderType(GLenum type)
 
 static GLuint CompileShader(const char *name, const char *defines, int defines_length, const char *base_source, int base_length, GLenum type)
 {
-	char source_buffer[MAX_SHADER_SOURCE];
+	const char *type_string;
 
-	if (defines_length + base_length > MAX_SHADER_SOURCE)
+	switch (type)
+	{
+	case GL_VERTEX_SHADER:
+		type_string = "#define VERTEX_SHADER\n";
+		break;
+
+	case GL_FRAGMENT_SHADER:
+		type_string = "#define FRAGMENT_SHADER\n";
+		break;
+
+	default:
+		assert(false);
+		type_string = "";
+		break;
+	}
+
+	int type_length = strlen(type_string);
+
+	if (defines_length + base_length + type_length > MAX_SHADER_SOURCE)
 		Plat_Error("Compiling %s %s shader failed: source is too long\n", name, ShaderType(type));
 
-	memcpy(source_buffer, defines, defines_length);
-	memcpy(source_buffer + defines_length, base_source, base_length);
+	int length = 0;
+	char source_buffer[MAX_SHADER_SOURCE];
+
+	memcpy(&source_buffer[length], defines, defines_length);
+	length += defines_length;
+
+	memcpy(&source_buffer[length], type_string, type_length);
+	length += type_length;
+
+	memcpy(&source_buffer[length], base_source, base_length);
+	length += base_length;
 
 	const char *source = source_buffer;
-	int length = defines_length + base_length;
-
 	GLuint shader = glCreateShader(type);
 	glShaderSource(shader, 1, &source, &length);
 	glCompileShader(shader);
@@ -73,13 +98,10 @@ static char *LoadFromDisk(const char *name, int *psize)
 
 GLuint CreateShaderProgram(const char *name,
 #ifdef SHADER_DIR
-	char *vertex_name,
-	char *fragment_name,
+	char *path,
 #else
-	const char *vertex_source,
-	int vertex_length,
-	const char *fragment_source,
-	int fragment_length,
+	const char *source,
+	int source_length,
 #endif
 	const char *defines,
 	int defines_length,
@@ -92,21 +114,14 @@ GLuint CreateShaderProgram(const char *name,
 	int i;
 
 #ifdef SHADER_DIR
-	int vertex_length;
-	char *vertex_source = LoadFromDisk(vertex_name, &vertex_length);
-	GLuint vertex_shader = CompileShader(name, defines, defines_length, vertex_source, vertex_length, GL_VERTEX_SHADER);
-	Mem_TempFree(vertex_source);
+	int source_length;
+	char *source = LoadFromDisk(path, &source_length);
+	GLuint vertex_shader = CompileShader(name, defines, defines_length, source, source_length, GL_VERTEX_SHADER);
+	GLuint fragment_shader = CompileShader(name, defines, defines_length, source, source_length, GL_FRAGMENT_SHADER);
+	Mem_TempFree(source);
 #else
-	GLuint vertex_shader = CompileShader(name, defines, defines_length, vertex_source, vertex_length, GL_VERTEX_SHADER);
-#endif
-
-#ifdef SHADER_DIR
-	int fragment_length;
-	char *fragment_source = LoadFromDisk(fragment_name, &fragment_length);
-	GLuint fragment_shader = CompileShader(name, defines, defines_length, fragment_source, fragment_length, GL_FRAGMENT_SHADER);
-	Mem_TempFree(fragment_source);
-#else
-	GLuint fragment_shader = CompileShader(name, defines, defines_length, fragment_source, fragment_length, GL_FRAGMENT_SHADER);
+	GLuint vertex_shader = CompileShader(name, defines, defines_length, source, source_length, GL_VERTEX_SHADER);
+	GLuint fragment_shader = CompileShader(name, defines, defines_length, source, source_length, GL_FRAGMENT_SHADER);
 #endif
 
 	GLuint program = glCreateProgram();

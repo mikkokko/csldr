@@ -12,13 +12,10 @@ typedef struct
 
 GLuint CreateShaderProgram(const char *name,
 #ifdef SHADER_DIR
-	char *vertex_name,
-	char *fragment_name,
+	char *path,
 #else
-	const char *vertex_source,
-	int vertex_length,
-	const char *fragment_source,
-	int fragment_length,
+	const char *source,
+	int source_length,
 #endif
 	const char *defines,
 	int defines_length,
@@ -31,8 +28,7 @@ GLuint CreateShaderProgram(const char *name,
 #ifdef SHADER_DIR
 #define LOAD_SHADER(obj, name, defs, defs_len, atr, un)	\
 obj->program = CreateShaderProgram(#name,				\
-	#name ".vert",										\
-	#name ".frag",										\
+	#name ".glsl",										\
 	defs,												\
 	defs_len,											\
 	atr,												\
@@ -43,10 +39,8 @@ obj->program = CreateShaderProgram(#name,				\
 #else
 #define LOAD_SHADER(obj, name, defs, defs_len, atr, un) \
 obj->program = CreateShaderProgram(#name,				\
-	(char *)name##_vert,								\
-	(int)name##_vert_len,								\
-	(char *)name##_frag,								\
-	(int)name##_frag_len,								\
+	(char *)name##_glsl,								\
+	(int)name##_glsl_len,								\
 	defs,												\
 	defs_len,											\
 	atr,												\

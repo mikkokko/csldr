@@ -1,20 +1,25 @@
+// non boolean shader options (needs to match the shader)
+#define FOG_MODE_NONE 0
+#define FOG_MODE_LINEAR 1
+#define FOG_MODE_EXP2 2
+
+#define LIGHTING_MODE_DEFAULT 0
+#define LIGHTING_MODE_ADDITIVE 1
+#define LIGHTING_MODE_GLOWSHELL 2
+#define LIGHTING_MODE_ELIGHTS 3
+
 // shader permutation flags, roughly in order of frequency
-enum
+typedef struct
 {
-	CAN_MASKED = (1 << 0),
-	CAN_CHROME = (1 << 1),
+	unsigned CAN_MASKED;
+	unsigned CAN_CHROME;
 
-	HAVE_ELIGHTS = (1 << 2),
-	HAVE_ADDITIVE = (1 << 3),
-	HAVE_GLOWSHELL = (1 << 4),
-	HAVE_FOG = (1 << 5),
-	HAVE_FOG_LINEAR = (1 << 6),
+	unsigned LIGHTING_MODE;
+	unsigned FOG_MODE;
 
-	CAN_FLATSHADE = (1 << 7), // who the fuck uses these
-	CAN_FULLBRIGHT = (1 << 8), // an "extension" so not too common probably
-
-	NUM_OPTIONS = (1 << 9)
-};
+	unsigned CAN_FLATSHADE; // who the fuck uses these
+	unsigned CAN_FULLBRIGHT; // an "extension" so not too common probably
+} studio_options_t;
 
 // vertex attributes
 enum
@@ -22,8 +27,6 @@ enum
 	shader_studio_a_pos = 0,
 	shader_studio_a_normal = 1,
 	shader_studio_a_texcoord = 2,
-
-	// only for gpu skinning
 	shader_studio_a_bones = 3
 };
 
@@ -31,7 +34,9 @@ typedef struct studio_shader_s
 {
 	GLuint program;
 
-	GLint u_colormix;
+	GLint u_bones; // used if ubos are not avaialble
+
+	GLint u_color;
 
 	GLint u_chromeorg;
 	GLint u_chromeright;
@@ -45,18 +50,19 @@ typedef struct studio_shader_s
 	GLint u_invgamma;
 	GLint u_g3;
 
+	GLint u_elight_pos;
+	GLint u_elight_color;
+
 	GLint u_texture;
 
 	GLint u_tex_flatshade;
 	GLint u_tex_chrome;
 	GLint u_tex_fullbright;
 	GLint u_tex_masked;
-
-	GLint u_elight_pos;
-	GLint u_elight_color;
 } studio_shader_t;
 
-studio_shader_t *R_StudioSelectShader(int options);
+studio_shader_t *R_StudioSelectShader(const studio_options_t *options);
 
-// compiles as many shader combos as it can in 0.5 seconds
+// compiles half of all shader permutations
+// called once on startup and once on level load
 void R_StudioCompileShaders(void);

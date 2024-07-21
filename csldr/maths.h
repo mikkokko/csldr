@@ -76,6 +76,13 @@ inline static void VectorNegate(vec3_t v)
 	v[2] = -v[2];
 }
 
+inline static void VectorAdd(const vec3_t a, const vec3_t b, vec3_t dst)
+{
+	dst[0] = a[0] + b[0];
+	dst[1] = a[1] + b[1];
+	dst[2] = a[2] + b[2];
+}
+
 inline static void VectorSubtract(const vec3_t a, const vec3_t b, vec3_t dst)
 {
 	dst[0] = a[0] - b[0];

@@ -2,53 +2,43 @@
 
 #define MAX_IMAGES 2048
 
-typedef struct
+typedef struct image_s
 {
-	uint32 hash; // crap
+	struct image_s *children[4];
+
 	char *path;
 	bool gamma;
 	GLuint texture;
 	unsigned int flush_count;
 } image_t;
 
-static int num_images;
-static image_t images[MAX_IMAGES];
+static int image_count;
+static image_t images_array[MAX_IMAGES];
+static image_t *images_head;
 
-// FNV-1a hash (mikkotodo studio_cache dupe)
-#define FNV_OFFSET_BASIS32 0x811c9dc5
-#define FNV_PRIME32 0x01000193
-
-static uint32 HashString(const char *s)
+static image_t *FindImage(const char *path)
 {
-	uint32 hash = FNV_OFFSET_BASIS32;
+	image_t **p = &images_head;
 
-	for (; *s; s++)
+	for (uint32 h = HashString(path); *p; h <<= 2)
 	{
-		hash ^= *s;
-		hash *= FNV_PRIME32;
+		if (!strcmp((*p)->path, path))
+			return *p;
+
+		p = &(*p)->children[h >> 30];
 	}
 
-	return hash;
-}
+	if (image_count >= MAX_IMAGES)
+		Plat_Error("Studio model texture cache full\n");
 
-static image_t *FindImage(uint32 hash)
-{
-	for (int i = 0; i < num_images; i++)
-	{
-		image_t *image = &images[i];
-		if (image->hash == hash)
-			return image;
-	}
-
-	return NULL;
+	*p = &images_array[image_count++];
+	return *p;
 }
 
 static GLuint LoadFromFile(char *path, bool gamma, bool flush)
 {
-	uint32 hash = HashString(path);
-
-	image_t *image = FindImage(hash);
-	if (image)
+	image_t *image = FindImage(path);
+	if (image->texture)
 	{
 		if (!flush || (image->flush_count == flush_count))
 			return image->texture;
@@ -83,13 +73,8 @@ static GLuint LoadFromFile(char *path, bool gamma, bool flush)
 		}
 	}
 
-	if (!image)
+	if (!image->texture)
 	{
-		if (num_images >= MAX_IMAGES)
-			Plat_Error("Studio model texture cache full\n");
-
-		image = &images[num_images++];
-		image->hash = hash;
 		image->path = Mem_Strdup(path);
 		image->gamma = gamma;
 		glGenTextures(1, &image->texture);

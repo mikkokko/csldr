@@ -97,9 +97,6 @@ static void V_CalcBob_CSGO(ref_params_t *pparams)
 	float bobScale;
 	float cycle;
 
-	if ((!pparams->frametime))
-		return;
-
 	speed = VectorLength2D(pparams->simvel);
 
 	maxSpeedDelta = MAX(0, (pparams->time - g_bobVars.lastBobTime) * 620);

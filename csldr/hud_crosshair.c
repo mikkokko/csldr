@@ -1,11 +1,8 @@
 #include "pch.h"
 
-/* mikkotodo: other flags can hide the crosshair as well, however
-the way those work is more complicated than just checking the flag
-before drawing the crosshair */
+#define HIDEHUD_WEAPONS (1 << 0)
+#define HIDEHUD_ALL (1 << 2)
 #define HIDEHUD_CROSSHAIR (1 << 6)
-
-static bool can_xhair;
 
 static cvar_t *xhair_enable;
 
@@ -23,6 +20,7 @@ static cvar_t *xhair_color_r;
 static cvar_t *xhair_color_g;
 static cvar_t *xhair_color_b;
 static cvar_t *xhair_alpha;
+static cvar_t *xhair_additive;
 
 static cvar_t *cl_crosshair_color;
 static cvar_t *cl_crosshair_translucent;
@@ -42,12 +40,15 @@ int (*Og_MsgFunc_CurWeapon)(const char *pszName, int iSize, void *pbuf);
 int Hk_MsgFunc_CurWeapon(const char *pszName, int iSize, void *pbuf)
 {
 	int state = ((byte *)pbuf)[0];
-	int weaponId = ((char *)pbuf)[1];
+	int weaponId = ((signed char *)pbuf)[1];
 
-	if (weaponId < 1)
-		currentWeaponId = 0;
-	else if (state)
-		currentWeaponId = weaponId;
+	if (state)
+	{
+		if (weaponId > 0)
+			currentWeaponId = weaponId;
+		else
+			currentWeaponId = 0;
+	}
 
 	return Og_MsgFunc_CurWeapon(pszName, iSize, pbuf);
 }
@@ -78,16 +79,11 @@ void HudInit(void)
 	CVAR_ARCHIVE_FAST(xhair_color_g, 1);
 	CVAR_ARCHIVE_FAST(xhair_color_b, 0);
 	CVAR_ARCHIVE_FAST(xhair_alpha, 1);
+	CVAR_ARCHIVE_FAST(xhair_additive, 0);
 
-	/* string spoof */
 	cl_crosshair_color = gEngfuncs.pfnGetCvarPointer("cl_crosshair_color");
-
-	/* value spoof */
 	cl_crosshair_translucent = gEngfuncs.pfnGetCvarPointer("cl_crosshair_translucent");
-
 	hud_draw = gEngfuncs.pfnGetCvarPointer("hud_draw");
-
-	can_xhair = (cl_crosshair_color && cl_crosshair_translucent);
 }
 
 /* mikkotodo clean all of this up some day */
@@ -176,9 +172,9 @@ enum
 	ACCURACY_VERY_INACCURATE = (1 << 4)
 };
 
-static int GetWeaponAccuracyFlags(int iWeaponID)
+static int GetWeaponAccuracyFlags(int weaponId)
 {
-	switch (iWeaponID)
+	switch (weaponId)
 	{
 	case WEAPON_P228:
 	case WEAPON_FIVESEVEN:
@@ -217,14 +213,14 @@ static int GetWeaponAccuracyFlags(int iWeaponID)
 
 #define MAX_XHAIR_GAP 15
 
-float GetCrosshairGap(void)
+float GetCrosshairGap(int weaponId)
 {
 	static float xhairGap;
 	static int lastShotsFired;
 	static float xhairPrevTime;
 	float minGap, deltaGap;
 
-	switch (currentWeaponId)
+	switch (weaponId)
 	{
 	case WEAPON_P228:
 	case WEAPON_HEGRENADE:
@@ -307,7 +303,7 @@ float GetCrosshairGap(void)
 	float baseMinGap = minGap;
 	float absMinGap = baseMinGap * 0.5f;
 
-	int flags = GetWeaponAccuracyFlags(currentWeaponId);
+	int flags = GetWeaponAccuracyFlags(weaponId);
 	if (xhair_dynamic_move->value && flags)
 	{
 		if (!(xhairPlayerFlags & FL_ONGROUND) && (flags & ACCURACY_JUMP))
@@ -322,7 +318,7 @@ float GetCrosshairGap(void)
 		{
 			float runLimit;
 
-			switch (currentWeaponId)
+			switch (weaponId)
 			{
 			case WEAPON_AUG:
 			case WEAPON_GALIL:
@@ -362,7 +358,7 @@ float GetCrosshairGap(void)
 		// client restart
 		xhairPrevTime = clientTime;
 	}
-	
+
 	float deltaTime = clientTime - xhairPrevTime;
 	xhairPrevTime = clientTime;
 
@@ -387,7 +383,7 @@ float GetCrosshairGap(void)
 	return xhairGap + xhair_gap->value;
 }
 
-static void DrawCrosshair(void)
+static void DrawCrosshair(int weaponId)
 {
 	int center_x, center_y;
 	int gap, length, thickness;
@@ -395,18 +391,11 @@ static void DrawCrosshair(void)
 	wrect_t inner;
 	wrect_t outer;
 
-	/* dumb */
-	if (!currentWeaponId || (currentWeaponId == WEAPON_SCOUT) ||
-		(currentWeaponId == WEAPON_AWP) ||
-		(currentWeaponId == WEAPON_G3SG1) ||
-		(currentWeaponId == WEAPON_SG550))
-		return;
-
-	/* calculate coordinates */
+	/* calculate the coordinates */
 	center_x = screenWidth / 2;
 	center_y = screenHeight / 2;
 
-	gap = ScaleForRes(GetCrosshairGap(), screenHeight);
+	gap = ScaleForRes(GetCrosshairGap(weaponId), screenHeight);
 	length = ScaleForRes(xhair_size->value, screenHeight);
 	thickness = ScaleForRes(xhair_thick->value, screenHeight);
 	thickness = MAX(1, thickness);
@@ -428,17 +417,24 @@ static void DrawCrosshair(void)
 
 	glDisable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	
+	if (xhair_additive->value)
+		glBlendFunc(GL_ONE, GL_ONE);
+	else
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	if (xhair_dot->value)
 		DrawCrosshairSection(x0, y0, x1, y1);
-	
+
 	if (!xhair_t->value)
 		DrawCrosshairSection(x0, outer.top, x1, inner.top);
-	
+
 	DrawCrosshairSection(x0, inner.bottom, x1, outer.bottom);
 	DrawCrosshairSection(outer.left, y0, inner.left, y1);
 	DrawCrosshairSection(inner.right, y0, outer.right, y1);
+
+	if (xhair_additive->value)
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	/* draw padding if wanted */
 	if (xhair_pad->value)
@@ -463,22 +459,76 @@ static void DrawCrosshair(void)
 	glEnable(GL_TEXTURE_2D);
 }
 
+static bool ShouldDrawCustomCrosshair(int intermission, int *weaponId)
+{
+	if (!canOpenGL)
+		return false; /* we use opengl to draw the crosshair */
+
+	if (!cl_crosshair_color || !cl_crosshair_translucent)
+		return false; /* we spoof these to hide the original crosshair */
+
+	if (!xhair_enable->value)
+		return false; /* disabled by the user */
+
+	if (hud_draw && !hud_draw->value)
+		return false; /* not drawing the hud */
+
+	if (gEngfuncs.IsSpectateOnly())
+	{
+		if (user1 != 4)
+			return false;
+
+		/* not really correct... */
+		if (fovValueOriginal <= 44)
+			return false;
+
+		/* zero the weapon id to match 1.6's behaviour */
+		*weaponId = 0;
+
+		/* i guess */
+		return true;
+	}
+
+	if (intermission)
+		return false;
+
+	if (user1 != 4 && (hideHudFlags & (HIDEHUD_WEAPONS | HIDEHUD_ALL)))
+		return false; /* not drawing the ammo hud */
+
+	if (hideHudFlags & HIDEHUD_CROSSHAIR)
+		return false; /* not drawing the crosshair */
+
+	/* 1.6 checks the fov so we do so too... */
+	if (fovValueOriginal <= 54)
+		return false;
+
+	/* snipers have no crosshairs */
+	switch (*weaponId)
+	{
+	case WEAPON_SCOUT:
+	case WEAPON_SG550:
+	case WEAPON_AWP:
+	case WEAPON_G3SG1:
+		return false;
+	default:
+		break;
+	}
+
+	/* i guess */
+	return true;
+}
+
 int Hk_HudRedraw(float time, int intermission)
 {
 	char *color_str;
 	float old_trans;
 	char old_color[2];
+	int weaponId = currentWeaponId;
 
-	if (!canOpenGL
-		|| !can_xhair
-		|| !xhair_enable->value
-		|| (hud_draw && !hud_draw->value)
-		|| (hideHudFlags & HIDEHUD_CROSSHAIR))
-	{
+	if (!ShouldDrawCustomCrosshair(intermission, &weaponId))
 		return cl_funcs.pHudRedrawFunc(time, intermission);
-	}
 
-	/*  stupid hack, the memory is always writable though */
+	/* stupid hack, the memory is always writable though */
 	color_str = (char *)cl_crosshair_color->string;
 
 	/* back up the original values */
@@ -488,8 +538,8 @@ int Hk_HudRedraw(float time, int intermission)
 
 	/* spoof the values so the crosshair will be invisible */
 	cl_crosshair_translucent->value = 1;
-	color_str[0] = '0'; /* the 0 as ascii character */
-	color_str[1] = '\0'; /* the 0 as null terminator */
+	color_str[0] = '0'; /* 0 as ascii character */
+	color_str[1] = '\0'; /* 0 as null terminator */
 
 	cl_funcs.pHudRedrawFunc(time, intermission);
 
@@ -499,7 +549,7 @@ int Hk_HudRedraw(float time, int intermission)
 	color_str[1] = old_color[1];
 
 	/* draw our own crosshair */
-	DrawCrosshair();
+	DrawCrosshair(weaponId);
 
 	return 1;
 }

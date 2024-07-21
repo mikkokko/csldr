@@ -12,8 +12,12 @@ if (MSVC)
 		add_compile_options(/arch:SSE2 /fp:fast)
 	endif()
 else()
-	add_compile_options(-m32 -Wall -Wextra)
-	add_link_options(-m32)
+	if (NOT NO_FORCE_32BIT)
+		add_compile_options(-m32)
+		add_link_options(-m32)
+	endif()
+
+	add_compile_options(-Wall -Wextra)
 
 	if (NOT DEBUG_BUILD)
 		add_compile_options(-Ofast -msse -msse2 -mfpmath=sse)
@@ -59,6 +63,10 @@ endif()
 
 set_target_properties(csldr PROPERTIES OUTPUT_NAME "client")
 set_target_properties(csldr PROPERTIES PREFIX "")
+
+if (APPLE)
+	target_link_options(csldr PRIVATE -framework CoreFoundation)
+endif()
 
 if (OUTDIR)
 	add_custom_command(TARGET csldr POST_BUILD

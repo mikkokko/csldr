@@ -2,7 +2,7 @@
 
 #define MEM_ALIGN (8 - 1)
 
-#define BLOCK_SIZE (128 << 20)
+#define BLOCK_SIZE (32 << 20)
 #define TEMP_SIZE (32 << 20)
 
 static byte *mem_block;
@@ -65,6 +65,7 @@ void *Mem_TempAlloc(size_t size)
 	void *ptr = &temp_block[temp_used];
 	temp_used += size;
 	temp_count++;
+
 	return ptr;
 }
 

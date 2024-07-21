@@ -12,31 +12,37 @@ static void *clientOrig;
 		return; \
 	}
 
+#define ORIG_SUFFIX "_orig"
+#define ORIG_SUFFIX_LEN 5
+
 void ProxyInit(void)
 {
-	char *dot;
-	char name[512];
-
-	if (!Plat_CurrentModuleName(name, sizeof(name))
-		|| !(dot = strrchr(name, '.')))
+	char path[512];
+	size_t length = Plat_CurrentModuleName(path, sizeof(path));
+	if (!length)
 	{
 		Plat_Error("Could not get current module name\n");
 		return;
 	}
 
-	const char *ext = "_orig" LIB_EXT;
-	size_t ext_length = strlen(ext);
-
-	if ((dot - name) + ext_length >= sizeof(name))
+	/* need to be able to fit the suffix in there */
+	if (length + ORIG_SUFFIX_LEN >= sizeof(path))
 		Plat_Error("Game path is too long\n");
 
-	memcpy(dot, ext, ext_length + 1);
+	char *end = path + length;
+	char *ext = strrchr(path, '.'); /* no memrchr on msvc.. */
+	if (!ext)
+		ext = end; // no extension?
 
-	if (Secret_LoadClient(name))
+	size_t ext_length = end - ext;
+	memmove(ext + ORIG_SUFFIX_LEN, ext, ext_length + 1); /* including the nul terminator */
+	memcpy(ext, ORIG_SUFFIX, ORIG_SUFFIX_LEN);
+
+	if (Secret_LoadClient(path))
 		return;
 
 	/* if this fails, it prints out why and terminates the process */
-	clientOrig = Plat_CheckedDlopen(name);
+	clientOrig = Plat_CheckedDlopen(path);
 
 	CLIENT_DLSYM_VALIDATE(pCreateInterface, "CreateInterface")
 

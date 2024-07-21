@@ -5,49 +5,29 @@
 
 #define MAX_CACHED 4096
 
-static studio_cache_t studio_cache[MAX_CACHED];
-static int num_cache;
+static int cache_count;
+static studio_cache_t cache_array[MAX_CACHED];
+static studio_cache_t *cache_head;
 
 unsigned int flush_count;
-
-// FNV-1a hash
-#define FNV_OFFSET_BASIS32 0x811c9dc5
-#define FNV_PRIME32 0x01000193
-
-static uint32 HashData(const void *data, int size)
-{
-	uint32 hash = FNV_OFFSET_BASIS32;
-
-	for (int i = 0; i < size; i++)
-	{
-		hash ^= ((const unsigned char *)data)[i];
-		hash *= FNV_PRIME32;
-	}
-
-	return hash;
-}
 
 typedef struct
 {
 	unsigned num_verts;
+	studio_vert_t *verts;
 	unsigned num_indices;
 	GLuint *indices;
-} base_build_buffer_t;
+} build_buffer_t;
 
-typedef struct
-{
-	base_build_buffer_t base;
-	studio_cpu_vert_t *verts;
-	studio_vertbone_t *vertbones;
-} cpu_build_buffer_t;
-
-typedef struct
-{
-	base_build_buffer_t base;
-	studio_gpu_vert_t *verts;
-} gpu_build_buffer_t;
-
-static void ParseTricmds(base_build_buffer_t *build, short *tricmds, vec3_t *vertices, vec3_t *normals, byte *vertinfo, byte *norminfo, float s, float t)
+static void ParseTricmds(build_buffer_t *build,
+	short *tricmds,
+	vec3_t *vertices,
+	vec3_t *normals,
+	byte *vertinfo,
+	byte *norminfo,
+	float s,
+	float t,
+	byte *is_rigged_bone)
 {
 	while (1)
 	{
@@ -62,59 +42,33 @@ static void ParseTricmds(base_build_buffer_t *build, short *tricmds, vec3_t *ver
 			trifan = true;
 			value = -value;
 		}
-		
+
 		unsigned count = (unsigned)value;
 
 		unsigned offset = build->num_verts;
 		build->num_verts += count;
 
-		if (studio_gpuskin)
+		studio_vert_t *vert = &build->verts[offset];
+
+		for (unsigned l = 0; l < count; l++)
 		{
-			gpu_build_buffer_t *gpu_build = (gpu_build_buffer_t *)build;
-			studio_gpu_vert_t *vert = &gpu_build->verts[offset];
-
-			for (unsigned l = 0; l < count; l++)
+			for (unsigned m = 0; m < 3; m++)
 			{
-				for (unsigned m = 0; m < 3; m++)
-				{
-					vert->pos[m] = vertices[tricmds[0]][m];
-					vert->norm[m] = normals[tricmds[1]][m];
-				}
-
-				vert->texcoord[0] = s * tricmds[2];
-				vert->texcoord[1] = t * tricmds[3];
-
-				vert->bones[0] = vertinfo[tricmds[0]];
-				vert->bones[1] = norminfo[tricmds[1]];
-
-				tricmds += 4;
-				vert++;
+				vert->pos[m] = vertices[tricmds[0]][m];
+				vert->norm[m] = normals[tricmds[1]][m];
 			}
-		}
-		else
-		{
-			cpu_build_buffer_t *cpu_build = (cpu_build_buffer_t *)build;
-			studio_cpu_vert_t *vert = &cpu_build->verts[offset];
-			studio_vertbone_t *vertbone = &cpu_build->vertbones[offset];
 
-			for (unsigned l = 0; l < count; l++)
-			{
-				for (unsigned m = 0; m < 3; m++)
-				{
-					vert->pos[m] = vertices[tricmds[0]][m];
-					vert->norm[m] = normals[tricmds[1]][m];
-				}
+			vert->texcoord[0] = s * tricmds[2];
+			vert->texcoord[1] = t * tricmds[3];
 
-				vert->texcoord[0] = s * tricmds[2];
-				vert->texcoord[1] = t * tricmds[3];
+			vert->bones[0] = vertinfo[tricmds[0]];
+			vert->bones[1] = norminfo[tricmds[1]];
 
-				vertbone->bones[0] = vertinfo[tricmds[0]];
-				vertbone->bones[1] = norminfo[tricmds[1]];
+			is_rigged_bone[vertinfo[tricmds[0]]] = true;
+			is_rigged_bone[norminfo[tricmds[1]]] = true;
 
-				tricmds += 4;
-				vert++;
-				vertbone++;
-			}
+			tricmds += 4;
+			vert++;
 		}
 
 		if (trifan)
@@ -168,9 +122,10 @@ static int CountVertsTricmds(short *tricmds)
 	return result;
 }
 
-static int CountVerts(studiohdr_t *header)
+static int CountVerts(studiohdr_t *header, int *pmax_drawn_polys)
 {
-	int result = 0;
+	int total_verts = 0;
+	int max_drawn_polys = 0;
 
 	mstudiobodyparts_t *bodyparts = (mstudiobodyparts_t *)((byte *)header + header->bodypartindex);
 
@@ -179,50 +134,42 @@ static int CountVerts(studiohdr_t *header)
 		mstudiobodyparts_t *bodypart = &bodyparts[i];
 		mstudiomodel_t *models = (mstudiomodel_t *)((byte *)header + bodypart->modelindex);
 
+		int max_bodypart_polys = 0;
+
 		for (int j = 0; j < bodypart->nummodels; j++)
 		{
 			mstudiomodel_t *submodel = &models[j];
 			mstudiomesh_t *meshes = (mstudiomesh_t *)((byte *)header + submodel->meshindex);
-	
+
+			int submodel_polys = 0;
+
 			for (int k = 0; k < submodel->nummesh; k++)
 			{
 				mstudiomesh_t *mesh = &meshes[k];
 				short *tricmds = (short *)((byte *)header + mesh->triindex);
-				result += CountVertsTricmds(tricmds);
+				total_verts += CountVertsTricmds(tricmds);
+				submodel_polys += mesh->numtris;
 			}
+
+			max_bodypart_polys = MAX(max_bodypart_polys, submodel_polys);
 		}
+
+		max_drawn_polys += max_bodypart_polys;
 	}
 
-	return result;
+	*pmax_drawn_polys = max_drawn_polys;
+	return total_verts;
 }
 
 static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *header)
 {
-	union
-	{
-		cpu_build_buffer_t cpu;
-		gpu_build_buffer_t gpu;
-	} build_buffer;
+	int total_verts = CountVerts(header, &cache->max_drawn_polys);
 
-	memset(&build_buffer, 0, sizeof(build_buffer));
-
-	base_build_buffer_t *build = (base_build_buffer_t *)&build_buffer;
-
-	int total_verts = CountVerts(header);
-
-	build->indices = (GLuint *)Mem_TempAlloc(sizeof(*build->indices) * total_verts * 3);
-
-	if (studio_gpuskin)
-	{
-		gpu_build_buffer_t *gpu_build = (gpu_build_buffer_t *)build;
-		gpu_build->verts = (studio_gpu_vert_t *)Mem_TempAlloc(sizeof(*gpu_build->verts) * total_verts);
-	}
-	else
-	{
-		cpu_build_buffer_t *cpu_build = (cpu_build_buffer_t *)build;
-		cpu_build->verts = (studio_cpu_vert_t *)Mem_TempAlloc(sizeof(*cpu_build->verts) * total_verts);
-		cpu_build->vertbones = (studio_vertbone_t *)Mem_TempAlloc(sizeof(*cpu_build->vertbones) * total_verts);
-	}
+	build_buffer_t build;
+	build.num_verts = 0;
+	build.verts = (studio_vert_t *)Mem_TempAlloc(sizeof(*build.verts) * total_verts);
+	build.num_indices = 0;
+	build.indices = (GLuint *)Mem_TempAlloc(sizeof(*build.indices) * total_verts * 3);
 
 	mstudiobodyparts_t *bodyparts = (mstudiobodyparts_t *)((byte *)header + header->bodypartindex);
 
@@ -231,6 +178,9 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 	mstudiotexture_t *textures = (mstudiotexture_t *)((byte *)textureheader + textureheader->textureindex);
 
 	cache->bodyparts = (mem_bodypart_t *)Mem_Alloc(sizeof(*cache->bodyparts) * header->numbodyparts);
+
+	byte is_rigged_bone[128]; // keep track of bones that are used for skinning
+	memset(is_rigged_bone, 0, sizeof(is_rigged_bone));
 
 	for (int i = 0; i < header->numbodyparts; i++)
 	{
@@ -254,9 +204,6 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 			mem_model_t *mem_model = &mem_bodypart->models[j];
 			mem_model->meshes = (mem_mesh_t *)Mem_Alloc(sizeof(*mem_model->meshes) * submodel->nummesh);
 
-			// only for cpu skinning
-			unsigned vert_offset_model = build->num_verts;
-
 			for (int k = 0; k < submodel->nummesh; k++)
 			{
 				mstudiomesh_t *mesh = &meshes[k];
@@ -266,78 +213,64 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 				float s = 1.0f / (float)texture->width;
 				float t = 1.0f / (float)texture->height;
 
-				unsigned index_offset = build->num_indices;
-				
-				// only for cpu skinning
-				unsigned vert_offset_mesh = build->num_verts;
+				unsigned index_offset = build.num_indices;
 
-				// save texture flags for shader selection
-				cache->texflags |= texture->flags;
-
-				ParseTricmds(build, tricmds, vertices, normals, vertinfo, norminfo, s, t);
+				ParseTricmds(&build, tricmds, vertices, normals, vertinfo, norminfo, s, t, is_rigged_bone);
 
 				mem_mesh_t *mem_mesh = &mem_model->meshes[k];
-				mem_mesh->ofs_indices = index_offset * sizeof(*build->indices);
-				mem_mesh->num_indices = build->num_indices - index_offset;
+				mem_mesh->ofs_indices = index_offset * sizeof(*build.indices);
+				mem_mesh->num_indices = build.num_indices - index_offset;
 
-				// only for cpu skinning
-				mem_mesh->ofs_verts = vert_offset_mesh;
-				mem_mesh->num_verts = build->num_verts - vert_offset_mesh;
+				// count how many meshes can be drawn with this texture
+				mem_texture_t *mem_texture = &cache->textures[skins[mesh->skinref]];
+				mem_texture->num_elements++;
 			}
-
-			// only for cpu skinning
-			mem_model->ofs_verts = vert_offset_model;
-			mem_model->num_verts = build->num_verts - vert_offset_model;
 		}
+	}
+
+	// allocate memory for the texture sorted drawing structures
+	for (int i = 0; i < cache->numtextures; i++)
+	{
+		mem_texture_t *texture = &cache->textures[i];
+		texture->counts = Mem_Alloc(sizeof(*texture->counts) * texture->num_elements);
+		texture->offsets = Mem_Alloc(sizeof(*texture->offsets) * texture->num_elements);
+		texture->num_elements = 0;
+	}
+
+	// build bone remap arrays
+	byte bone_remap[128];
+	for (int i = 0; i < header->numbones; i++)
+	{
+		if (is_rigged_bone[i])
+		{
+			bone_remap[i] = cache->num_gpubones;
+			cache->map_gpubones[cache->num_gpubones++] = i;
+		}
+	}
+
+	// remap bone indices to the correct ones
+	for (unsigned i = 0; i < build.num_verts; i++)
+	{
+		studio_vert_t *vert = &build.verts[i];
+		vert->bones[0] = bone_remap[(int)vert->bones[0]];
+		vert->bones[1] = bone_remap[(int)vert->bones[1]];
 	}
 
 	glGenBuffers(1, &cache->studio_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, cache->studio_vbo);
-
-	if (studio_gpuskin)
-	{
-		gpu_build_buffer_t *cpu_build = (gpu_build_buffer_t *)build;
-		glBufferData(GL_ARRAY_BUFFER, build->num_verts * sizeof(studio_gpu_vert_t), cpu_build->verts, GL_STATIC_DRAW);
-	}
-	else
-	{
-		glBufferData(GL_ARRAY_BUFFER, build->num_verts * sizeof(studio_cpu_vert_t), NULL, GL_DYNAMIC_DRAW);
-	}
-
+	glBufferData(GL_ARRAY_BUFFER, build.num_verts * sizeof(studio_vert_t), build.verts, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glGenBuffers(1, &cache->studio_ebo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cache->studio_ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(*build->indices) * build->num_indices, build->indices, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(*build.indices) * build.num_indices, build.indices, GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	if (!studio_gpuskin)
-	{
-		cpu_build_buffer_t *cpu_build = (cpu_build_buffer_t *)build;
-
-		cache->verts = (studio_cpu_vert_t *)Mem_Alloc(sizeof(studio_cpu_vert_t) * build->num_verts);
-		memcpy(cache->verts, cpu_build->verts, sizeof(studio_cpu_vert_t) * build->num_verts);
-
-		cache->vertbones = (studio_vertbone_t *)Mem_Alloc(sizeof(studio_vertbone_t) * build->num_verts);
-		memcpy(cache->vertbones, cpu_build->vertbones, sizeof(studio_vertbone_t) * build->num_verts);
-	}
-
-	if (studio_gpuskin)
-	{
-		gpu_build_buffer_t *gpu_build = (gpu_build_buffer_t *)build;
-		Mem_TempFree(gpu_build->verts);
-	}
-	else
-	{
-		cpu_build_buffer_t *cpu_build = (cpu_build_buffer_t *)build;
-		Mem_TempFree(cpu_build->verts);
-		Mem_TempFree(cpu_build->vertbones);
-	}
-
-	Mem_TempFree(build->indices);
+	Mem_TempFree(build.verts);
+	Mem_TempFree(build.indices);
 }
 
-static void ParseTextures(studio_cache_t *cache, keyValue_t *key, bool flush)
+static void ParseTextures(studio_cache_t *cache, keyValue_t *key, bool flush, const char *config_path)
 {
 	if (!studio_fastpath)
 		return;
@@ -362,7 +295,12 @@ static void ParseTextures(studio_cache_t *cache, keyValue_t *key, bool flush)
 		if (!found)
 		{
 			gEngfuncs.Con_Printf("Texture %s not overriding an existing one in %s, ignoring\n",
-				subkey->name, cache->config_path);
+				subkey->name, config_path);
+		}
+		else
+		{
+			// using custom textures, need to use the custom renderer
+			cache->needs_renderer = true;
 		}
 	}
 }
@@ -417,19 +355,32 @@ static void ClearConfig(studio_cache_t *cache)
 	}
 }
 
+// this is ok for us because we know the buffer sizes
+static void CopyWithoutExtension(char *dst, const char *src)
+{
+	while (*src && *src != '.')
+		*dst++ = *src++;
+	*dst = '\0';
+}
+
 static void ParseConfig(studio_cache_t *cache, bool flush)
 {
 	// clear in case we're reloading
 	ClearConfig(cache);
 
-	char *text = (char *)gEngfuncs.COM_LoadFile(cache->config_path, 5, NULL);
+	char modelname[64];
+	char config_path[128];
+	CopyWithoutExtension(modelname, cache->name); // will fit
+	sprintf(config_path, "%s.txt", modelname); // will fit
+
+	char *text = (char *)gEngfuncs.COM_LoadFile(config_path, 5, NULL);
 	if (!text)
 		return;
 
 	keyValue_t root;
 	if (!KeyValueParse(&root, text))
 	{
-		gEngfuncs.Con_Printf("Could not parse file %s\n", cache->config_path);
+		gEngfuncs.Con_Printf("Could not parse file %s\n", config_path);
 		KeyValueFree(&root);
 		gEngfuncs.COM_FreeFile(text);
 		return;
@@ -441,32 +392,32 @@ static void ParseConfig(studio_cache_t *cache, bool flush)
 
 		if (!strcmp(subkey->name, "textures"))
 		{
-			ParseTextures(cache, subkey, flush);
+			ParseTextures(cache, subkey, flush, config_path);
 		}
 		else if (!strcmp(subkey->name, "mirror_shell"))
 		{
-			cache->config.mirror_shell = ParseBoolean(subkey, cache->config_path);
+			cache->config.mirror_shell = ParseBoolean(subkey, config_path);
 		}
 		else if (!strcmp(subkey->name, "mirror_model"))
 		{
-			cache->config.mirror_model = ParseBoolean(subkey, cache->config_path);
+			cache->config.mirror_model = ParseBoolean(subkey, config_path);
 		}
 		else if (!strcmp(subkey->name, "origin"))
 		{
-			ParseVector(subkey, cache->config_path, cache->config.origin);
+			ParseVector(subkey, config_path, cache->config.origin);
 		}
 		else if (!strcmp(subkey->name, "fov_override"))
 		{
-			cache->config.fov_override = ParseFloat(subkey, cache->config_path);
+			cache->config.fov_override = ParseFloat(subkey, config_path);
 			if (cache->config.fov_override < 1 || cache->config.fov_override > 179)
 			{
-				gEngfuncs.Con_Printf("Value out of range for option %s in %s (min 1, max 179)\n", subkey->name, cache->config_path);
+				gEngfuncs.Con_Printf("Value out of range for option %s in %s (min 1, max 179)\n", subkey->name, config_path);
 				cache->config.fov_override = 0;
 			}
 		}
 		else
 		{
-			gEngfuncs.Con_Printf("Unrecognized option %s in %s\n", subkey->name, cache->config_path);
+			gEngfuncs.Con_Printf("Unrecognized option %s in %s\n", subkey->name, config_path);
 		}
 	}
 
@@ -478,7 +429,7 @@ static void SetupTextures(studio_cache_t *cache, model_t *model, studiohdr_t *he
 {
 	studiohdr_t *textureheader = R_LoadTextures(model, header);
 	mstudiotexture_t *textures = (mstudiotexture_t *)((byte *)textureheader + textureheader->textureindex);
-	
+
 	// we need to store numtextures, texture names and config path in the cache so we
 	// can reload textures even when we don't have access to a model_t or studiohdr_t
 
@@ -486,33 +437,24 @@ static void SetupTextures(studio_cache_t *cache, model_t *model, studiohdr_t *he
 	memset(cache->textures, 0, sizeof(mem_texture_t) * textureheader->numtextures);
 	cache->numtextures = textureheader->numtextures;
 
-	// set texture names
+	// set texture names and check flags
 	for (int i = 0; i < textureheader->numtextures; i++)
 	{
 		mstudiotexture_t *texture = &textures[i];
 		mem_texture_t *mem_texture = &cache->textures[i];
 		strcpy(mem_texture->name, texture->name); // will fit
+
+		if (texture->flags & STUDIO_NF_FULLBRIGHT)
+			cache->needs_renderer = true;
+		else if (texture->flags & STUDIO_NF_CHROME && (texture->width != 64 || texture->height != 64))
+			cache->needs_renderer = true;
 	}
-}
-
-// this is ok for us because we know the buffer sizes
-static void CopyWithoutExtension(char *dst, const char *src)
-{
-	while (*src && *src != '.')
-		*dst++ = *src++;
-	*dst = '\0';
-}
-
-static void SetConfigPath(studio_cache_t *cache, model_t *model)
-{
-	char modelname[64];
-	CopyWithoutExtension(modelname, model->name); // will fit
-	sprintf(cache->config_path, "%s.txt", modelname); // will fit
 }
 
 static void BuildStudioCache(studio_cache_t *cache, model_t *model, studiohdr_t *header)
 {
-	cache->hash = HashData(header, sizeof(*header));
+	strcpy(cache->name, model->name); // will fit
+	cache->header_length = header->length;
 
 	if (studio_fastpath)
 	{
@@ -520,7 +462,6 @@ static void BuildStudioCache(studio_cache_t *cache, model_t *model, studiohdr_t 
 		SetupTextures(cache, model, header);
 	}
 
-	SetConfigPath(cache, model);
 	ParseConfig(cache, false);
 
 	if (studio_fastpath)
@@ -534,42 +475,45 @@ studio_cache_t *GetStudioCache(model_t *model, studiohdr_t *header)
 {
 	// see if the cache pointer is in the header
 	if (header->id == CACHE_ID && header->version == CACHE_VERSION)
-		return &studio_cache[header->length];
+		return &cache_array[header->length];
 
 	// see if this model is cached even
-	uint32 hash = HashData(header, sizeof(*header));
+	uint32 name_hash = HashString(model->name);
 
-	// mikkotodo revisit? slow but probably doesn't matter
-	for (int i = 0; i < num_cache; i++)
+	studio_cache_t **p = &cache_head;
+	for (uint32 h = name_hash; *p; h <<= 2)
 	{
-		if (studio_cache[i].hash == hash)
+		if (!strcmp(model->name, (*p)->name))
 		{
-			// ok, update header
+			// see if the model has changed (flush command)
+			if (header->length != (*p)->header_length)
+			{
+				// this leaks memory but my computer has a lot of it so i don't care
+				memset(*p, 0, sizeof(**p));
+				BuildStudioCache(*p, model, header);
+			}
+
+			// update the header
 			header->id = CACHE_ID;
 			header->version = CACHE_VERSION;
-			header->length = i;
-			return &studio_cache[i];
+			header->length = (int)((*p) - cache_array);
+			return *p;
 		}
+
+		p = &(*p)->children[h >> 30];
 	}
 
-	if (num_cache >= MAX_CACHED)
-	{
+	if (cache_count >= MAX_CACHED)
 		Plat_Error("Studio model cache full");
-		return NULL; // not reached
-	}
 
-	// cache the model
-	int index = num_cache++;
-	studio_cache_t *cache = &studio_cache[index];
+	*p = &cache_array[cache_count++];
+	BuildStudioCache(*p, model, header);
 
-	BuildStudioCache(cache, model, header);
-
-	// update header
+	// update the header
 	header->id = CACHE_ID;
 	header->version = CACHE_VERSION;
-	header->length = index;
-
-	return cache;
+	header->length = (int)((*p) - cache_array);
+	return *p;
 }
 
 studio_cache_t *EntityStudioCache(cl_entity_t *entity)
@@ -588,7 +532,6 @@ studio_cache_t *EntityStudioCache(cl_entity_t *entity)
 	return GetStudioCache(model, studiohdr);
 }
 
-// mikkotodo might be necessary again if we need extremely expensive tangent calc
 void UpdateStudioCaches(void)
 {
 	static model_t *last_world = NULL;
@@ -615,11 +558,14 @@ void UpdateStudioCaches(void)
 		studiohdr_t *header = (studiohdr_t *)IEngineStudio.Mod_Extradata(model);
 		(void)GetStudioCache(model, header);
 	}
+
+	if (studio_fastpath)
+		R_StudioCompileShaders();
 }
 
 void StudioCacheStats(int *count, int *max)
 {
-	*count = num_cache;
+	*count = cache_count;
 	*max = MAX_CACHED;
 }
 
@@ -627,9 +573,9 @@ void StudioConfigFlush_f(void)
 {
 	flush_count++;
 
-	for (int i = 0; i < num_cache; i++)
+	for (int i = 0; i < cache_count; i++)
 	{
-		studio_cache_t *cache = &studio_cache[i];
+		studio_cache_t *cache = &cache_array[i];
 		ParseConfig(cache, true);
 	}
 }

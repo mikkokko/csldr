@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <setjmp.h>
+#include <stddef.h>
 
 /* mikkotodo move */
 #if !defined(__cplusplus)
@@ -70,6 +71,7 @@ typedef enum {false, true} bool;
 #include "gamma.h"
 #include "tga.h"
 #include "d3d.h"
+#include "hash.h"
 
 /* ui stuff */
 #include "hud_crosshair.h"

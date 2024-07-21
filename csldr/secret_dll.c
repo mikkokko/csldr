@@ -2,7 +2,7 @@
 
 /* support for loading encrypted client dlls */
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(_WIN64)
 
 #include <windows.h>
 
@@ -217,7 +217,7 @@ bool Secret_LoadClient(const char *fileName)
 	return Secret_LoadLibrary(fileName, &cl_funcs);
 }
 
-#elif defined(__linux__)
+#else
 
 bool Secret_LoadClient(const char *fileName)
 {

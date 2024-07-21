@@ -2,19 +2,11 @@ typedef struct
 {
 	unsigned ofs_indices;
 	unsigned num_indices;
-
-	// only for cpu skinning
-	unsigned ofs_verts;
-	unsigned num_verts;
 } mem_mesh_t;
 
 typedef struct mem_model_s
 {
 	mem_mesh_t *meshes;
-
-	// only for cpu skinning
-	unsigned ofs_verts;
-	unsigned num_verts;
 } mem_model_t;
 
 typedef struct
@@ -22,31 +14,24 @@ typedef struct
 	mem_model_t *models;
 } mem_bodypart_t;
 
-typedef struct
-{
-	float pos[3];
-	float norm[3];
-	float texcoord[2];
-} studio_cpu_vert_t;
-
+// we could pack the components to halve the size of vertices, right? WRONG!!!! that completely tanks peformance on old ATI APUs
 typedef struct
 {
 	float pos[3];
 	float norm[3];
 	float texcoord[2];
 	float bones[2];
-} studio_gpu_vert_t;
-
-// only for cpu skinning
-typedef struct
-{
-	byte bones[2];
-} studio_vertbone_t;
+} studio_vert_t;
 
 typedef struct
 {
 	char name[64];
 	GLuint diffuse;
+	
+	// renderer structures
+	int num_elements;
+	unsigned *counts;
+	void **offsets;
 } mem_texture_t;
 
 typedef struct
@@ -58,16 +43,22 @@ typedef struct
 } studio_config_t;
 
 typedef struct studio_cache_s
-{
-	uint32 hash;
+{	
+	char name[64]; // name of the model file
+	struct studio_cache_s *children[4];
 
-	// name of the configuration file
-	char config_path[256];
+	// header fields
+	int header_length;
 
 	// configuration
+	bool needs_renderer;
 	studio_config_t config;
 
 	// renderer specfic stuff
+	int max_drawn_polys;
+	int num_gpubones;
+	byte map_gpubones[128];
+
 	mem_texture_t *textures;
 	int numtextures;
 
@@ -75,12 +66,6 @@ typedef struct studio_cache_s
 
 	GLuint studio_vbo;
 	GLuint studio_ebo;
-
-	// only for cpu skinning
-	studio_cpu_vert_t *verts;
-	studio_vertbone_t *vertbones;
-
-	int texflags;
 } studio_cache_t;
 
 extern unsigned int flush_count;
@@ -88,7 +73,6 @@ extern unsigned int flush_count;
 studio_cache_t *GetStudioCache(model_t *model, studiohdr_t *header);
 studio_cache_t *EntityStudioCache(cl_entity_t *entity);
 
-// mikkotodo might be necessary again if we need extremely expensive tangent calc
 void UpdateStudioCaches(void);
 
 void StudioCacheStats(int *count, int *max);

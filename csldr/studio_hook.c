@@ -1,14 +1,22 @@
 #include "pch.h"
 
-bool studio_gpuskin;
+// 3*4*128 for bone matrices and then some
+#define REQUIRED_UNIFORM_COMPONENTS 1600
+
 bool studio_fastpath;
+bool studio_uboable;
+
+static int s_max_vertex_uniform_components;
 
 static studio_context_t context;
 
 static cvar_t *studio_fastpath_toggle;
+static cvar_t *studio_fastpath_min_polys;
 
 static studiohdr_t *s_header;
 static model_t *s_model;
+
+static bool skip_fastpath;
 
 #define FASTPATH_ENABLED (studio_fastpath && studio_fastpath_toggle->value)
 
@@ -55,7 +63,7 @@ static void Hk_StudioEntityLight(alight_t *lighting)
 {
 	if (FASTPATH_ENABLED)
 	{
-		R_StudioEntityLight(&context);
+		// done in Hk_StudioSetupLighting
 	}
 	else
 	{
@@ -77,8 +85,20 @@ static void Hk_StudioSetupLighting(alight_t *lighting)
 		assert(s_model);
 		assert(s_header);
 
-		R_StudioInitContext(&context, IEngineStudio.GetCurrentEntity(), s_model, s_header);
-		R_StudioSetupLighting(&context, lighting);
+		studio_cache_t *cache = GetStudioCache(s_model, s_header);
+		skip_fastpath = (!cache->needs_renderer) && (cache->max_drawn_polys < studio_fastpath_min_polys->value);
+		if (skip_fastpath)
+		{
+			IEngineStudio.StudioSetupLighting(lighting);
+			return;
+		}
+
+		R_StudioInitContext(&context, IEngineStudio.GetCurrentEntity(), s_model, s_header, cache);
+		
+		// moved here because of skip_fastpath
+		R_StudioEntityLight(&context);
+
+		R_StudioSetupLighting(&context, lighting);	
 	}
 	else
 	{
@@ -90,7 +110,7 @@ void Hk_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 {
 	IEngineStudio.StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
 
-	if (FASTPATH_ENABLED)
+	if (FASTPATH_ENABLED && !skip_fastpath)
 	{
 		R_StudioSetupModel(&context, bodypart);
 	}
@@ -98,7 +118,7 @@ void Hk_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 
 static void Hk_StudioDrawPoints(void)
 {
-	if (FASTPATH_ENABLED)
+	if (FASTPATH_ENABLED && !skip_fastpath)
 	{
 		R_StudioDrawPoints(&context);
 	}
@@ -110,7 +130,7 @@ static void Hk_StudioDrawPoints(void)
 
 static void Hk_StudioDrawHulls(void)
 {
-	if (FASTPATH_ENABLED)
+	if (FASTPATH_ENABLED && !skip_fastpath)
 	{
 		// not implemented for fast path
 	}
@@ -122,7 +142,7 @@ static void Hk_StudioDrawHulls(void)
 
 static void Hk_StudioDrawAbsBBox(void)
 {
-	if (FASTPATH_ENABLED)
+	if (FASTPATH_ENABLED && !skip_fastpath)
 	{
 		// not implemented for fast path
 	}
@@ -134,7 +154,7 @@ static void Hk_StudioDrawAbsBBox(void)
 
 static void Hk_StudioDrawBones(void)
 {
-	if (FASTPATH_ENABLED)
+	if (FASTPATH_ENABLED && !skip_fastpath)
 	{
 		// not implemented for fast path
 	}
@@ -147,18 +167,13 @@ static void Hk_StudioDrawBones(void)
 static void Hk_SetupRenderer(int rendermode)
 {
 	IEngineStudio.SetupRenderer(rendermode);
-
-	if (FASTPATH_ENABLED)
-	{
-		R_StudioSetupRenderer(&context);
-	}
 }
 
 static void Hk_RestoreRenderer(void)
 {
-	if (FASTPATH_ENABLED)
+	if (FASTPATH_ENABLED && !skip_fastpath)
 	{
-		R_StudioRestoreRenderer(&context);
+		R_StudioFinish(&context);
 	}
 
 	IEngineStudio.RestoreRenderer();
@@ -168,8 +183,8 @@ static void StudioInfo_f(void)
 {
 	gEngfuncs.Con_Printf("OpenGL version: %s\n", glGetString(GL_VERSION));
 	gEngfuncs.Con_Printf("GL_ARB_uniform_buffer_object: %s\n", GLAD_GL_ARB_uniform_buffer_object ? "available" : "not available");
+	gEngfuncs.Con_Printf("GL_MAX_VERTEX_UNIFORM_COMPONENTS: %d\n", s_max_vertex_uniform_components);
 	gEngfuncs.Con_Printf("Fast path: %s\n", studio_fastpath ? "available" : "not available");
-	gEngfuncs.Con_Printf("GPU skinning: %s\n", studio_gpuskin ? "enabled" : "disabled");
 	
 	int num_models, max_models;
 	StudioCacheStats(&num_models, &max_models);
@@ -203,11 +218,32 @@ void HookEngineStudio(engine_studio_api_t *studio)
 	if (!canOpenGL)
 		return; // won't work
 
-	// see if we can do fast path
-	studio_fastpath = (GLAD_GL_VERSION_2_0) ? true : false;
+	// see if we can do gpu skinning without ubos
+	glad_glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &s_max_vertex_uniform_components);
 
-	// see if we can do gpu skinning
-	studio_gpuskin = (GLAD_GL_VERSION_2_1 && GLAD_GL_ARB_uniform_buffer_object);
+	// see if we can do fast path
+	if (GLAD_GL_VERSION_2_1)
+	{
+		if (GLVersion.major >= 3 && GLVersion.minor >= 2 && GLAD_GL_ARB_uniform_buffer_object)
+		{
+			// opengl 3.2 supports compatibility profiles so we should
+			// be able to use layout(std140) in our otherwise glsl 1.20 shader
+			// see R_StudioSelectShader
+			studio_fastpath = true;
+			studio_uboable = true;
+		}
+		else if (s_max_vertex_uniform_components >= REQUIRED_UNIFORM_COMPONENTS)
+		{
+			studio_fastpath = true;
+			studio_uboable = false;
+		}
+		else if (GLAD_GL_ARB_uniform_buffer_object)
+		{
+			// probably won't work but ok (see R_StudioSelectShader)
+			studio_fastpath = true;
+			studio_uboable = true;
+		}
+	}
 
 	gEngfuncs.pfnAddCommand("studio_info", StudioInfo_f);
 
@@ -231,6 +267,7 @@ void HookEngineStudio(engine_studio_api_t *studio)
 		R_StudioInit();
 
 		studio_fastpath_toggle = gEngfuncs.pfnRegisterVariable("studio_fastpath", "0", FCVAR_ARCHIVE);
+		studio_fastpath_min_polys = gEngfuncs.pfnRegisterVariable("studio_fastpath_min_polys", "100", FCVAR_ARCHIVE);
 
 		gEngfuncs.pfnAddCommand("studio_config_flush", StudioConfigFlush_f);
 	}

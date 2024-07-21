@@ -1,41 +1,35 @@
 #include "pch.h"
 
 #ifndef SHADER_DIR /* xxd'd shaders */
-#include "studio_frag.h"
-#include "studio_vert.h"
+#include "studio_glsl.h"
 #endif
 
 typedef struct
 {
-	int flag;
-	const char *define;
+	int offset;
+	unsigned max;
+	const char *define_fmt;
 } option_info_t;
 
-#define OPTION_INFO(name) { name, "#define " #name "\n" }
+#define OPTION_INFO(type, field, max) { offsetof(type, field), max, "#define " #field " %u\n" }
 
 static const option_info_t option_info[] =
 {
-	OPTION_INFO(CAN_MASKED),
-	OPTION_INFO(CAN_CHROME),
-	OPTION_INFO(CAN_FLATSHADE),
+	OPTION_INFO(studio_options_t, CAN_MASKED, 1),
+	OPTION_INFO(studio_options_t, CAN_CHROME, 1),
 
-	OPTION_INFO(HAVE_ELIGHTS),
-	OPTION_INFO(HAVE_ADDITIVE),
-	OPTION_INFO(HAVE_GLOWSHELL),
-	OPTION_INFO(HAVE_FOG),
-	OPTION_INFO(HAVE_FOG_LINEAR),
+	OPTION_INFO(studio_options_t, LIGHTING_MODE, 3),
+	OPTION_INFO(studio_options_t, FOG_MODE, 2),
 
-	OPTION_INFO(CAN_FULLBRIGHT),
+	OPTION_INFO(studio_options_t, CAN_FLATSHADE, 1),
+	OPTION_INFO(studio_options_t, CAN_FULLBRIGHT, 1),
 };
 
-static const attribute_t studio_attributes_cpu[] =
-{
-	{ shader_studio_a_pos, "a_pos" },
-	{ shader_studio_a_normal, "a_normal" },
-	{ shader_studio_a_texcoord, "a_texcoord" }
-};
+// no constexpr, needs to be manually updated
+// ValidatePermutationCount checks if it's off
+#define NUM_PERMUTATIONS 192
 
-static const attribute_t studio_attributes_gpu[] =
+static const attribute_t studio_attributes[] =
 {
 	{ shader_studio_a_pos, "a_pos" },
 	{ shader_studio_a_normal, "a_normal" },
@@ -47,7 +41,9 @@ static const attribute_t studio_attributes_gpu[] =
 
 static const uniform_t studio_uniforms[] =
 {
-	UNIFORM_DEF(u_colormix),
+	UNIFORM_DEF(u_bones),
+
+	UNIFORM_DEF(u_color),
 
 	UNIFORM_DEF(u_chromeorg),
 	UNIFORM_DEF(u_chromeright),
@@ -58,22 +54,21 @@ static const uniform_t studio_uniforms[] =
 
 	UNIFORM_DEF(u_lightgamma),
 	UNIFORM_DEF(u_brightness),
+	UNIFORM_DEF(u_invgamma),
 	UNIFORM_DEF(u_g3),
 
-	UNIFORM_DEF(u_invgamma),
+	UNIFORM_DEF(u_elight_pos),
+	UNIFORM_DEF(u_elight_color),
 
 	UNIFORM_DEF(u_texture),
 
 	UNIFORM_DEF(u_tex_flatshade),
 	UNIFORM_DEF(u_tex_chrome),
 	UNIFORM_DEF(u_tex_fullbright),
-	UNIFORM_DEF(u_tex_masked),
-
-	UNIFORM_DEF(u_elight_pos),
-	UNIFORM_DEF(u_elight_color)
+	UNIFORM_DEF(u_tex_masked)
 };
 
-static studio_shader_t studio_shaders[NUM_OPTIONS];
+static studio_shader_t studio_shaders[NUM_PERMUTATIONS];
 
 typedef struct
 {
@@ -95,12 +90,8 @@ static bool StringAppend(String *dst, const char *src)
 
 	if (srclen >= dst->cap - dst->len)
 	{
-		// truncation happened, shouldn't happen, if it does no big deal
+		// truncated
 		assert(false);
-
-		memcpy(dst->data + dst->len, src, dst->cap - dst->len - 1);
-		dst->data[dst->cap - 1] = '\0';
-		dst->len = dst->cap - 1;
 		return false;
 	}
 
@@ -109,66 +100,147 @@ static bool StringAppend(String *dst, const char *src)
 	return true;
 }
 
-studio_shader_t *R_StudioSelectShader(int options)
+static bool StringAppendf(String *dst, const char *fmt, ...)
 {
-	studio_shader_t *dest = &studio_shaders[options];
-	if (dest->program)
-		return dest;
+	va_list ap;
+
+	va_start(ap, fmt);
+	int result = vsnprintf(dst->data + dst->len, dst->cap - dst->len, fmt, ap);
+	va_end(ap);
+
+	if (result < 0)
+	{
+		// wtf
+		assert(false);
+		return false;
+	}
+
+	if ((unsigned)result >= dst->cap - dst->len)
+	{
+		// truncated
+		assert(false);
+		return false;
+	}
+
+	// i guess
+	dst->len += result;
+	return true;
+}
+
+#define OPTION_VALUE(option, object) *((unsigned *)((byte *)(object) + (option)->offset))
+
+inline static unsigned OptionValue(const option_info_t *option, const void *object)
+{
+	unsigned value = *((unsigned *)((byte *)object + option->offset));
+	assert(value <= option->max);
+	return value;
+}
+
+#ifndef NDEBUG
+static void ValidatePermutationCount(void)
+{
+	unsigned index = 0;
+	unsigned accum = 1;
+
+	for (size_t i = 0; i < Q_ARRAYSIZE(option_info); i++)
+	{
+		const option_info_t *option = &option_info[i];
+		index += (accum * option->max);
+		accum *= (option->max + 1);
+	}
+
+	assert((index + 1) == NUM_PERMUTATIONS);
+}
+#endif
+
+static unsigned ShaderIndex(const studio_options_t *options)
+{
+	unsigned index = 0;
+	unsigned accum = 1;
+
+	for (size_t i = 0; i < Q_ARRAYSIZE(option_info); i++)
+	{
+		const option_info_t *option = &option_info[i];
+		index += (accum * OptionValue(option, options));
+		accum *= (option->max + 1);
+	}
+
+	assert(index < NUM_PERMUTATIONS);
+	return index;
+}
+
+studio_shader_t *R_StudioSelectShaderIndex(unsigned index)
+{
+	studio_shader_t *shader = &studio_shaders[index];
+	if (shader->program)
+		return shader;
 
 	char buffer[4096];
 	String defines = { buffer, sizeof(buffer), 0 };
 
-	if (studio_gpuskin)
+	if (studio_uboable)
 	{
 		// we can't use glsl 1.20 because most drivers will syntax error
 		// on the std140 ubo. use glsl 1.50 in compat profile if we can,
 		// otherwise use glsl 1.20 and hope that it'll work on this card...
 		if (GLVersion.major >= 3 && GLVersion.minor >= 2)
-			StringAppend(&defines, "#version 150 compatibility\n#define GPU_SKINNING\n");
+			StringAppend(&defines, "#version 150 compatibility\n#define UBO_ABLE 1\n");
 		else
-			StringAppend(&defines, "#version 120\n#define GPU_SKINNING\n");
+			StringAppend(&defines, "#version 120\n#define UBO_ABLE 1\n");
 	}
 	else
-	{
-		StringAppend(&defines, "#version 110\n");
-	}
+		StringAppend(&defines, "#version 120\n");
 
-	for (size_t j = 0; j < Q_ARRAYSIZE(option_info); j++)
+	unsigned j = index;
+
+	for (size_t i = 0; i < Q_ARRAYSIZE(option_info); i++)
 	{
-		if (options & option_info[j].flag)
-			StringAppend(&defines, option_info[j].define);
+		const option_info_t *option = &option_info[i];
+
+		unsigned count = option->max + 1;
+		unsigned value = (j % count);
+		j = (j / count);
+
+		StringAppendf(&defines, option->define_fmt, value);
 	}
 
 	gEngfuncs.Con_DPrintf("Compiling studio shader with defines:\n%s", defines);
 
-	if (studio_gpuskin)
+	LOAD_SHADER(shader, studio, defines.data, defines.len, studio_attributes, studio_uniforms);
+
+	if (studio_uboable)
 	{
-		LOAD_SHADER(dest, studio, defines.data, defines.len, studio_attributes_gpu, studio_uniforms);
-		GLuint block_index = glGetUniformBlockIndex(dest->program, "bones");
-		glUniformBlockBinding(dest->program, block_index, 0);
-	}
-	else
-	{
-		LOAD_SHADER(dest, studio, defines.data, defines.len, studio_attributes_cpu, studio_uniforms);
+		GLuint block_index = glGetUniformBlockIndex(shader->program, "bones");
+		glUniformBlockBinding(shader->program, block_index, 0);
 	}
 
-	return dest;
+	// set uniforms that never change
+	glUniform1i(shader->u_texture, 0);
+
+	return shader;
+}
+
+studio_shader_t *R_StudioSelectShader(const studio_options_t *options)
+{
+	unsigned index = ShaderIndex(options);
+	return R_StudioSelectShaderIndex(index);
 }
 
 void R_StudioCompileShaders(void)
 {
-	int i;
+	static int current = 0;
 
-	double end = gEngfuncs.GetAbsoluteTime() + 1;
+	if (current == NUM_PERMUTATIONS)
+		return;
 
-	for (i = 0; i < NUM_OPTIONS; i++)
-	{
-		double current = gEngfuncs.GetAbsoluteTime();
-		if (current > end)
-			break;
+#ifndef NDEBUG
+	ValidatePermutationCount();
+#endif
 
-		R_StudioSelectShader(i);
-	}
+	int end = current ? NUM_PERMUTATIONS : (NUM_PERMUTATIONS / 2);
+
+	for (; current < end; current++)
+		R_StudioSelectShaderIndex(current);
 
 	// probably won't do shit but keep it in anyway
 	glFlush();

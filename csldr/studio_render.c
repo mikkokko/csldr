@@ -5,16 +5,15 @@ studio_globals_t studio_globals;
 void R_StudioInit(void)
 {
 	studio_globals.r_glowshellfreq = gEngfuncs.pfnGetCvarPointer("r_glowshellfreq");
-	studio_globals.gl_fog = gEngfuncs.pfnGetCvarPointer("gl_fog");
 
 	R_StudioCompileShaders();
 
-	if (studio_gpuskin)
+	if (studio_uboable)
 	{
 		// bold size assumption
 		glGenBuffers(1, &studio_globals.ubo);
 		glBindBuffer(GL_UNIFORM_BUFFER, studio_globals.ubo);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(mat3x4_t) * 128, NULL, GL_STREAM_DRAW);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(mat3x4_t) * 128, NULL, GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, studio_globals.ubo);
@@ -26,9 +25,6 @@ void R_StudioInit(void)
 
 void R_StudioNewFrame(void)
 {
-	if (!studio_globals.framecount && studio_fastpath)
-		R_StudioCompileShaders();
-
 	studio_globals.framecount++;
 }
 
@@ -44,9 +40,7 @@ void R_StudioEntityLight(studio_context_t *ctx)
 	float max_radius = 1000000;
 	float min_radius = 0;
 
-	// ctx->entity is not set yet... mikkotodo revisit
-	(void)ctx;
-	cl_entity_t *entity = IEngineStudio.GetCurrentEntity();
+	cl_entity_t *entity = ctx->entity;
 
 	// asssume that max elights is 64
 	for (int i = 0; i < 64; i++)
@@ -62,6 +56,7 @@ void R_StudioEntityLight(studio_context_t *ctx)
 		if ((elight->key & 0xFFF) == entity->index)
 		{
 			int attachment = (elight->key >> 12) & 0xF;
+			assert(attachment >= 0 && attachment < 4);
 
 			if (attachment)
 				VectorCopy(entity->attachment[attachment], elight->origin);
@@ -125,7 +120,7 @@ void R_StudioEntityLight(studio_context_t *ctx)
 	}
 }
 
-void R_StudioInitContext(studio_context_t *ctx, cl_entity_t *entity, model_t *model, studiohdr_t *header)
+void R_StudioInitContext(studio_context_t *ctx, cl_entity_t *entity, model_t *model, studiohdr_t *header, studio_cache_t *cache)
 {
 	assert(entity);
 	assert(model);
@@ -134,10 +129,16 @@ void R_StudioInitContext(studio_context_t *ctx, cl_entity_t *entity, model_t *mo
 	ctx->entity = entity;
 	ctx->model = model;
 	ctx->header = header;
-	ctx->cache = GetStudioCache(ctx->model, header);
+	ctx->cache = cache;
+	ctx->used_texflags = 0;
 
-	// mikkotodo move? this never changes
-	ctx->bonetransform = (mat3x4_t(*)[])IEngineStudio.StudioGetBoneTransform();
+	mat3x4_t(*bonetransform)[] = (mat3x4_t(*)[])IEngineStudio.StudioGetBoneTransform();
+
+	for (int i = 0; i < cache->num_gpubones; i++)
+	{
+		int index = cache->map_gpubones[i];
+		memcpy(ctx->gpu_bonetransform[i], (*bonetransform)[index], sizeof(mat3x4_t));
+	}
 }
 
 void R_StudioSetupLighting(studio_context_t *ctx, alight_t *lighting)
@@ -263,40 +264,38 @@ static int CalcFxBlend(const cl_entity_t *ent)
 	return CLAMP(amount, 0, 255);
 }
 
-static int R_StudioGetOptions(studio_context_t *ctx)
+static void R_StudioGetOptions(studio_context_t *ctx, studio_options_t *options)
 {
-	int options = 0;
-
 	if (ctx->entity->curstate.rendermode == kRenderTransAdd)
-		options |= HAVE_ADDITIVE;
+		options->LIGHTING_MODE = LIGHTING_MODE_ADDITIVE;
 	else if (ctx->entity->curstate.renderfx == kRenderFxGlowShell)
-		options |= HAVE_GLOWSHELL;
+	{
+		options->LIGHTING_MODE = LIGHTING_MODE_GLOWSHELL;
+		assert(ctx->used_texflags & STUDIO_NF_CHROME);
+		//options->CAN_CHROME = 1; // set by forceflags
+	}
+	else if (ctx->elight_num)
+		options->LIGHTING_MODE = LIGHTING_MODE_ELIGHTS;
 
-	// mikkotodo revisit
 	if (studio_globals.fog_mode == GL_LINEAR)
-		options |= (HAVE_FOG | HAVE_FOG_LINEAR);
+		options->FOG_MODE = FOG_MODE_LINEAR;
 	else if (studio_globals.fog_mode == GL_EXP2)
-		options |= HAVE_FOG;
+		options->FOG_MODE = FOG_MODE_EXP2;
 
-	if (ctx->elight_num)
-		options |= HAVE_ELIGHTS;
+	if (ctx->used_texflags & STUDIO_NF_FLATSHADE)
+		options->CAN_FLATSHADE = 1;
 
-	if (ctx->cache->texflags & STUDIO_NF_FLATSHADE)
-		options |= CAN_FLATSHADE;
+	if (ctx->used_texflags & STUDIO_NF_CHROME)
+		options->CAN_CHROME = 1;
 
-	if (ctx->cache->texflags & STUDIO_NF_CHROME)
-		options |= CAN_CHROME;
+	if (ctx->used_texflags & STUDIO_NF_FULLBRIGHT)
+		options->CAN_FULLBRIGHT = 1;
 
-	if (ctx->cache->texflags & STUDIO_NF_FULLBRIGHT)
-		options |= CAN_FULLBRIGHT;
-
-	if (ctx->cache->texflags & STUDIO_NF_MASKED)
-		options |= CAN_MASKED;
-
-	return options;
+	if (ctx->used_texflags & STUDIO_NF_MASKED)
+		options->CAN_MASKED = 1;
 }
 
-void R_StudioSetupRenderer(studio_context_t *ctx)
+static void R_StudioSetupRenderer(studio_context_t *ctx)
 {
 	static int framecount;
 
@@ -310,18 +309,21 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 			studio_globals.fog_mode = 0;
 	}
 
-	int options = R_StudioGetOptions(ctx);
-	studio_shader_t *shader = R_StudioSelectShader(options);
+	ctx->forceflags = IEngineStudio.GetForceFaceFlags();
+	ctx->used_texflags |= ctx->forceflags;
+
+	studio_options_t options = { 0 };
+	R_StudioGetOptions(ctx, &options);
+
+	studio_shader_t *shader = R_StudioSelectShader(&options);
 	ctx->shader = shader;
 
 	// setup our 70 different uniforms
 	glUseProgram(shader->program);
 
-	glUniform1i(shader->u_texture, 0);
-
 	float colormix[4];
 
-	if (options & HAVE_GLOWSHELL)
+	if (options.LIGHTING_MODE == LIGHTING_MODE_GLOWSHELL)
 	{
 		colormix[0] = (float)ctx->entity->curstate.rendercolor.r * (1.0f / 255);
 		colormix[1] = (float)ctx->entity->curstate.rendercolor.g * (1.0f / 255);
@@ -336,10 +338,9 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 		colormix[3] = CalcFxBlend(ctx->entity) * (1.0f / 255);
 	}
 
-	glUniform4fv(shader->u_colormix, 1, colormix);
+	glUniform4fv(shader->u_color, 1, colormix);
 
-	// mikkotodo is this correct
-	if ((options & (HAVE_ADDITIVE | HAVE_GLOWSHELL)) == 0)
+	if (options.LIGHTING_MODE == LIGHTING_MODE_DEFAULT || options.LIGHTING_MODE == LIGHTING_MODE_ELIGHTS)
 	{
 		glUniform1f(shader->u_ambientlight, ctx->ambientlight);
 		glUniform1f(shader->u_shadelight, ctx->shadelight);
@@ -348,30 +349,30 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 		glUniform1f(shader->u_lightgamma, gammavars.lightgamma);
 		glUniform1f(shader->u_brightness, gammavars.brightness);
 		glUniform1f(shader->u_g3, gammavars.g3);
-	}
-
-	if ((options & HAVE_ELIGHTS) || (options & (HAVE_ADDITIVE | HAVE_GLOWSHELL)) == 0)
 		glUniform1f(shader->u_invgamma, gammavars.g);
-
-	// bruh
-	if (options & HAVE_GLOWSHELL)
-	{
-		ctx->chrome_origin[0] = cosf(studio_globals.r_glowshellfreq->value * clientTime) * 4000.0f;
-		ctx->chrome_origin[1] = sinf(studio_globals.r_glowshellfreq->value * clientTime) * 4000.0f;
-		ctx->chrome_origin[2] = cosf(studio_globals.r_glowshellfreq->value * clientTime * 0.33f) * 4000.0f;
-	}
-	else
-	{
-		VectorCopy(v_vieworg, ctx->chrome_origin);
 	}
 
-	if (options & CAN_CHROME)
+	if (options.CAN_CHROME)
 	{
-		glUniform3fv(shader->u_chromeorg, 1, ctx->chrome_origin);
+		vec3_t chrome_origin;
+
+		// bruh
+		if (options.LIGHTING_MODE == LIGHTING_MODE_GLOWSHELL)
+		{
+			chrome_origin[0] = cosf(studio_globals.r_glowshellfreq->value * clientTime) * 4000.0f;
+			chrome_origin[1] = sinf(studio_globals.r_glowshellfreq->value * clientTime) * 4000.0f;
+			chrome_origin[2] = cosf(studio_globals.r_glowshellfreq->value * clientTime * 0.33f) * 4000.0f;
+		}
+		else
+		{
+			VectorCopy(v_vieworg, chrome_origin);
+		}
+
+		glUniform3fv(shader->u_chromeorg, 1, chrome_origin);
 		glUniform3fv(shader->u_chromeright, 1, v_viewright);
 	}
 
-	if (options & HAVE_ELIGHTS)
+	if (options.LIGHTING_MODE == LIGHTING_MODE_ELIGHTS)
 	{
 		glUniform4fv(shader->u_elight_pos, ctx->elight_num, &ctx->elight_pos[0][0]);
 		glUniform3fv(shader->u_elight_color, ctx->elight_num, &ctx->elight_color[0][0]);
@@ -386,37 +387,28 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 	glBindBuffer(GL_ARRAY_BUFFER, ctx->cache->studio_vbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->cache->studio_ebo);
 
-	if (studio_gpuskin)
+	if (studio_uboable)
 	{
 		glBindBuffer(GL_UNIFORM_BUFFER, studio_globals.ubo);
-		glBufferSubData(GL_UNIFORM_BUFFER, 0, ctx->header->numbones * sizeof(mat3x4_t), &(*ctx->bonetransform)[0][0][0]);
-	}
-
-	if (studio_gpuskin)
-	{
-		glEnableVertexAttribArray(shader_studio_a_pos);
-		glEnableVertexAttribArray(shader_studio_a_normal);
-		glEnableVertexAttribArray(shader_studio_a_texcoord);
-		glEnableVertexAttribArray(shader_studio_a_bones);
-
-		glVertexAttribPointer(shader_studio_a_pos, 3, GL_FLOAT, GL_FALSE, sizeof(studio_gpu_vert_t), (void *)Q_OFFSETOF(studio_gpu_vert_t, pos));
-		glVertexAttribPointer(shader_studio_a_normal, 3, GL_FLOAT, GL_FALSE, sizeof(studio_gpu_vert_t), (void *)Q_OFFSETOF(studio_gpu_vert_t, norm));
-		glVertexAttribPointer(shader_studio_a_texcoord, 2, GL_FLOAT, GL_FALSE, sizeof(studio_gpu_vert_t), (void *)Q_OFFSETOF(studio_gpu_vert_t, texcoord));
-		glVertexAttribPointer(shader_studio_a_bones, 2, GL_FLOAT, GL_FALSE, sizeof(studio_gpu_vert_t), (void *)Q_OFFSETOF(studio_gpu_vert_t, bones));
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, ctx->cache->num_gpubones * sizeof(mat3x4_t), &ctx->gpu_bonetransform[0][0]);
 	}
 	else
 	{
-		glEnableVertexAttribArray(shader_studio_a_pos);
-		glEnableVertexAttribArray(shader_studio_a_normal);
-		glEnableVertexAttribArray(shader_studio_a_texcoord);
-
-		glVertexAttribPointer(shader_studio_a_pos, 3, GL_FLOAT, GL_FALSE, sizeof(studio_cpu_vert_t), (void *)Q_OFFSETOF(studio_cpu_vert_t, pos));
-		glVertexAttribPointer(shader_studio_a_normal, 3, GL_FLOAT, GL_FALSE, sizeof(studio_cpu_vert_t), (void *)Q_OFFSETOF(studio_cpu_vert_t, norm));
-		glVertexAttribPointer(shader_studio_a_texcoord, 2, GL_FLOAT, GL_FALSE, sizeof(studio_cpu_vert_t), (void *)Q_OFFSETOF(studio_cpu_vert_t, texcoord));
+		glUniformMatrix3x4fv(shader->u_bones, ctx->cache->num_gpubones, GL_FALSE, &ctx->gpu_bonetransform[0][0][0]);
 	}
+
+	glEnableVertexAttribArray(shader_studio_a_pos);
+	glEnableVertexAttribArray(shader_studio_a_normal);
+	glEnableVertexAttribArray(shader_studio_a_texcoord);
+	glEnableVertexAttribArray(shader_studio_a_bones);
+
+	glVertexAttribPointer(shader_studio_a_pos, 3, GL_FLOAT, GL_FALSE, sizeof(studio_vert_t), (void *)Q_OFFSETOF(studio_vert_t, pos));
+	glVertexAttribPointer(shader_studio_a_normal, 3, GL_FLOAT, GL_FALSE, sizeof(studio_vert_t), (void *)Q_OFFSETOF(studio_vert_t, norm));
+	glVertexAttribPointer(shader_studio_a_texcoord, 2, GL_FLOAT, GL_FALSE, sizeof(studio_vert_t), (void *)Q_OFFSETOF(studio_vert_t, texcoord));
+	glVertexAttribPointer(shader_studio_a_bones, 2, GL_FLOAT, GL_FALSE, sizeof(studio_vert_t), (void *)Q_OFFSETOF(studio_vert_t, bones));
 }
 
-void R_StudioRestoreRenderer(studio_context_t *ctx)
+static void R_StudioRestoreRenderer(studio_context_t *ctx)
 {
 	glUseProgram(0);
 
@@ -427,19 +419,94 @@ void R_StudioRestoreRenderer(studio_context_t *ctx)
 	glDisableVertexAttribArray(shader_studio_a_pos);
 	glDisableVertexAttribArray(shader_studio_a_normal);
 	glDisableVertexAttribArray(shader_studio_a_texcoord);
-
-	if (studio_gpuskin)
-	{
-		glDisableVertexAttribArray(shader_studio_a_bones);
-	}
+	glDisableVertexAttribArray(shader_studio_a_bones);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	if (studio_gpuskin)
-	{
+	if (studio_uboable)
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+static void R_StudioEmitDrawCalls(studio_context_t *ctx, studio_shader_t *shader)
+{
+	studiohdr_t *header = ctx->header;
+	studiohdr_t *textureheader = R_LoadTextures(ctx->model, header);
+	mstudiotexture_t *textures = (mstudiotexture_t *)((byte *)textureheader + textureheader->textureindex);
+
+	assert(ctx->forceflags == IEngineStudio.GetForceFaceFlags());
+	assert(ctx->forceflags == 0 || ctx->forceflags == STUDIO_NF_CHROME);
+
+	for (int i = 0; i < textureheader->numtextures; i++)
+	{
+		mem_texture_t *mem_texture = &ctx->cache->textures[i];
+		if (!mem_texture->num_elements)
+			continue;
+
+		mstudiotexture_t *texture = &textures[i];
+
+		int texture_flags = texture->flags | ctx->forceflags;
+
+		if (shader->u_tex_flatshade != -1)
+			glUniform1i(shader->u_tex_flatshade, (texture_flags & STUDIO_NF_FLATSHADE) ? true : false);
+
+		if (shader->u_tex_chrome != -1)
+			glUniform1i(shader->u_tex_chrome, (texture_flags & STUDIO_NF_CHROME) ? true : false);
+
+		if (shader->u_tex_fullbright != -1)
+			glUniform1i(shader->u_tex_fullbright, (texture_flags & STUDIO_NF_FULLBRIGHT) ? true : false);
+
+		if (shader->u_tex_masked != -1)
+			glUniform1i(shader->u_tex_masked, (texture_flags & STUDIO_NF_MASKED) ? true : false);
+
+		bool additive = ((texture_flags & STUDIO_NF_ADDITIVE) && ctx->entity->curstate.rendermode == kRenderNormal);
+		if (additive)
+		{
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_ONE, GL_ONE);
+			glDepthMask(GL_FALSE);
+		}
+
+		if (mem_texture->diffuse)
+		{
+			// mikkotodo revisit, hack to make texture bindings go through GL_Bind
+			char old_name = texture->name[0]; // make sure remapping won't happen
+			int old_index = texture->index;
+
+			texture->name[0] = '\0';
+			texture->index = mem_texture->diffuse;
+
+			IEngineStudio.StudioSetupSkin(textureheader, i);
+
+			texture->name[0] = old_name;
+			texture->index = old_index;
+		}
+		else
+		{
+			IEngineStudio.StudioSetupSkin(textureheader, i);
+		}
+
+		glMultiDrawElements(GL_TRIANGLES,
+			(GLint *)mem_texture->counts,
+			GL_UNSIGNED_INT,
+			(const void *const *)mem_texture->offsets,
+			mem_texture->num_elements);
+
+		if (additive)
+		{
+			glDisable(GL_BLEND);
+			glDepthMask(GL_TRUE);
+		}
+
+		mem_texture->num_elements = 0;
 	}
+}
+
+void R_StudioFinish(studio_context_t *ctx)
+{
+	R_StudioSetupRenderer(ctx);
+	R_StudioEmitDrawCalls(ctx, ctx->shader);
+	R_StudioRestoreRenderer(ctx);
 }
 
 void R_StudioSetupModel(studio_context_t *ctx, int bodypart_index)
@@ -458,49 +525,6 @@ void R_StudioSetupModel(studio_context_t *ctx, int bodypart_index)
 
 	ctx->submodel = &submodels[model_index];
 	ctx->mem_submodel = &mem_bodypart->models[model_index];
-}
-
-static void CalcChromeCPU(studio_context_t *ctx, float *out, int bone_id, mat3x4_t bone, vec3_t normal)
-{
-	// cache the results like the engine does
-	static int chrome_age[128];
-	static vec3_t chrome_up[128];
-	static vec3_t chrome_side[128];
-
-	float *up_anim = chrome_up[bone_id];
-	float *side_anim = chrome_side[bone_id];
-
-	if (chrome_age[bone_id] != studio_globals.drawcount)
-	{
-		chrome_age[bone_id] = studio_globals.drawcount;
-
-		vec3_t dir;
-		dir[0] = bone[0][3] - ctx->chrome_origin[0];
-		dir[1] = bone[1][3] - ctx->chrome_origin[1];
-		dir[2] = bone[2][3] - ctx->chrome_origin[2];
-
-		VectorNormalize(dir);
-
-		vec3_t up;
-		CrossProduct(dir, v_viewright, up);
-		VectorNormalize(up);
-
-		vec3_t side;
-		CrossProduct(dir, up, side);
-		VectorNormalize(side);
-
-		up_anim[0] = up[0] * bone[0][0] + up[1] * bone[1][0] + up[2] * bone[2][0];
-		up_anim[1] = up[0] * bone[0][1] + up[1] * bone[1][1] + up[2] * bone[2][1];
-		up_anim[2] = up[0] * bone[0][2] + up[1] * bone[1][2] + up[2] * bone[2][2];
-
-		side_anim[0] = side[0] * bone[0][0] + side[1] * bone[1][0] + side[2] * bone[2][0];
-		side_anim[1] = side[0] * bone[0][1] + side[1] * bone[1][1] + side[2] * bone[2][1];
-		side_anim[2] = side[0] * bone[0][2] + side[1] * bone[1][2] + side[2] * bone[2][2];
-	}
-
-	// mikkotodo why the fuck this this needed???
-	out[0] = 1.0f - (DotProduct(normal, side_anim) + 1.0f) * 0.5f;
-	out[1] = (DotProduct(normal, up_anim) + 1.0f) * 0.5f;
 }
 
 void R_StudioDrawPoints(studio_context_t *ctx)
@@ -522,130 +546,17 @@ void R_StudioDrawPoints(studio_context_t *ctx)
 		skins = &skins[skin * textureheader->numskinref];
 	}
 
-	int forceflags = IEngineStudio.GetForceFaceFlags();
-
-	if (!studio_gpuskin)
-	{
-		studio_cpu_vert_t *anim_verts = (studio_cpu_vert_t *)Mem_TempAlloc(sizeof(studio_cpu_vert_t) * mem_submodel->num_verts);
-		int vert_ofs = 0;
-
-		for (int i = 0; i < submodel->nummesh; i++)
-		{
-			mstudiomesh_t *mesh = &meshes[i];
-			mem_mesh_t *mem_mesh = &mem_submodel->meshes[i];
-			mstudiotexture_t *texture = &textures[skins[mesh->skinref]];
-
-			int flags = texture->flags | forceflags;
-
-			if (flags & STUDIO_NF_CHROME)
-			{
-				for (unsigned int j = 0; j < mem_mesh->num_verts; j++)
-				{
-					studio_cpu_vert_t *src = &ctx->cache->verts[mem_mesh->ofs_verts + j];
-					studio_vertbone_t *srcbone = &ctx->cache->vertbones[mem_mesh->ofs_verts + j];
-					studio_cpu_vert_t *dst = &anim_verts[vert_ofs++];
-
-					mat3x4_t *bone = &(*ctx->bonetransform)[srcbone->bones[0]];
-					dst->pos[0] = DotProduct(src->pos, (*bone)[0]) + (*bone)[0][3];
-					dst->pos[1] = DotProduct(src->pos, (*bone)[1]) + (*bone)[1][3];
-					dst->pos[2] = DotProduct(src->pos, (*bone)[2]) + (*bone)[2][3];
-
-					bone = &(*ctx->bonetransform)[srcbone->bones[1]];
-					dst->norm[0] = DotProduct(src->norm, (*bone)[0]);
-					dst->norm[1] = DotProduct(src->norm, (*bone)[1]);
-					dst->norm[2] = DotProduct(src->norm, (*bone)[2]);
-
-					CalcChromeCPU(ctx, dst->texcoord, srcbone->bones[1], (*ctx->bonetransform)[srcbone->bones[1]], src->norm);
-				}
-			}
-			else
-			{
-				for (unsigned int j = 0; j < mem_mesh->num_verts; j++)
-				{
-					studio_cpu_vert_t *src = &ctx->cache->verts[mem_mesh->ofs_verts + j];
-					studio_vertbone_t *srcbone = &ctx->cache->vertbones[mem_mesh->ofs_verts + j];
-					studio_cpu_vert_t *dst = &anim_verts[vert_ofs++];
-
-					mat3x4_t *bone = &(*ctx->bonetransform)[srcbone->bones[0]];
-					dst->pos[0] = DotProduct(src->pos, (*bone)[0]) + (*bone)[0][3];
-					dst->pos[1] = DotProduct(src->pos, (*bone)[1]) + (*bone)[1][3];
-					dst->pos[2] = DotProduct(src->pos, (*bone)[2]) + (*bone)[2][3];
-
-					bone = &(*ctx->bonetransform)[srcbone->bones[1]];
-					dst->norm[0] = DotProduct(src->norm, (*bone)[0]);
-					dst->norm[1] = DotProduct(src->norm, (*bone)[1]);
-					dst->norm[2] = DotProduct(src->norm, (*bone)[2]);
-
-					dst->texcoord[0] = src->texcoord[0];
-					dst->texcoord[1] = src->texcoord[1];
-				}
-			}
-		}
-
-		// mikkotodo this copies way too much data
-		glBufferSubData(GL_ARRAY_BUFFER,
-			mem_submodel->ofs_verts * sizeof(studio_cpu_vert_t),
-			mem_submodel->num_verts * sizeof(studio_cpu_vert_t),
-			anim_verts);
-
-		Mem_TempFree(anim_verts);
-	}
-
 	for (int i = 0; i < submodel->nummesh; i++)
 	{
 		mstudiomesh_t *mesh = &meshes[i];
-		mstudiotexture_t *texture = &textures[skins[mesh->skinref]];
-		mem_texture_t *mem_texture = &ctx->cache->textures[skins[mesh->skinref]];
 		mem_mesh_t *mem_mesh = &mem_submodel->meshes[i];
 
-		int flags = texture->flags | forceflags;
+		mem_texture_t *call = &ctx->cache->textures[skins[mesh->skinref]];
+		call->counts[call->num_elements] = mem_mesh->num_indices;
+		call->offsets[call->num_elements] = (void *)(size_t)mem_mesh->ofs_indices;
+		call->num_elements++;
 
-		if (ctx->shader->u_tex_flatshade != -1)
-			glUniform1i(ctx->shader->u_tex_flatshade, (flags & STUDIO_NF_FLATSHADE) ? true : false);
-
-		if (ctx->shader->u_tex_chrome != -1)
-			glUniform1i(ctx->shader->u_tex_chrome, (flags & STUDIO_NF_CHROME) ? true : false);
-
-		if (ctx->shader->u_tex_fullbright != -1)
-			glUniform1i(ctx->shader->u_tex_fullbright, (flags & STUDIO_NF_FULLBRIGHT) ? true : false);
-
-		if (ctx->shader->u_tex_masked != -1)
-			glUniform1i(ctx->shader->u_tex_masked, (flags & STUDIO_NF_MASKED) ? true : false);
-
-		bool additive = ((flags & STUDIO_NF_ADDITIVE) && ctx->entity->curstate.rendermode == kRenderNormal);
-
-		if (additive)
-		{
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_ONE, GL_ONE);
-			glDepthMask(GL_FALSE);
-		}
-
-		if (mem_texture->diffuse)
-		{
-			// mikkotodo revisit, hack to make texture bindings go through GL_Bind
-			char old_name = texture->name[0]; // make sure remapping won't happen
-			int old_index = texture->index;
-
-			texture->name[0] = '\0';
-			texture->index = mem_texture->diffuse;
-
-			IEngineStudio.StudioSetupSkin(textureheader, skins[mesh->skinref]);
-
-			texture->name[0] = old_name;
-			texture->index = old_index;
-		}
-		else
-		{
-			IEngineStudio.StudioSetupSkin(textureheader, skins[mesh->skinref]);
-		}
-
-		glDrawElements(GL_TRIANGLES, mem_mesh->num_indices, GL_UNSIGNED_INT, (void *)mem_mesh->ofs_indices);
-
-		if (additive)
-		{
-			glDisable(GL_BLEND);
-			glDepthMask(GL_TRUE);
-		}
+		mstudiotexture_t *texture = &textures[skins[mesh->skinref]];
+		ctx->used_texflags |= texture->flags;
 	}
 }

@@ -56,10 +56,13 @@ void Plat_Dlclose(void *handle)
 	FreeLibrary((HMODULE)handle);
 }
 
-bool Plat_CurrentModuleName(char *name, size_t size)
+size_t Plat_CurrentModuleName(char *name, size_t size)
 {
 	DWORD length = GetModuleFileNameA(hModule, name, size);
-	return (length && length < size);
+	if (!length || length >= size)
+		return 0;
+
+	return length;
 }
 
 void Plat_Error(const char *fmt, ...)

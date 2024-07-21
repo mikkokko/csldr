@@ -1,4 +1,5 @@
 extern float fovScale;
+extern int fovValueOriginal;
 
 void FovThink(void);
 float GetCurrentFov(void);

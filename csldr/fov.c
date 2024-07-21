@@ -3,6 +3,9 @@
 // used to scale the viewmodel fov
 float fovScale = 1;
 
+// not corrected or interpolated
+int fovValueOriginal = 90;
+
 static float currentFov = 90;
 static float destFov = 90;
 static float initialFov = 90;
@@ -87,11 +90,12 @@ int (*Og_MsgFunc_SetFOV)(const char *pszName, int iSize, void *pbuf);
 
 int Hk_MsgFunc_SetFOV(const char *pszName, int iSize, void *pbuf)
 {
-	float fov = (float)(*(byte *)pbuf);
-
+	int fov = *(byte *)pbuf;
 	if (fov < 1 || fov > 180)
 		fov = 90;
 
-	SetLerpFov(fov, fov_lerp->value);
+	fovValueOriginal = fov;
+
+	SetLerpFov((float)fov, fov_lerp->value);
 	return Og_MsgFunc_SetFOV(pszName, iSize, pbuf);
 }

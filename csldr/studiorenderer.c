@@ -6,18 +6,6 @@ static r_studio_interface_t studio;
 #define Z_NEAR 1.0f /* was 4 but that's too far for viewmodels */
 #define Z_FAR 4096.0f
 
-static int Hk_StudioDrawModel(int flags)
-{
-	studio_globals.drawcount++;
-	return studio.StudioDrawModel(flags);
-}
-
-static int Hk_StudioDrawPlayer(int flags, entity_state_t *player)
-{
-	studio_globals.drawcount++;
-	return studio.StudioDrawPlayer(flags, player);
-}
-
 bool ShouldMirrorViewmodel(cl_entity_t *vm)
 {
 	studio_cache_t *cache = EntityStudioCache(vm);
@@ -80,7 +68,7 @@ static void DrawHands(cl_entity_t *weapon, int flags)
 	weapon->model = model;
 	weapon->curstate.movetype = 12; /* MOVETYPE_FOLLOW */
 
-	Hk_StudioDrawModel(flags);
+	studio.StudioDrawModel(flags);
 
 	*weapon = backup;
 }
@@ -144,7 +132,7 @@ static int My_StudioDrawModel(int flags)
 	cl_entity_t *entity = IEngineStudio.GetCurrentEntity();
 
 	if (entity != IEngineStudio.GetViewEntity())
-		return Hk_StudioDrawModel(flags);
+		return studio.StudioDrawModel(flags);
 
 	SetProjectionMatrix();
 
@@ -153,7 +141,7 @@ static int My_StudioDrawModel(int flags)
 
 	mirrored = PushMirrorViewmodel(entity, &old_righthand);
 
-	result = Hk_StudioDrawModel(flags);
+	result = studio.StudioDrawModel(flags);
 
 	/* draw hands now that the scene is properly set up */
 	DrawHands(entity, flags);
@@ -235,7 +223,6 @@ int Hk_GetStudioModelInterface(int version,
 	/* backup and change client stuff */
 	memcpy(&studio, (*ppinterface), sizeof(studio));
 	(*ppinterface)->StudioDrawModel = My_StudioDrawModel;
-	(*ppinterface)->StudioDrawPlayer = Hk_StudioDrawPlayer;
 
 	return result;
 }

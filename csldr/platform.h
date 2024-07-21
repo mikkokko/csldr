@@ -1,18 +1,12 @@
-#if defined(_WIN32)
-#define LIB_EXT ".dll"
-#elif defined(__linux__)
-#define LIB_EXT ".so"
-#endif
-
 #if defined(__cplusplus)
 #define EXTERNC extern "C"
 #else
 #define EXTERNC
 #endif
 
-#if defined(_WIN32)
+#if defined(_MSC_VER)
 #define EXPORT EXTERNC __declspec(dllexport)
-#elif defined(__linux__)
+#elif defined(__GNUC__)
 #define EXPORT EXTERNC __attribute__((visibility("default")))
 #endif
 
@@ -23,5 +17,5 @@ extern int isWarzone;
 void *Plat_CheckedDlopen(const char *filename);
 void *Plat_Dlsym(void *handle, const char *name);
 void Plat_Dlclose(void *handle);
-bool Plat_CurrentModuleName(char *name, size_t size);
+size_t Plat_CurrentModuleName(char *name, size_t size);
 void Plat_Error(const char *fmt, ...);

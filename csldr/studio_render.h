@@ -7,7 +7,7 @@ typedef struct
 	model_t *model;
 	studio_cache_t *cache;
 
-	mat3x4_t (*bonetransform)[];
+	mat3x4_t gpu_bonetransform[128];
 
 	mstudiomodel_t *submodel;
 	mem_model_t *mem_submodel;
@@ -21,23 +21,19 @@ typedef struct
 	float elight_pos[MAX_ELIGHTS][4];
 	float elight_color[MAX_ELIGHTS][3];
 
-	vec3_t chrome_origin;
-
 	struct studio_shader_s *shader;
+
+	int forceflags;
+	int used_texflags;
 } studio_context_t;
 
 typedef struct studio_globals_s
 {
 	// engine structs set on startup
 	cvar_t *r_glowshellfreq;
-	cvar_t *gl_fog;
 	dlight_t *elights;
 
-	// only for gpu skinning
 	GLuint ubo;
-
-	// for cpu chrome, incremented in StudioDrawModel and StudioDrawPlayer hooks
-	int drawcount;
 
 	// incremented every frame
 	int framecount;
@@ -52,11 +48,10 @@ void R_StudioInit(void);
 
 void R_StudioNewFrame(void);
 
-void R_StudioInitContext(studio_context_t *ctx, cl_entity_t *entity, model_t *model, studiohdr_t *header);
+void R_StudioInitContext(studio_context_t *ctx, cl_entity_t *entity, model_t *model, studiohdr_t *header, studio_cache_t *cache);
 void R_StudioEntityLight(studio_context_t *ctx);
 void R_StudioSetupLighting(studio_context_t *ctx, alight_t *lighting);
-void R_StudioSetupRenderer(studio_context_t *ctx);
-void R_StudioRestoreRenderer(studio_context_t *ctx);
+void R_StudioFinish(studio_context_t *ctx);
 
 void R_StudioSetupModel(studio_context_t *ctx, int bodypart_index);
 void R_StudioDrawPoints(studio_context_t *ctx);

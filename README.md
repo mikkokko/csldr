@@ -38,8 +38,8 @@ Some non-Steam builds of the game (notably CS WaRzOnE) come with a program calle
 
 ## Shader-based model renderer
 
-The shader-based model renderer requires OpenGL 2.0 for GLSL shaders. For GPU skinning to work, OpenGL 2.1 is required for non-square GLSL matrices and the GL_ARB_uniform_buffer_object extension is needed for UBOs. Currently the renderer doesn't have a lot going for it besides a few nice to have things:
-- Improved performance in some cases
+The shader-based model renderer requires OpenGL 2.1 and the GL_ARB_uniform_buffer_object extension. Currently the renderer doesn't have a lot going for it besides a few nice to have things:
+- Improved performance when rendering high poly models
 - Support for the fullbright texture flag
 - Chrome textures are no longer limited to 64x64
 - Support for more than 2048 vertices/normals per submodel
@@ -50,9 +50,11 @@ Eventually I will add more features to it for modding purposes.
 Known issues with the renderer:
 - Glowshell uses model normals instead of computing custom ones
 - Rendering of hulls, bboxes or bones is not supported (r_drawentities > 1)
-- Having a lot of entities visible at once tanks the frame rate on some systems
 
-The renderer can be enabled with `studio_fastpath 1` if the system supports it. To see information about the renderer's state, use `studio_info`. If you notice any issues with the renderer (models not looking as they should, worse performance, etc.) let me know by opening an issue.
+The renderer can be slower with low poly models on some systems due to the overhead it adds. When a model is not using studio_fastpath exclusive features and its poly count is below `studio_fastpath_min_polys`, the default renderer will be used instead of the custom shader-based renderer.
+If you encounter framerate drops when many low poly models are being drawn, you can try tweaking `studio_fastpath_min_polys` to see if it helps.
+
+The renderer can be enabled with `studio_fastpath 1` if the system supports it. To see information about the renderer's state, use `studio_info`. If you notice any issues with the renderer (models not looking as they should, performance issues, etc.) let me know by opening an issue.
 
 ## Model config files
 
@@ -106,6 +108,7 @@ Model config files can be reloaded with the `studio_config_flush` command. This 
 | lookat | Inspects the weapon if the animation is present. |
 | studio_confg_flush | Reloads model config files and any files referenced by them (like textures). |
 | studio_fastpath | Enables the shader-based model renderer. |
+| studio_fastpath_min_polys | Optimization kludge, see the [documentation](#shader-based-model-renderer). |
 | studio_info | Prints information about the shader-based model renderer. |
 | viewmodel_fov | Viewmodel FOV. |
 | viewmodel_hands | Specifies an external hand model, for example "v_hands.mdl". Can be disabled with an empty string (""). |
@@ -116,6 +119,7 @@ Model config files can be reloaded with the `studio_config_flush` command. This 
 | viewmodel_offset_y | Viewmodel's y offset. |
 | viewmodel_offset_z | Viewmodel's z offset. |
 | viewmodel_shift | Fixes the viewmodel shift when looking up and down. 1 disables the shift without fixing the viewmodel position, 2 disables the shift and fixes the viewmodel position. |
+| xhair_additive | Makes the crosshair additive. Does not affect the crosshair padding. xhair_alpha only affects the padding when xhair_additive is set to 1. |
 | xhair_alpha | Crosshair's transparency (0-1). |
 | xhair_color_b | Crosshair color's blue value (0-1). |
 | xhair_color_g | Crosshair color's green value (0-1). |

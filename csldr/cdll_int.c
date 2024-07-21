@@ -32,37 +32,29 @@ static void UpdateScreenSize(void)
 -------------------------------------------------
 */
 
+static pfnUserMsgHook HookUserMsg(const char *szMsgName, pfnUserMsgHook pfn)
+{
+#define CHECK_HOOK(name) \
+	if (!Og_MsgFunc_##name && !strcmp(szMsgName, #name)) \
+	{ \
+		Og_MsgFunc_##name = pfn; \
+		return Hk_MsgFunc_##name; \
+	}
+
+	CHECK_HOOK(SetFOV)
+	CHECK_HOOK(TeamInfo)
+	CHECK_HOOK(Brass)
+	CHECK_HOOK(CurWeapon)
+	CHECK_HOOK(HideWeapon)
+
+#undef CHECK_HOOK
+
+	return pfn;
+}
+
 static int Hk_HookUserMsg(const char *szMsgName, pfnUserMsgHook pfn)
 {
-	pfnUserMsgHook hook = pfn;
-
-	if (!strcmp(szMsgName, "SetFOV"))
-	{
-		Og_MsgFunc_SetFOV = pfn;
-		hook = Hk_MsgFunc_SetFOV;
-	}
-	else if (!strcmp(szMsgName, "TeamInfo"))
-	{
-		Og_MsgFunc_TeamInfo = pfn;
-		hook = Hk_MsgFunc_TeamInfo;
-	}
-	else if (!strcmp(szMsgName, "Brass"))
-	{
-		Og_MsgFunc_Brass = pfn;
-		hook = Hk_MsgFunc_Brass;
-	}
-	else if (!strcmp(szMsgName, "CurWeapon"))
-	{
-		Og_MsgFunc_CurWeapon = pfn;
-		hook = Hk_MsgFunc_CurWeapon;
-	}
-	else if (!strcmp(szMsgName, "HideWeapon"))
-	{
-		Og_MsgFunc_HideWeapon = pfn;
-		hook = Hk_MsgFunc_HideWeapon;
-	}
-
-	return gEngfuncs.pfnHookUserMsg(szMsgName, hook);
+	return gEngfuncs.pfnHookUserMsg(szMsgName, HookUserMsg(szMsgName, pfn));
 }
 
 /*
@@ -180,7 +172,6 @@ void Hk_HudFrame(double time)
 
 	GammaUpdate();
 
-	// mikkotodo might be necessary again if we need extremely expensive tangent calc
 	UpdateStudioCaches();
 
 	clientTime = gEngfuncs.GetClientTime();

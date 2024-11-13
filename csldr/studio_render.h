@@ -22,9 +22,6 @@ typedef struct
 	float elight_color[MAX_ELIGHTS][3];
 
 	struct studio_shader_s *shader;
-
-	int forceflags;
-	int used_texflags;
 } studio_context_t;
 
 typedef struct studio_globals_s
@@ -51,7 +48,8 @@ void R_StudioNewFrame(void);
 void R_StudioInitContext(studio_context_t *ctx, cl_entity_t *entity, model_t *model, studiohdr_t *header, studio_cache_t *cache);
 void R_StudioEntityLight(studio_context_t *ctx);
 void R_StudioSetupLighting(studio_context_t *ctx, alight_t *lighting);
-void R_StudioFinish(studio_context_t *ctx);
+void R_StudioSetupRenderer(studio_context_t *ctx);
+void R_StudioRestoreRenderer(studio_context_t *ctx);
 
 void R_StudioSetupModel(studio_context_t *ctx, int bodypart_index);
 void R_StudioDrawPoints(studio_context_t *ctx);

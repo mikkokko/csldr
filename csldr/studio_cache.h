@@ -27,11 +27,6 @@ typedef struct
 {
 	char name[64];
 	GLuint diffuse;
-	
-	// renderer structures
-	int num_elements;
-	unsigned *counts;
-	void **offsets;
 } mem_texture_t;
 
 typedef struct
@@ -66,6 +61,8 @@ typedef struct studio_cache_s
 
 	GLuint studio_vbo;
 	GLuint studio_ebo;
+
+	int texflags;
 } studio_cache_t;
 
 extern unsigned int flush_count;

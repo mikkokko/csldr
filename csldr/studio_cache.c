@@ -163,13 +163,16 @@ static int CountVerts(studiohdr_t *header, int *pmax_drawn_polys)
 
 static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *header)
 {
+	// mikkotodo revisit, for some reason meshes won't draw when the index offset is 0???
+	const int index_reserve = 1;
+
 	int total_verts = CountVerts(header, &cache->max_drawn_polys);
 
 	build_buffer_t build;
 	build.num_verts = 0;
 	build.verts = (studio_vert_t *)Mem_TempAlloc(sizeof(*build.verts) * total_verts);
-	build.num_indices = 0;
-	build.indices = (GLuint *)Mem_TempAlloc(sizeof(*build.indices) * total_verts * 3);
+	build.num_indices = index_reserve;
+	build.indices = (GLuint *)Mem_TempAlloc(index_reserve + sizeof(*build.indices) * total_verts * 3);
 
 	mstudiobodyparts_t *bodyparts = (mstudiobodyparts_t *)((byte *)header + header->bodypartindex);
 
@@ -215,26 +218,16 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 
 				unsigned index_offset = build.num_indices;
 
+				// save texture flags for shader selection
+				cache->texflags |= texture->flags;
+
 				ParseTricmds(&build, tricmds, vertices, normals, vertinfo, norminfo, s, t, is_rigged_bone);
 
 				mem_mesh_t *mem_mesh = &mem_model->meshes[k];
 				mem_mesh->ofs_indices = index_offset * sizeof(*build.indices);
 				mem_mesh->num_indices = build.num_indices - index_offset;
-
-				// count how many meshes can be drawn with this texture
-				mem_texture_t *mem_texture = &cache->textures[skins[mesh->skinref]];
-				mem_texture->num_elements++;
 			}
 		}
-	}
-
-	// allocate memory for the texture sorted drawing structures
-	for (int i = 0; i < cache->numtextures; i++)
-	{
-		mem_texture_t *texture = &cache->textures[i];
-		texture->counts = Mem_Alloc(sizeof(*texture->counts) * texture->num_elements);
-		texture->offsets = Mem_Alloc(sizeof(*texture->offsets) * texture->num_elements);
-		texture->num_elements = 0;
 	}
 
 	// build bone remap arrays

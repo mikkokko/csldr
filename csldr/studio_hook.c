@@ -167,13 +167,18 @@ static void Hk_StudioDrawBones(void)
 static void Hk_SetupRenderer(int rendermode)
 {
 	IEngineStudio.SetupRenderer(rendermode);
+
+	if (FASTPATH_ENABLED && !skip_fastpath)
+	{
+		R_StudioSetupRenderer(&context);
+	}
 }
 
 static void Hk_RestoreRenderer(void)
 {
 	if (FASTPATH_ENABLED && !skip_fastpath)
 	{
-		R_StudioFinish(&context);
+		R_StudioRestoreRenderer(&context);
 	}
 
 	IEngineStudio.RestoreRenderer();

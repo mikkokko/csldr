@@ -1,82 +1,30 @@
 #include "pch.h"
 
+// FIXME: use stb_image instead of this old crusty crap
+
 // mikkotodo make this 1024
 #define MAX_TGA_DIM 2048
 
 static const char *error_string;
 
-// mikkotodo merge with msg.c, essentially the same thing
-typedef struct
+static byte *LoadFromBuffer(void *buffer, int size, jmp_buf *error, int *pwidth, int *pheight, int *pcomp)
 {
-	byte *data;
-	int size;
-	int offset;
-} readBuffer_t;
-
-static jmp_buf readError;
-
-inline static void ReadBegin(readBuffer_t *buffer, void *data, int size)
-{
-	buffer->data = (byte *)data;
-	buffer->size = size;
-	buffer->offset = 0;
-}
-
-inline static void ReadSeek(readBuffer_t *buffer, int offset)
-{
-	if (buffer->offset + offset > buffer->size)
-		longjmp(readError, 1);
-
-	buffer->offset += offset;
-}
-
-inline static void ReadData(readBuffer_t *buffer, void *dest, int size)
-{
-	if (buffer->offset + size > buffer->size)
-		longjmp(readError, 1);
-
-	memcpy(dest, buffer->data + buffer->offset, size);
-	buffer->offset += size;
-}
-
-inline static byte ReadByte(readBuffer_t *buffer)
-{
-	if (buffer->offset + 1 > buffer->size)
-		longjmp(readError, 1);
-
-	byte value = *(byte *)(buffer->data + buffer->offset);
-	buffer->offset += 1;
-	return value;
-}
-
-inline static unsigned short ReadShort(readBuffer_t *buffer)
-{
-	if (buffer->offset + 2 > buffer->size)
-		longjmp(readError, 1);
-
-	unsigned short value = *(unsigned short *)(buffer->data + buffer->offset);
-	buffer->offset += 2;
-	return value;
-}
-
-static byte *LoadFromBuffer(void *buffer, int size, int *pwidth, int *pheight, int *pcomp)
-{
-	readBuffer_t read;
-	ReadBegin(&read, buffer, size);
+	msg_read_t read;
+	Msg_ReadInit(&read, buffer, size, error);
 
 	// read the header
-	int idLength = ReadByte(&read);
-	int colorMapType = ReadByte(&read);
-	int imageType = ReadByte(&read);
-	int colorMapFirstEntry = ReadShort(&read);
-	int colorMapLength = ReadShort(&read);
-	int colorMapEntrySize = ReadByte(&read);
-	int xOrigin = ReadShort(&read);
-	int yOrigin = ReadShort(&read);
-	int width = ReadShort(&read);
-	int height = ReadShort(&read);
-	int pixelDepth = ReadByte(&read);
-	int imageDescriptor = ReadByte(&read);
+	int idLength = Msg_ReadByte(&read);
+	int colorMapType = Msg_ReadByte(&read);
+	int imageType = Msg_ReadByte(&read);
+	int colorMapFirstEntry = Msg_ReadShort(&read);
+	int colorMapLength = Msg_ReadShort(&read);
+	int colorMapEntrySize = Msg_ReadByte(&read);
+	int xOrigin = Msg_ReadShort(&read);
+	int yOrigin = Msg_ReadShort(&read);
+	int width = Msg_ReadShort(&read);
+	int height = Msg_ReadShort(&read);
+	int pixelDepth = Msg_ReadByte(&read);
+	int imageDescriptor = Msg_ReadByte(&read);
 
 	// validate the header
 	if (colorMapType)
@@ -123,7 +71,7 @@ static byte *LoadFromBuffer(void *buffer, int size, int *pwidth, int *pheight, i
 		return NULL;
 	}
 
-	ReadSeek(&read, idLength);
+	Msg_ReadSeek(&read, idLength);
 
 	int pixelSize = pixelDepth >> 3;
 	assert(pixelSize == 1 || pixelSize == 3 || pixelSize == 4);
@@ -139,7 +87,7 @@ static byte *LoadFromBuffer(void *buffer, int size, int *pwidth, int *pheight, i
 
 			for (int j = 0; j < width; j += count)
 			{
-				count = ReadByte(&read);
+				count = Msg_ReadByte(&read);
 
 				if (count & 0x80)
 				{
@@ -148,7 +96,7 @@ static byte *LoadFromBuffer(void *buffer, int size, int *pwidth, int *pheight, i
 					count -= 0x7F;
 
 					byte pixel[4]; // max pixel size is 4
-					ReadData(&read, &pixel, pixelSize);
+					Msg_ReadData(&read, &pixel, pixelSize);
 
 					switch (pixelSize)
 					{
@@ -181,9 +129,9 @@ static byte *LoadFromBuffer(void *buffer, int size, int *pwidth, int *pheight, i
 				else
 				{
 					count++;
-					ReadData(&read, dst, count * pixelSize);
+					Msg_ReadData(&read, dst, count * pixelSize);
 					dst += (count * pixelSize);
-				}		
+				}
 			}
 
 			dst -= width * (2 * pixelSize);
@@ -193,7 +141,7 @@ static byte *LoadFromBuffer(void *buffer, int size, int *pwidth, int *pheight, i
 	{
 		for (int i = height - 1; i >= 0; i--)
 		{
-			ReadData(&read, dst, width * pixelSize);
+			Msg_ReadData(&read, dst, width * pixelSize);
 			dst -= width * pixelSize;
 		}
 	}
@@ -230,6 +178,7 @@ byte *TgaLoad(char *path, int *pwidth, int *pheight, int *pcomp)
 		return NULL;
 	}
 
+	jmp_buf readError;
 	if (setjmp(readError))
 	{
 		error_string = "Corrupted TGA file";
@@ -237,7 +186,7 @@ byte *TgaLoad(char *path, int *pwidth, int *pheight, int *pcomp)
 		return NULL;
 	}
 
-	byte *data = LoadFromBuffer(file, size, pwidth, pheight, pcomp);
+	byte *data = LoadFromBuffer(file, size, &readError, pwidth, pheight, pcomp);
 
 	// if data is null, error_string was set by LoadFromBuffer
 

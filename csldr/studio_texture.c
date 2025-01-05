@@ -48,7 +48,9 @@ static GLuint LoadFromFile(char *path, bool gamma, bool flush)
 	byte *data = TgaLoad(path, &width, &height, &comp);
 	if (!data)
 	{
-		gEngfuncs.Con_Printf("Could not load %s: %s\n", path, TgaLoadError());
+		// do a fatal error for now, TgaLoad leaks memory on failure
+		// and we don't handle failures properly here...
+		Plat_Error("Could not load %s: %s\n", path, TgaLoadError());
 		return 0;
 	}
 
@@ -69,7 +71,7 @@ static GLuint LoadFromFile(char *path, bool gamma, bool flush)
 		else
 		{
 			for (int i = 0; i < s; i++)
-				data[i] = gammavars.textable[data[i]];		
+				data[i] = gammavars.textable[data[i]];
 		}
 	}
 
@@ -116,7 +118,7 @@ static GLuint LoadFromFile(char *path, bool gamma, bool flush)
 	glPopAttrib();
 
 	Mem_TempFree(data);
-	
+
 	return image->texture;
 }
 

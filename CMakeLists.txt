@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 
 project(csldr)
 
@@ -56,10 +56,7 @@ if (DEBUG_BUILD)
 	target_compile_definitions(csldr PRIVATE SHADER_DIR="${SRCDIR}/shaders")
 endif()
 
-if (MSVC)
-	set_source_files_properties(${CSLDR_SRC} PROPERTIES COMPILE_FLAGS "/Yupch.h")
-	set_source_files_properties(${SRCDIR}/csldr/pch.c PROPERTIES COMPILE_FLAGS "/Ycpch.h")
-endif()
+target_precompile_headers(csldr PRIVATE ${SRCDIR}/csldr/pch.h)
 
 set_target_properties(csldr PROPERTIES OUTPUT_NAME "client")
 set_target_properties(csldr PROPERTIES PREFIX "")

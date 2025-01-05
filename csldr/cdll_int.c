@@ -46,6 +46,7 @@ static pfnUserMsgHook HookUserMsg(const char *szMsgName, pfnUserMsgHook pfn)
 	CHECK_HOOK(Brass)
 	CHECK_HOOK(CurWeapon)
 	CHECK_HOOK(HideWeapon)
+	CHECK_HOOK(NVGToggle)
 
 #undef CHECK_HOOK
 
@@ -71,6 +72,7 @@ int Hk_Initialize(cl_enginefunc_t *pEnginefuncs, int iVersion)
 	/* install custom ones */
 	pEnginefuncs->pfnHookUserMsg = Hk_HookUserMsg;
 	pEnginefuncs->pfnHookEvent = Hk_HookEvent;
+	pEnginefuncs->pfnFillRGBABlend = Hk_FillRGBABlend;
 
 	Og_TempModel = pEnginefuncs->pEfxAPI->R_TempModel;
 	pEnginefuncs->pEfxAPI->R_TempModel = Hk_TempModel;
@@ -90,7 +92,7 @@ void Hk_HudInit(void)
 	const char *gamedir;
 
 	cl_funcs.pHudInitFunc();
-	
+
 	Mem_Init();
 	ViewInit();
 	HudInit();

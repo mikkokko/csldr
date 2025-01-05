@@ -28,6 +28,7 @@ static cvar_t *hud_draw;
 
 int currentWeaponId;
 static int hideHudFlags;
+static bool nightVisionOn;
 
 // all of this is set by other code
 int xhairPlayerFlags;
@@ -63,6 +64,29 @@ int Hk_MsgFunc_HideWeapon(const char *pszName, int iSize, void *pbuf)
 	Msg_ReadInit(&read, pbuf, iSize, NULL);
 	hideHudFlags = Msg_ReadByte(&read);
 	return Og_MsgFunc_HideWeapon(pszName, iSize, pbuf);
+}
+
+int (*Og_MsgFunc_NVGToggle)(const char *pszName, int iSize, void *pbuf);
+
+int Hk_MsgFunc_NVGToggle(const char *pszName, int iSize, void *pbuf)
+{
+	msg_read_t read;
+	Msg_ReadInit(&read, pbuf, iSize, NULL);
+	nightVisionOn = Msg_ReadByte(&read);
+	return Og_MsgFunc_NVGToggle(pszName, iSize, pbuf);
+}
+
+/* stupid hack for disabling the nightvision crosshair when xhair_enabled is 1 */
+static bool xhairNvgHack = false;
+
+void Hk_FillRGBABlend(int x, int y, int w, int h, int r, int g, int b, int a)
+{
+	if (xhairNvgHack && ((w == 1 || h == 1) && r == 250 && g == 50 && b == 50))
+	{
+		return;
+	}
+
+	gEngfuncs.pfnFillRGBABlend(x, y, w, h, r, g, b, a);
 }
 
 void HudInit(void)
@@ -545,7 +569,9 @@ int Hk_HudRedraw(float time, int intermission)
 	color_str[0] = '0'; /* 0 as ascii character */
 	color_str[1] = '\0'; /* 0 as null terminator */
 
+	xhairNvgHack = nightVisionOn;
 	cl_funcs.pHudRedrawFunc(time, intermission);
+	xhairNvgHack = false;
 
 	/* restore the values */
 	cl_crosshair_translucent->value = old_trans;
@@ -562,6 +588,7 @@ int Hk_HudVidInit(void)
 {
 	currentWeaponId = WEAPON_NONE;
 	hideHudFlags = 0;
+	nightVisionOn = false;
 
 	return cl_funcs.pHudVidInitFunc();
 }

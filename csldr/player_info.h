@@ -1,6 +1,10 @@
-/* mikkotodo: should have 0 as no team */
-#define TEAM_TERRORIST 0
-#define TEAM_CT 1
+enum
+{
+	TEAM_UNASSIGNED = 0,
+	TEAM_TERRORIST = 1,
+	TEAM_CT = 2,
+	TEAM_SPECTATOR = 3
+};
 
 /* custom player info struct */
 typedef struct

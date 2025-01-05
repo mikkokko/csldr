@@ -39,15 +39,17 @@ int (*Og_MsgFunc_CurWeapon)(const char *pszName, int iSize, void *pbuf);
 
 int Hk_MsgFunc_CurWeapon(const char *pszName, int iSize, void *pbuf)
 {
-	int state = ((byte *)pbuf)[0];
-	int weaponId = ((signed char *)pbuf)[1];
+	msg_read_t read;
+	Msg_ReadInit(&read, pbuf, iSize, NULL);
+	int state = Msg_ReadByte(&read);
+	int weaponId = Msg_ReadChar(&read);
 
 	if (state)
 	{
-		if (weaponId > 0)
+		if (weaponId > WEAPON_NONE)
 			currentWeaponId = weaponId;
 		else
-			currentWeaponId = 0;
+			currentWeaponId = WEAPON_NONE;
 	}
 
 	return Og_MsgFunc_CurWeapon(pszName, iSize, pbuf);
@@ -57,7 +59,9 @@ int (*Og_MsgFunc_HideWeapon)(const char *pszName, int iSize, void *pbuf);
 
 int Hk_MsgFunc_HideWeapon(const char *pszName, int iSize, void *pbuf)
 {
-	hideHudFlags = ((byte *)pbuf)[0];
+	msg_read_t read;
+	Msg_ReadInit(&read, pbuf, iSize, NULL);
+	hideHudFlags = Msg_ReadByte(&read);
 	return Og_MsgFunc_HideWeapon(pszName, iSize, pbuf);
 }
 
@@ -556,7 +560,7 @@ int Hk_HudRedraw(float time, int intermission)
 
 int Hk_HudVidInit(void)
 {
-	currentWeaponId = 0;
+	currentWeaponId = WEAPON_NONE;
 	hideHudFlags = 0;
 
 	return cl_funcs.pHudVidInitFunc();

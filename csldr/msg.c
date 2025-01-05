@@ -1,60 +1,103 @@
 #include "pch.h"
 
-void Msg_ReadInit(msg_read_t *ctx, void *data, int size)
+void Msg_ReadInit(msg_read_t *ctx, void *data, int size, jmp_buf *error)
 {
 	ctx->data = (byte *)data;
 	ctx->size = size;
 	ctx->ofs = 0;
+	ctx->error = error;
+}
+
+bool Msg_ReadSeek(msg_read_t *ctx, int size)
+{
+	if (ctx->ofs + size > ctx->size)
+	{
+		if (ctx->error)
+			longjmp(*ctx->error, 1);
+		return false;
+	}
+
+	ctx->ofs += size;
+	return true;
+}
+
+bool Msg_ReadData(msg_read_t *ctx, void *buffer, int size)
+{
+	if (ctx->ofs + size > ctx->size)
+	{
+		if (ctx->error)
+			longjmp(*ctx->error, 1);
+		return false;
+	}
+
+	memcpy(buffer, &ctx->data[ctx->ofs], size);
+	ctx->ofs += size;
+	return true;
 }
 
 int Msg_ReadByte(msg_read_t *ctx)
 {
-	int val;
-
-	if (ctx->ofs + (int)sizeof(byte) > ctx->size)
+	if (ctx->ofs + 1 > ctx->size)
+	{
+		if (ctx->error)
+			longjmp(*ctx->error, 1);
 		return 0;
+	}
 
-	val = *(byte *)(&ctx->data[ctx->ofs]);
-	ctx->ofs += sizeof(byte);
-
-	return val;
+	return ctx->data[ctx->ofs++];
 }
 
 int Msg_ReadChar(msg_read_t *ctx)
 {
-	int val;
-
-	if (ctx->ofs + (int)sizeof(char) > ctx->size)
+	if (ctx->ofs + 1 > ctx->size)
+	{
+		if (ctx->error)
+			longjmp(*ctx->error, 1);
 		return 0;
+	}
 
-	val = *(char *)(&ctx->data[ctx->ofs]);
-	ctx->ofs += sizeof(char);
+	return (signed char)ctx->data[ctx->ofs++];
+}
 
-	return val;
+short Msg_ReadShort(msg_read_t *ctx)
+{
+	if (ctx->ofs + 2 > ctx->size)
+	{
+		if (ctx->error)
+			longjmp(*ctx->error, 1);
+		return 0;
+	}
+
+	int lo = ctx->data[ctx->ofs++];
+	int hi = ctx->data[ctx->ofs++];
+
+	return (short)(lo | (hi << 8));
 }
 
 float Msg_ReadAngle(msg_read_t *ctx)
 {
-	int val;
-
-	if (ctx->ofs + (int)sizeof(char) > ctx->size)
-		return 0;
-
-	val = *(char *)(&ctx->data[ctx->ofs]);
-	ctx->ofs += (int)sizeof(char);
-
-	return (float)val * (360.0f / 256);
+	return (float)Msg_ReadChar(ctx) * (360.0f / 256);
 }
 
 float Msg_ReadCoord(msg_read_t *ctx)
 {
-	int val;
+	return (float)Msg_ReadShort(ctx) * (1.0f / 8);
+}
 
-	if (ctx->ofs + (int)sizeof(short) > ctx->size)
-		return 0;
+int Msg_ReadString(msg_read_t *ctx, char *buffer, int size)
+{
+	int offset = 0;
 
-	val = *(short *)(&ctx->data[ctx->ofs]);
-	ctx->ofs += (int)sizeof(short);
+	while (true)
+	{
+		int ch = Msg_ReadChar(ctx);
+		if (!ch)
+			break;
 
-	return (float)val * (1.0f / 8);
+		if (offset < size - 1)
+			buffer[offset++] = (char)ch;
+	}
+
+	buffer[offset] = '\0';
+	return offset;
 }

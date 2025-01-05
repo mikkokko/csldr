@@ -11,22 +11,33 @@ int (*Og_MsgFunc_TeamInfo)(const char *pszName, int iSize, void *pbuf);
 
 int Hk_MsgFunc_TeamInfo(const char *pszName, int iSize, void *pbuf)
 {
-	int team;
 	int index;
-	const char *teamName;
+	char teamName[32];
+	msg_read_t read;
 
-	index = *(byte *)pbuf;
-	teamName = (const char *)pbuf + 1;
+	Msg_ReadInit(&read, pbuf, iSize, NULL);
 
-	if (!strcmp(teamName, "CT"))
-		team = TEAM_CT;
-	else
-		team = TEAM_TERRORIST; /* mikkotodo bad */
+	index = Msg_ReadByte(&read);
+	Msg_ReadString(&read, teamName, sizeof(teamName));
 
-	playerInfo[index].team = team;
+	if (index >= 0 && index < Q_ARRAYSIZE(playerInfo))
+	{
+		int team;
 
-	if (index == gEngfuncs.GetLocalPlayer()->index)
-		localTeam = team;
+		if (!strcmp(teamName, "CT"))
+			team = TEAM_CT;
+		else if (!strcmp(teamName, "TERRORIST"))
+			team = TEAM_TERRORIST;
+		else if (!strcmp(teamName, "SPECTATOR"))
+			team = TEAM_SPECTATOR;
+		else
+			team = TEAM_UNASSIGNED;
+
+		playerInfo[index].team = team;
+
+		if (index == gEngfuncs.GetLocalPlayer()->index)
+			localTeam = team;
+	}
 
 	return Og_MsgFunc_TeamInfo(pszName, iSize, pbuf);
 }

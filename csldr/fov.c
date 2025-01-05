@@ -90,7 +90,10 @@ int (*Og_MsgFunc_SetFOV)(const char *pszName, int iSize, void *pbuf);
 
 int Hk_MsgFunc_SetFOV(const char *pszName, int iSize, void *pbuf)
 {
-	int fov = *(byte *)pbuf;
+	msg_read_t read;
+	Msg_ReadInit(&read, pbuf, iSize, NULL);
+
+	int fov = Msg_ReadByte(&read);
 	if (fov < 1 || fov > 180)
 		fov = 90;
 

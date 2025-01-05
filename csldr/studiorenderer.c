@@ -58,7 +58,7 @@ static void DrawHands(cl_entity_t *weapon, int flags)
 	free the model so we'd need to do that manually... */
 	model = IEngineStudio.Mod_ForName(hands_path, false);
 	hands_valid = model != NULL;
-	if (!hands_valid)	
+	if (!hands_valid)
 		return;
 
 	/* should probably see what changes and only backup the necessary */
@@ -163,6 +163,7 @@ void My_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 	int oldbody;
 	int current;
 	int newbody;
+	int teamIndex;
 
 	entity = IEngineStudio.GetCurrentEntity();
 	viewModel = (entity == IEngineStudio.GetViewEntity());
@@ -193,9 +194,11 @@ void My_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 	oldbody = entity->curstate.body;
 
 	if (user1 == 4)
-		newbody = playerInfo[user2].team;
+		teamIndex = playerInfo[user2].team;
 	else
-		newbody = localTeam;
+		teamIndex = localTeam;
+
+	newbody = (teamIndex == TEAM_CT) ? 1 : 0;
 
 	current = (entity->curstate.body / body->base) % body->nummodels;
 	entity->curstate.body = (entity->curstate.body - (current * body->base) + (newbody * body->base));

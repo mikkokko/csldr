@@ -32,7 +32,7 @@ int Hk_MsgFunc_Brass(const char *pszName, int iSize, void *pbuf)
 		msg_read_t read;
 
 		/* save origin and velocity, we'll flip them later in R_TempModel */
-		Msg_ReadInit(&read, pbuf, iSize);
+		Msg_ReadInit(&read, pbuf, iSize, NULL);
 
 		if (isCzero)
 		{

@@ -65,6 +65,21 @@ if (APPLE)
 	target_link_options(csldr PRIVATE -framework CoreFoundation)
 endif()
 
+# try adding the git tag as a compile definition
+find_package(Git)
+
+if (GIT_FOUND)
+	execute_process(
+		COMMAND ${GIT_EXECUTABLE} describe --exact-match --tags
+		RESULT_VARIABLE RESULT
+		OUTPUT_VARIABLE OUTPUT
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+	if (RESULT STREQUAL "0")
+		target_compile_definitions(csldr PRIVATE GIT_TAG="${OUTPUT}")
+	endif()
+endif()
+
 if (OUTDIR)
 	add_custom_command(TARGET csldr POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy

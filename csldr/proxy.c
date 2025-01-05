@@ -1,6 +1,13 @@
 /* client.dll proxy */
 #include "pch.h"
 
+/* program version string, exported to make sure the compiler won't strip it */
+#ifdef GIT_TAG
+EXPORT const char *programVersion = "\ncsldr version:" GIT_TAG "\n";
+#else
+EXPORT const char *programVersion = "\ncsldr version:unknown\n";
+#endif
+
 static void *clientOrig;
 
 /* bruh */

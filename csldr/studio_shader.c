@@ -34,7 +34,7 @@ static const attribute_t studio_attributes[] =
 	{ shader_studio_a_pos, "a_pos" },
 	{ shader_studio_a_normal, "a_normal" },
 	{ shader_studio_a_texcoord, "a_texcoord" },
-	{ shader_studio_a_bones, "a_bones" }
+	{ shader_studio_a_bone, "a_bone" }
 };
 
 #define UNIFORM_DEF(name) { Q_OFFSETOF(studio_shader_t, name), #name }
@@ -105,7 +105,11 @@ static bool StringAppendf(String *dst, const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
+#if defined(_MSC_VER) && (_MSC_VER < 1800)
+	int result = _vsnprintf(dst->data + dst->len, dst->cap - dst->len, fmt, ap);
+#else
 	int result = vsnprintf(dst->data + dst->len, dst->cap - dst->len, fmt, ap);
+#endif
 	va_end(ap);
 
 	if (result < 0)

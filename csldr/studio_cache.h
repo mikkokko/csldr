@@ -20,7 +20,7 @@ typedef struct
 	float pos[3];
 	float norm[3];
 	float texcoord[2];
-	float bones[2];
+	float bone;
 } studio_vert_t;
 
 typedef struct
@@ -38,7 +38,7 @@ typedef struct
 } studio_config_t;
 
 typedef struct studio_cache_s
-{	
+{
 	char name[64]; // name of the model file
 	struct studio_cache_s *children[4];
 

@@ -13,9 +13,9 @@ unsigned int flush_count;
 
 typedef struct
 {
-	unsigned num_verts;
+	int num_verts;
 	studio_vert_t *verts;
-	unsigned num_indices;
+	int num_indices;
 	GLuint *indices;
 } build_buffer_t;
 
@@ -24,7 +24,6 @@ static void ParseTricmds(build_buffer_t *build,
 	vec3_t *vertices,
 	vec3_t *normals,
 	byte *vertinfo,
-	byte *norminfo,
 	float s,
 	float t,
 	byte *is_rigged_bone)
@@ -43,16 +42,16 @@ static void ParseTricmds(build_buffer_t *build,
 			value = -value;
 		}
 
-		unsigned count = (unsigned)value;
+		int count = value;
 
-		unsigned offset = build->num_verts;
+		int offset = build->num_verts;
 		build->num_verts += count;
 
 		studio_vert_t *vert = &build->verts[offset];
 
-		for (unsigned l = 0; l < count; l++)
+		for (int l = 0; l < count; l++)
 		{
-			for (unsigned m = 0; m < 3; m++)
+			for (int m = 0; m < 3; m++)
 			{
 				vert->pos[m] = vertices[tricmds[0]][m];
 				vert->norm[m] = normals[tricmds[1]][m];
@@ -61,11 +60,9 @@ static void ParseTricmds(build_buffer_t *build,
 			vert->texcoord[0] = s * tricmds[2];
 			vert->texcoord[1] = t * tricmds[3];
 
-			vert->bones[0] = vertinfo[tricmds[0]];
-			vert->bones[1] = norminfo[tricmds[1]];
+			vert->bone = vertinfo[tricmds[0]];
 
 			is_rigged_bone[vertinfo[tricmds[0]]] = true;
-			is_rigged_bone[norminfo[tricmds[1]]] = true;
 
 			tricmds += 4;
 			vert++;
@@ -73,7 +70,7 @@ static void ParseTricmds(build_buffer_t *build,
 
 		if (trifan)
 		{
-			for (unsigned i = 2; i < count; i++)
+			for (int i = 2; i < count; i++)
 			{
 				build->indices[build->num_indices++] = offset;
 				build->indices[build->num_indices++] = offset + i - 1;
@@ -82,7 +79,7 @@ static void ParseTricmds(build_buffer_t *build,
 		}
 		else
 		{
-			for (unsigned i = 2; i < count; i++)
+			for (int i = 2; i < count; i++)
 			{
 				if (!(i % 2))
 				{
@@ -163,6 +160,8 @@ static int CountVerts(studiohdr_t *header, int *pmax_drawn_polys)
 
 static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *header)
 {
+	int i;
+
 	// mikkotodo revisit, for some reason meshes won't draw when the index offset is 0???
 	const int index_reserve = 1;
 
@@ -185,7 +184,7 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 	byte is_rigged_bone[128]; // keep track of bones that are used for skinning
 	memset(is_rigged_bone, 0, sizeof(is_rigged_bone));
 
-	for (int i = 0; i < header->numbodyparts; i++)
+	for (i = 0; i < header->numbodyparts; i++)
 	{
 		mstudiobodyparts_t *bodypart = &bodyparts[i];
 		mstudiomodel_t *models = (mstudiomodel_t *)((byte *)header + bodypart->modelindex);
@@ -202,7 +201,6 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 			vec3_t *normals = (vec3_t *)((byte *)header + submodel->normindex);
 
 			byte *vertinfo = (byte *)((byte *)header + submodel->vertinfoindex);
-			byte *norminfo = (byte *)((byte *)header + submodel->norminfoindex);
 
 			mem_model_t *mem_model = &mem_bodypart->models[j];
 			mem_model->meshes = (mem_mesh_t *)Mem_Alloc(sizeof(*mem_model->meshes) * submodel->nummesh);
@@ -216,12 +214,12 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 				float s = 1.0f / (float)texture->width;
 				float t = 1.0f / (float)texture->height;
 
-				unsigned index_offset = build.num_indices;
+				int index_offset = build.num_indices;
 
 				// save texture flags for shader selection
 				cache->texflags |= texture->flags;
 
-				ParseTricmds(&build, tricmds, vertices, normals, vertinfo, norminfo, s, t, is_rigged_bone);
+				ParseTricmds(&build, tricmds, vertices, normals, vertinfo, s, t, is_rigged_bone);
 
 				mem_mesh_t *mem_mesh = &mem_model->meshes[k];
 				mem_mesh->ofs_indices = index_offset * sizeof(*build.indices);
@@ -232,7 +230,7 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 
 	// build bone remap arrays
 	byte bone_remap[128];
-	for (int i = 0; i < header->numbones; i++)
+	for (i = 0; i < header->numbones; i++)
 	{
 		if (is_rigged_bone[i])
 		{
@@ -242,11 +240,10 @@ static void BuildStudioVBO(studio_cache_t *cache, model_t *model, studiohdr_t *h
 	}
 
 	// remap bone indices to the correct ones
-	for (unsigned i = 0; i < build.num_verts; i++)
+	for (i = 0; i < build.num_verts; i++)
 	{
 		studio_vert_t *vert = &build.verts[i];
-		vert->bones[0] = bone_remap[(int)vert->bones[0]];
-		vert->bones[1] = bone_remap[(int)vert->bones[1]];
+		vert->bone = bone_remap[(int)vert->bone];
 	}
 
 	glGenBuffers(1, &cache->studio_vbo);

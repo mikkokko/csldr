@@ -400,12 +400,12 @@ void R_StudioSetupRenderer(studio_context_t *ctx)
 	glEnableVertexAttribArray(shader_studio_a_pos);
 	glEnableVertexAttribArray(shader_studio_a_normal);
 	glEnableVertexAttribArray(shader_studio_a_texcoord);
-	glEnableVertexAttribArray(shader_studio_a_bones);
+	glEnableVertexAttribArray(shader_studio_a_bone);
 
 	glVertexAttribPointer(shader_studio_a_pos, 3, GL_FLOAT, GL_FALSE, sizeof(studio_vert_t), (void *)Q_OFFSETOF(studio_vert_t, pos));
 	glVertexAttribPointer(shader_studio_a_normal, 3, GL_FLOAT, GL_FALSE, sizeof(studio_vert_t), (void *)Q_OFFSETOF(studio_vert_t, norm));
 	glVertexAttribPointer(shader_studio_a_texcoord, 2, GL_FLOAT, GL_FALSE, sizeof(studio_vert_t), (void *)Q_OFFSETOF(studio_vert_t, texcoord));
-	glVertexAttribPointer(shader_studio_a_bones, 2, GL_FLOAT, GL_FALSE, sizeof(studio_vert_t), (void *)Q_OFFSETOF(studio_vert_t, bones));
+	glVertexAttribPointer(shader_studio_a_bone, 1, GL_FLOAT, GL_FALSE, sizeof(studio_vert_t), (void *)Q_OFFSETOF(studio_vert_t, bone));
 }
 
 void R_StudioRestoreRenderer(studio_context_t *ctx)
@@ -419,7 +419,7 @@ void R_StudioRestoreRenderer(studio_context_t *ctx)
 	glDisableVertexAttribArray(shader_studio_a_pos);
 	glDisableVertexAttribArray(shader_studio_a_normal);
 	glDisableVertexAttribArray(shader_studio_a_texcoord);
-	glDisableVertexAttribArray(shader_studio_a_bones);
+	glDisableVertexAttribArray(shader_studio_a_bone);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);

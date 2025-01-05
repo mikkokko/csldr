@@ -34,7 +34,7 @@ varying float f_fog;
 attribute vec3 a_pos;
 attribute vec3 a_normal;
 attribute vec2 a_texcoord;
-attribute vec2 a_bones;
+attribute float a_bone;
 
 #if UBO_ABLE
 layout (std140) uniform bones
@@ -82,7 +82,7 @@ uniform bool u_tex_fullbright;
 #endif
 
 #if (LIGHTING_MODE == LIGHTING_MODE_NORMAL) || (LIGHTING_MODE == LIGHTING_MODE_ELIGHTS)
-float gamma_correct_light(float value)
+float lighten(float value)
 {
 	float f = pow(value, u_lightgamma) * max(u_brightness, 1.0);
 
@@ -111,7 +111,7 @@ vec4 vertex_color(vec3 pos_anim, vec3 normal_anim)
 	if (u_tex_fullbright)
 		return vec4(vec3(1.0), u_color.a);
 #endif
-	
+
 	// attempts to mimic engine's R_StudioLighting
 	float diffuse;
 
@@ -122,12 +122,12 @@ vec4 vertex_color(vec3 pos_anim, vec3 normal_anim)
 	}
 	else
 #endif
-	{					
+	{
 		// engine's v_lambert1, doesn't change
 		const float lambert = 1.4953241;
 
 		float ndl = dot(normal_anim, u_lightvec);
-		
+
 		 // assumes that lambert >= 1.0
 		diffuse = (1.0 - ndl) * (1.0 / lambert);
 		diffuse = min(diffuse, 1.0);
@@ -135,7 +135,7 @@ vec4 vertex_color(vec3 pos_anim, vec3 normal_anim)
 
 	float result = u_ambientlight + (u_shadelight * diffuse);
 	result = clamp(result, 0.0, 1.0);
-	result = gamma_correct_light(result);
+	result = lighten(result);
 
 	vec4 my_color = u_color;
 	my_color.rgb *= result;
@@ -167,11 +167,10 @@ vec4 vertex_color(vec3 pos_anim, vec3 normal_anim)
 
 void main()
 {
-	mat3x4 bone = u_bones[int(a_bones.x)];
-	mat3x4 bone_normal = u_bones[int(a_bones.y)];
+	mat3x4 bone = u_bones[int(a_bone)];
 
 	vec3 pos_anim = vec4(a_pos, 1.0) * bone;
-	vec3 normal_anim = a_normal * mat3(bone_normal);
+	vec3 normal_anim = a_normal * mat3(bone);
 
 	normal_anim = normalize(normal_anim);
 
@@ -179,21 +178,15 @@ void main()
 	if (u_tex_chrome)
 	{
 		// attempts to mimic engine's R_StudioChrome
-		vec3 dir = normalize(vec3(
-			bone_normal[0][3] - u_chromeorg[0],
-			bone_normal[1][3] - u_chromeorg[1],
-			bone_normal[2][3] - u_chromeorg[2]));
+		vec3 bone_pos = vec3(bone[0][3], bone[1][3], bone[2][3]);
+
+		vec3 dir = normalize(bone_pos - u_chromeorg);
 
 		vec3 up = normalize(cross(dir, u_chromeright));
 		vec3 side = normalize(cross(dir, up));
 
-		mat3 mat = transpose(mat3(bone_normal));
-		vec3 up_anim = up * mat;
-		vec3 side_anim = side * mat;
-
-		// mikkotodo why the fuck this this needed???
-		f_texcoord.x = 1.0 - (dot(a_normal, side_anim) + 1.0) * 0.5;
-		f_texcoord.y = (dot(a_normal, up_anim) + 1.0) * 0.5;
+		f_texcoord.x = 1.0 - (dot(normal_anim, side) + 1.0) * 0.5;
+		f_texcoord.y = (dot(normal_anim, up) + 1.0) * 0.5;
 	}
 	else
 #endif

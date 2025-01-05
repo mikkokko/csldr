@@ -94,11 +94,11 @@ static void Hk_StudioSetupLighting(alight_t *lighting)
 		}
 
 		R_StudioInitContext(&context, IEngineStudio.GetCurrentEntity(), s_model, s_header, cache);
-		
+
 		// moved here because of skip_fastpath
 		R_StudioEntityLight(&context);
 
-		R_StudioSetupLighting(&context, lighting);	
+		R_StudioSetupLighting(&context, lighting);
 	}
 	else
 	{
@@ -190,7 +190,7 @@ static void StudioInfo_f(void)
 	gEngfuncs.Con_Printf("GL_ARB_uniform_buffer_object: %s\n", GLAD_GL_ARB_uniform_buffer_object ? "available" : "not available");
 	gEngfuncs.Con_Printf("GL_MAX_VERTEX_UNIFORM_COMPONENTS: %d\n", s_max_vertex_uniform_components);
 	gEngfuncs.Con_Printf("Fast path: %s\n", studio_fastpath ? "available" : "not available");
-	
+
 	int num_models, max_models;
 	StudioCacheStats(&num_models, &max_models);
 	gEngfuncs.Con_Printf("Models cached: %d / %d\n", num_models, max_models);

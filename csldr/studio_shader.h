@@ -27,7 +27,7 @@ enum
 	shader_studio_a_pos = 0,
 	shader_studio_a_normal = 1,
 	shader_studio_a_texcoord = 2,
-	shader_studio_a_bones = 3
+	shader_studio_a_bone = 3
 };
 
 typedef struct studio_shader_s

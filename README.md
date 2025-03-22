@@ -72,7 +72,7 @@ fov_override 74 // scales accordingly to the value of viewmodel_fov (90 = no cha
 // texture overrides, these only work when studio_fastpath is 1
 textures
 {
-    ak47.bmp // embedded texture name
+    ak47.bmp // embedded texture name (case sensitive)
     {
         diffuse textures/models/v_ak47/ak47.tga
     }

@@ -15,6 +15,8 @@ int screenWidth, screenHeight;
 
 bool canOpenGL;
 
+bool renderActive;
+
 static void UpdateScreenSize(void)
 {
 	SCREENINFO scr;
@@ -77,6 +79,9 @@ int Hk_Initialize(cl_enginefunc_t *pEnginefuncs, int iVersion)
 	Og_TempModel = pEnginefuncs->pEfxAPI->R_TempModel;
 	pEnginefuncs->pEfxAPI->R_TempModel = Hk_TempModel;
 
+	/* let the renderer tap in */
+	Render_ModifyEngfuncs(pEnginefuncs);
+
 	/* give the custom ones to client */
 	return cl_funcs.pInitFunc(pEnginefuncs, iVersion);
 }
@@ -93,13 +98,11 @@ void Hk_HudInit(void)
 
 	cl_funcs.pHudInitFunc();
 
-	Mem_Init();
 	ViewInit();
 	HudInit();
 	InspectInit();
 	ShellInit();
 	CameraInit();
-	GammaInit();
 
 	/* is this czero */
 	gamedir = gEngfuncs.pfnGetGameDirectory();
@@ -119,7 +122,6 @@ void Hk_HudInit(void)
 void Hk_HudShutdown(void)
 {
 	cl_funcs.pShutdown();
-	Mem_Shutdown();
 }
 
 /*
@@ -172,12 +174,12 @@ void Hk_HudFrame(double time)
 
 	UpdateScreenSize();
 
-	GammaUpdate();
-
 	UpdateStudioCaches();
 
 	clientTime = gEngfuncs.GetClientTime();
 	cl_funcs.pHudFrame(time);
+
+	renderActive = Render_BeginFrame();
 }
 
 /*

@@ -10,6 +10,11 @@ static HMODULE hModule;
 int isWarzone;
 #endif
 
+void *Plat_Dlopen(const char *filename)
+{
+	return LoadLibraryA(filename);
+}
+
 void *Plat_CheckedDlopen(const char *filename)
 {
 	HMODULE handle = LoadLibraryA(filename);

@@ -43,10 +43,49 @@ EXPORT void Demo_ReadBuffer(int size, unsigned char *buffer)
 	cl_funcs.pReadDemoBuffer(size, buffer);
 }
 
+/***/
+
+int Hk_AddEntity(int type, cl_entity_t *ent, const char *modelname)
+{
+	int result = cl_funcs.pAddEntity(type, ent, modelname);
+	if (result)
+	{
+		if (!Render_AddEntity(type, ent))
+		{
+			return 1;
+		}
+
+		return 0;
+	}
+
+	return result;
+}
+
+void Hk_TempEntUpdate(double frametime,
+	double client_time,
+	double cl_gravity,
+	TEMPENTITY **ppTempEntFree,
+	TEMPENTITY **ppTempEntActive,
+	int (*Callback_AddVisibleEntity)(cl_entity_t *),
+	void (*Callback_TempEntPlaySound)(TEMPENTITY *, float))
+{
+	Callback_AddVisibleEntity = Render_GetAddEntityCallback(Callback_AddVisibleEntity);
+
+	cl_funcs.pTempEntUpdate(frametime,
+		client_time,
+		cl_gravity,
+		ppTempEntFree,
+		ppTempEntActive,
+		Callback_AddVisibleEntity,
+		Callback_TempEntPlaySound);
+}
+
+/***/
+
 EXPORT int HUD_AddEntity(int type, cl_entity_t *ent, const char *modelname)
 {
-	/* pass through */
-	return cl_funcs.pAddEntity(type, ent, modelname);
+	/* hooked */
+	return Hk_AddEntity(type, ent, modelname);
 }
 
 EXPORT void HUD_ChatInputPosition(int *x, int *y)
@@ -197,8 +236,8 @@ EXPORT void HUD_TempEntUpdate(double frametime,
 		int (*Callback_AddVisibleEntity)(cl_entity_t *),
 		void (*Callback_TempEntPlaySound)(TEMPENTITY *, float))
 {
-	/* pass through */
-	cl_funcs.pTempEntUpdate(frametime,
+	/* hooked */
+	Hk_TempEntUpdate(frametime,
 			client_time,
 			cl_gravity,
 			ppTempEntFree,

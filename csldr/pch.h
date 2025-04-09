@@ -57,23 +57,18 @@ typedef enum {false, true} bool;
 #include "platform.h"
 #include "player_info.h"
 #include "shell.h"
-#include "shader.h"
 #include "studio_cache.h"
-#include "studio_hook.h"
-#include "studio_render.h"
-#include "studio_shader.h"
-#include "studio_texture.h"
 #include "studiorenderer.h"
 #include "view.h"
 #include "weapon_info.h"
 #include "secret_dll.h"
-#include "memory.h"
-#include "gamma.h"
-#include "tga.h"
 #include "d3d.h"
 #include "hash.h"
 
 /* ui stuff */
 #include "hud_crosshair.h"
+
+/* the bloated renderer is in its own module, and is completely optional */
+#include "render.h"
 
 #endif // CSLDR_PCH_H

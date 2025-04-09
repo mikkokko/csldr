@@ -546,6 +546,14 @@ static bool ShouldDrawCustomCrosshair(int intermission, int *weaponId)
 	return true;
 }
 
+static int WrapRedraw(float time, int intermission)
+{
+	Render_PreDrawHud();
+	int result = cl_funcs.pHudRedrawFunc(time, intermission);
+	Render_PostDrawHud(screenWidth, screenHeight);
+	return result;
+}
+
 int Hk_HudRedraw(float time, int intermission)
 {
 	char *color_str;
@@ -554,7 +562,7 @@ int Hk_HudRedraw(float time, int intermission)
 	int weaponId = currentWeaponId;
 
 	if (!ShouldDrawCustomCrosshair(intermission, &weaponId))
-		return cl_funcs.pHudRedrawFunc(time, intermission);
+		return WrapRedraw(time, intermission);
 
 	/* stupid hack, the memory is always writable though */
 	color_str = (char *)cl_crosshair_color->string;
@@ -570,7 +578,7 @@ int Hk_HudRedraw(float time, int intermission)
 	color_str[1] = '\0'; /* 0 as null terminator */
 
 	xhairNvgHack = nightVisionOn;
-	cl_funcs.pHudRedrawFunc(time, intermission);
+	WrapRedraw(time, intermission);
 	xhairNvgHack = false;
 
 	/* restore the values */

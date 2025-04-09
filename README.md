@@ -14,7 +14,6 @@
 - Bone controlled camera movement
 - Mirrored shell ejects
 - FOV lerp
-- Shader-based model renderer
 
 ## Notes
 
@@ -36,25 +35,6 @@ Some non-Steam builds of the game (notably CS WaRzOnE) come with a program calle
 4. Move the new client.dll into the folder
 5. Play
 
-## Shader-based model renderer
-
-The shader-based model renderer requires OpenGL 2.1 and the GL_ARB_uniform_buffer_object extension. Currently the renderer doesn't have a lot going for it besides a few nice to have things:
-- Improved performance when rendering high poly models
-- Support for the fullbright texture flag
-- Chrome textures are no longer limited to 64x64
-- Support for more than 2048 vertices/normals per submodel
-- External texture replacements (see [Model config files](#model-config-files))
-
-Eventually I will add more features to it for modding purposes.
-
-Known issues with the renderer:
-- Glowshell uses model normals instead of computing custom ones
-- Rendering of hulls, bboxes or bones is not supported (r_drawentities > 1)
-
-On some systems, the renderer can be slower when rendering low poly models due to the overhead it adds. As a mitigation, the default renderer will be used for low poly models that don’t use studio_fastpath exclusive features. The poly count threshold can be controlled with the cvar `studio_fastpath_min_polys`.
-
-The renderer can be enabled with `studio_fastpath 1` if the system supports it. To see information about the renderer's state, use `studio_info`. If you notice any issues with the renderer (models not looking as they should, performance issues, etc.) let me know by opening an issue.
-
 ## Model config files
 
 Model config files allow you to tweak model specific options. Here is an example config file for the ak47 viewmodel (`models/v_ak47.txt`), which contains all of the available options:
@@ -68,20 +48,9 @@ mirror_shell 1 // mirror shell ejects
 mirror_model 1 // mirror the viewmodel
 origin "1 0 -1" // additional origin adjustment
 fov_override 74 // scales accordingly to the value of viewmodel_fov (90 = no change)
-
-// texture overrides, these only work when studio_fastpath is 1
-textures
-{
-    ak47.bmp // embedded texture name (case sensitive)
-    {
-        diffuse textures/models/v_ak47/ak47.tga
-    }
-}
 ```
 
-The texture replacements only work when the shader-based model renderer is active. Only TGA files are supported.
-
-Model config files can be reloaded with the `studio_config_flush` command. This will also reload texture files.
+Model config files can be reloaded with the `studio_config_flush` command.
 
 ## Other stuff
 
@@ -106,9 +75,6 @@ Model config files can be reloaded with the `studio_config_flush` command. This 
 | fov_lerp | FOV interpolation time in seconds. |
 | lookat | Inspects the weapon if the animation is present. |
 | studio_confg_flush | Reloads model config files and any files referenced by them (like textures). |
-| studio_fastpath | Enables the shader-based model renderer. |
-| studio_fastpath_min_polys | Optimization kludge, see the [documentation](#shader-based-model-renderer). |
-| studio_info | Prints information about the shader-based model renderer. |
 | viewmodel_fov | Viewmodel FOV. |
 | viewmodel_hands | Specifies an external hand model, for example "v_hands.mdl". Can be disabled with an empty string (""). |
 | viewmodel_lag_style | Viewmodel sway style. 0 is off, 1 is HL2 style and 2 is CS:S/CS:GO style. |

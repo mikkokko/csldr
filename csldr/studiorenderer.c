@@ -91,6 +91,9 @@ static void SetProjectionMatrix(void)
 	if (!canOpenGL)
 		return; // won't work
 
+	if (renderActive)
+		return; // won't work (renderer does this itself)
+
 	aspect = (float)screenWidth / (float)screenHeight;
 
 	fov = GetViewmodelFov() * fovScale;
@@ -117,6 +120,9 @@ static void RestoreProjectionMatrix(void)
 {
 	if (!canOpenGL)
 		return; // won't work
+
+	if (renderActive)
+		return; // won't work (renderer does this itself)
 
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
@@ -154,7 +160,7 @@ static int My_StudioDrawModel(int flags)
 	return result;
 }
 
-void My_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
+static void Hk_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 {
 	cl_entity_t *entity;
 	bool viewModel;
@@ -169,7 +175,7 @@ void My_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 	viewModel = (entity == IEngineStudio.GetViewEntity());
 	if (!viewModel) /* we don't want to do anything */
 	{
-		Hk_StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
+		IEngineStudio.StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
 		return;
 	}
 
@@ -177,7 +183,7 @@ void My_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 	studiohdr = (studiohdr_t *)entity->model->cache.data;
 	if (!studiohdr)
 	{
-		Hk_StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
+		IEngineStudio.StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
 		return;
 	}
 
@@ -186,7 +192,7 @@ void My_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 	/* check if the names matches and that there's enough submodels */
 	if (*(uint32 *)body->name != *(uint32 *)"arms" || body->nummodels < 2)
 	{
-		Hk_StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
+		IEngineStudio.StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
 		return;
 	}
 
@@ -204,7 +210,7 @@ void My_StudioSetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
 	entity->curstate.body = (entity->curstate.body - (current * body->base) + (newbody * body->base));
 
 	/* set the arm bodygroup */
-	Hk_StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
+	IEngineStudio.StudioSetupModel(bodypart, ppbodypart, ppsubmodel);
 
 	/* restore state */
 	entity->curstate.body = oldbody;
@@ -216,9 +222,27 @@ int Hk_GetStudioModelInterface(int version,
 {
 	int result;
 
-	/* install hooks for fast path rendering */
+	/* setup the GL, done here so we can get at pstudio->IsHardware() */
+	switch(pstudio->IsHardware())
+	{
+	case 1:
+		canOpenGL = gladLoadGL();
+		break;
+
+	case 2:
+		canOpenGL = gladLoadGLLoader(D3D_GL_GetProcAddress);
+		break;
+
+	default:
+		canOpenGL = false;
+		break;
+	}
+
+	/* let the renderer tap in before us */
+	Render_Initialize(pstudio, ppinterface);
+
 	memcpy(&IEngineStudio, pstudio, sizeof(engine_studio_api_t));
-	HookEngineStudio(pstudio);
+	pstudio->StudioSetupModel = Hk_StudioSetupModel;
 
 	/* give to client */
 	result = cl_funcs.pStudioInterface(version, ppinterface, pstudio);

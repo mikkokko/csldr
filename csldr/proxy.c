@@ -22,35 +22,8 @@ static void *clientOrig;
 #define ORIG_SUFFIX "_orig"
 #define ORIG_SUFFIX_LEN 5
 
-void ProxyInit(void)
+static void GetClientFuncs(void)
 {
-	char path[512];
-	size_t length = Plat_CurrentModuleName(path, sizeof(path));
-	if (!length)
-	{
-		Plat_Error("Could not get current module name\n");
-		return;
-	}
-
-	/* need to be able to fit the suffix in there */
-	if (length + ORIG_SUFFIX_LEN >= sizeof(path))
-		Plat_Error("Game path is too long\n");
-
-	char *end = path + length;
-	char *ext = strrchr(path, '.'); /* no memrchr on msvc.. */
-	if (!ext)
-		ext = end; // no extension?
-
-	size_t ext_length = end - ext;
-	memmove(ext + ORIG_SUFFIX_LEN, ext, ext_length + 1); /* including the nul terminator */
-	memcpy(ext, ORIG_SUFFIX, ORIG_SUFFIX_LEN);
-
-	if (Secret_LoadClient(path))
-		return;
-
-	/* if this fails, it prints out why and terminates the process */
-	clientOrig = Plat_CheckedDlopen(path);
-
 	CLIENT_DLSYM_VALIDATE(pCreateInterface, "CreateInterface")
 
 	/* don't use F because some clients won't call it
@@ -101,7 +74,44 @@ void ProxyInit(void)
 	CLIENT_DLSYM_VALIDATE(cl_funcs.pClientFactory, "ClientFactory")
 }
 
+void ProxyInit(void)
+{
+	char path[512];
+	size_t length = Plat_CurrentModuleName(path, sizeof(path));
+	if (!length)
+	{
+		Plat_Error("Could not get current module name\n");
+		return;
+	}
+
+	/* need to be able to fit the suffix in there */
+	if (length + ORIG_SUFFIX_LEN >= sizeof(path))
+		Plat_Error("Game path is too long\n");
+
+	char *end = path + length;
+	char *ext = strrchr(path, '.'); /* no memrchr on msvc.. */
+	if (!ext)
+		ext = end; // no extension?
+
+	size_t ext_length = end - ext;
+	memmove(ext + ORIG_SUFFIX_LEN, ext, ext_length + 1); /* including the nul terminator */
+	memcpy(ext, ORIG_SUFFIX, ORIG_SUFFIX_LEN);
+
+	if (Secret_LoadClient(path))
+		return;
+
+	/* if this fails, it prints out why and terminates the process */
+	clientOrig = Plat_CheckedDlopen(path);
+
+	/* fill cl_funcs */
+	GetClientFuncs();
+
+	/* try loading the renderer at this point */
+	Render_Load();
+}
+
 void ProxyQuit(void)
 {
+	Render_Unload();
 	Plat_Dlclose(clientOrig);
 }

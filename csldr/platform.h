@@ -14,7 +14,11 @@
 extern int isWarzone;
 #endif
 
+void *Plat_Dlopen(const char *filename);
+
+/* same as Plat_Dlopen, but exits with an error message on failure */
 void *Plat_CheckedDlopen(const char *filename);
+
 void *Plat_Dlsym(void *handle, const char *name);
 void Plat_Dlclose(void *handle);
 size_t Plat_CurrentModuleName(char *name, size_t size);

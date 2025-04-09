@@ -1,36 +1,5 @@
 typedef struct
 {
-	unsigned ofs_indices;
-	unsigned num_indices;
-} mem_mesh_t;
-
-typedef struct mem_model_s
-{
-	mem_mesh_t *meshes;
-} mem_model_t;
-
-typedef struct
-{
-	mem_model_t *models;
-} mem_bodypart_t;
-
-// we could pack the components to halve the size of vertices, right? WRONG!!!! that completely tanks peformance on old ATI APUs
-typedef struct
-{
-	float pos[3];
-	float norm[3];
-	float texcoord[2];
-	float bone;
-} studio_vert_t;
-
-typedef struct
-{
-	char name[64];
-	GLuint diffuse;
-} mem_texture_t;
-
-typedef struct
-{
 	bool mirror_shell;
 	bool mirror_model;
 	vec3_t origin;
@@ -46,23 +15,7 @@ typedef struct studio_cache_s
 	int header_length;
 
 	// configuration
-	bool needs_renderer;
 	studio_config_t config;
-
-	// renderer specfic stuff
-	int max_drawn_polys;
-	int num_gpubones;
-	byte map_gpubones[128];
-
-	mem_texture_t *textures;
-	int numtextures;
-
-	mem_bodypart_t *bodyparts;
-
-	GLuint studio_vbo;
-	GLuint studio_ebo;
-
-	int texflags;
 } studio_cache_t;
 
 extern unsigned int flush_count;
@@ -72,7 +25,4 @@ studio_cache_t *EntityStudioCache(cl_entity_t *entity);
 
 void UpdateStudioCaches(void);
 
-void StudioCacheStats(int *count, int *max);
 void StudioConfigFlush_f(void);
-
-studiohdr_t *R_LoadTextures(model_t *model, studiohdr_t *header);

@@ -11,6 +11,8 @@ extern int screenWidth, screenHeight;
 
 extern bool canOpenGL;
 
+extern bool renderActive;
+
 void Hk_HudInit(void);
 void Hk_HudShutdown(void);
 void Hk_HudFrame(double time);

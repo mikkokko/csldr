@@ -1,8 +1,5 @@
 #include "pch.h"
 
-vec3_t v_vieworg;
-vec3_t v_viewforward, v_viewright, v_viewup;
-
 cvar_t *viewmodel_fov;
 static cvar_t *viewmodel_shift;
 static cvar_t *viewmodel_offset_x;
@@ -487,11 +484,12 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 	/* mikkotodo move? */
 	FovThink();
 
-	VectorCopy(pparams->vieworg, v_vieworg);
-	VectorCopy(pparams->forward, v_viewforward);
-	VectorCopy(pparams->right, v_viewright);
-	VectorCopy(pparams->up, v_viewup);
-
-	// dumb as fuck
-	R_StudioNewFrame();
+	renderParams_t params;
+	VectorCopy(pparams->vieworg, params.origin);
+	VectorCopy(pparams->viewangles, params.angles);
+	VectorCopy(pparams->crosshairangle, params.crosshairAngle);
+	params.fov = GetCurrentFov();
+	params.aspectRatio = (float)screenWidth / screenHeight;
+	params.movevars = pparams->movevars;
+	Render_RenderScene(&params);
 }

@@ -49,12 +49,7 @@ add_library(csldr SHARED
 target_include_directories(csldr PRIVATE ${SRCDIR}/external/sdk)
 
 target_sources(csldr PRIVATE ${SRCDIR}/external/glad/src/glad.c)
-target_include_directories(csldr PRIVATE ${SRCDIR}/external/glad/include ${SRCDIR}/shaders)
-
-if (DEBUG_BUILD)
-	# load shaders from a hardcoded directory on debug builds
-	target_compile_definitions(csldr PRIVATE SHADER_DIR="${SRCDIR}/shaders")
-endif()
+target_include_directories(csldr PRIVATE ${SRCDIR}/external/glad/include)
 
 target_precompile_headers(csldr PRIVATE ${SRCDIR}/csldr/pch.h)
 

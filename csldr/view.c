@@ -1,6 +1,6 @@
 #include "pch.h"
 
-cvar_t *viewmodel_fov;
+static cvar_t *viewmodel_fov;
 static cvar_t *viewmodel_shift;
 static cvar_t *viewmodel_offset_x;
 static cvar_t *viewmodel_offset_y;
@@ -485,11 +485,24 @@ void Hk_CalcRefdef(ref_params_t *pparams)
 	FovThink();
 
 	renderParams_t params;
-	VectorCopy(pparams->vieworg, params.origin);
-	VectorCopy(pparams->viewangles, params.angles);
-	VectorCopy(pparams->crosshairangle, params.crosshairAngle);
 	params.fov = GetCurrentFov();
-	params.aspectRatio = (float)screenWidth / screenHeight;
-	params.movevars = pparams->movevars;
+	params.viewModelFov = GetViewmodelFov();
+	params.refParams = pparams;
 	Render_RenderScene(&params);
+}
+
+static float _GetViewmodelFov(void)
+{
+	studio_cache_t *cache = EntityStudioCache(gEngfuncs.GetViewModel());
+	if (!cache)
+		return viewmodel_fov->value;
+
+	float scale = (cache->config.fov_override > 0) ? (cache->config.fov_override / 90) : 1.0f;
+	return viewmodel_fov->value * scale;
+}
+
+float GetViewmodelFov(void)
+{
+	float fov = _GetViewmodelFov() * fovScale;
+	return CLAMP(fov, 1, 179);
 }

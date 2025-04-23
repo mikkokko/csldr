@@ -1,12 +1,9 @@
 /* if this doesn't match Render::Params, enjoy the segfaults */
 typedef struct
 {
-	vec3_t origin;
-	vec3_t angles;
-	vec3_t crosshairAngle;
 	float fov;
-	float aspectRatio;
-	movevars_t *movevars;
+	float viewModelFov;
+	ref_params_t *refParams;
 } renderParams_t;
 
 typedef int(*addEntityCallback_t)(cl_entity_t *);

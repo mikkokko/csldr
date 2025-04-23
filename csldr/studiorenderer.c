@@ -73,16 +73,6 @@ static void DrawHands(cl_entity_t *weapon, int flags)
 	*weapon = backup;
 }
 
-static float GetViewmodelFov(void)
-{
-	studio_cache_t *cache = EntityStudioCache(gEngfuncs.GetViewModel());
-	if (!cache)
-		return viewmodel_fov->value;
-
-	float scale = (cache->config.fov_override > 0) ? (cache->config.fov_override / 90) : 1.0f;
-	return viewmodel_fov->value * scale;
-}
-
 static void SetProjectionMatrix(void)
 {
 	float aspect, fov, f, fn;
@@ -95,10 +85,7 @@ static void SetProjectionMatrix(void)
 		return; // won't work (renderer does this itself)
 
 	aspect = (float)screenWidth / (float)screenHeight;
-
-	fov = GetViewmodelFov() * fovScale;
-	fov = CLAMP(fov, 1, 179);
-	fov = 0.75f * tanf(Radians(fov) * 0.5f);
+	fov = 0.75f * tanf(Radians(GetViewmodelFov()) * 0.5f);
 
 	f = 1.0f / fov;
 	fn = (1.0f / (Z_NEAR - Z_FAR));

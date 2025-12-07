@@ -97,14 +97,14 @@ void ProxyInit(void)
 	memmove(ext + ORIG_SUFFIX_LEN, ext, ext_length + 1); /* including the nul terminator */
 	memcpy(ext, ORIG_SUFFIX, ORIG_SUFFIX_LEN);
 
-	if (Secret_LoadClient(path))
-		return;
+	if (!Secret_LoadClient(path))
+	{
+		/* if this fails, it prints out why and terminates the process */
+		clientOrig = Plat_CheckedDlopen(path);
 
-	/* if this fails, it prints out why and terminates the process */
-	clientOrig = Plat_CheckedDlopen(path);
-
-	/* fill cl_funcs */
-	GetClientFuncs();
+		/* fill cl_funcs */
+		GetClientFuncs();
+	}
 
 	/* try loading the renderer at this point */
 	Render_Load();

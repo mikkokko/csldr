@@ -14,6 +14,7 @@
 - Bone controlled camera movement
 - Mirrored shell ejects
 - FOV lerp
+- Optional [OpenGL 3.1 renderer](https://github.com/mikkokko/csgl3)
 
 ## Notes
 

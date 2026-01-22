@@ -5,6 +5,11 @@
 #define __USE_GNU 1 /* stupid hack for dladdr on linux */
 #include <dlfcn.h>
 
+void *Plat_Dlopen(const char *filename)
+{
+	return dlopen(filename, RTLD_NOW);
+}
+
 void *Plat_CheckedDlopen(const char *filename)
 {
 	void *handle = dlopen(filename, RTLD_NOW);
